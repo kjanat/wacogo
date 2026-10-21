@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/partite-ai/wacogo/internal/core"
+	"github.com/kjanat/wacogo/internal/core"
 )
 
 // TestExportedFunc_CallRaw_TwoCallbacks verifies that the

@@ -1,8 +1,8 @@
 package host
 
 import (
-	"github.com/partite-ai/wacogo/internal/canon"
-	"github.com/partite-ai/wacogo/internal/core"
+	"github.com/kjanat/wacogo/internal/canon"
+	"github.com/kjanat/wacogo/internal/core"
 )
 
 // CallerCoreModule returns the wazero core module of the wasm caller

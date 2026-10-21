@@ -5,8 +5,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/partite-ai/wacogo"
-	"github.com/partite-ai/wacogo/internal/witgen/testdata/genfixtures/example/demo/compounds"
+	"github.com/kjanat/wacogo"
+	"github.com/kjanat/wacogo/internal/witgen/testdata/genfixtures/example/demo/compounds"
 )
 
 // myCounter is a minimal Counter impl: holds a u32 returned by Get().

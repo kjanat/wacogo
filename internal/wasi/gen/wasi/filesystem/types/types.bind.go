@@ -31,12 +31,12 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/partite-ai/wacogo"
-	"github.com/partite-ai/wacogo/host"
-	wallclock "github.com/partite-ai/wacogo/internal/wasi/gen/wasi/clocks/wallclock"
-	poll "github.com/partite-ai/wacogo/internal/wasi/gen/wasi/io/poll"
-	streams "github.com/partite-ai/wacogo/internal/wasi/gen/wasi/io/streams"
-	wioerror "github.com/partite-ai/wacogo/internal/wasi/gen/wasi/io/wioerror"
+	"github.com/kjanat/wacogo"
+	"github.com/kjanat/wacogo/host"
+	wallclock "github.com/kjanat/wacogo/internal/wasi/gen/wasi/clocks/wallclock"
+	poll "github.com/kjanat/wacogo/internal/wasi/gen/wasi/io/poll"
+	streams "github.com/kjanat/wacogo/internal/wasi/gen/wasi/io/streams"
+	wioerror "github.com/kjanat/wacogo/internal/wasi/gen/wasi/io/wioerror"
 )
 
 // Factory builds host-side instances of the Types interface

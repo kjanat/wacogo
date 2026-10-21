@@ -7,9 +7,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/partite-ai/wacogo"
-	"github.com/partite-ai/wacogo/host"
-	streams "github.com/partite-ai/wacogo/internal/wasi/gen/wasi/io/streams"
+	"github.com/kjanat/wacogo"
+	"github.com/kjanat/wacogo/host"
+	streams "github.com/kjanat/wacogo/internal/wasi/gen/wasi/io/streams"
 )
 
 // stdoutWrapper is the concrete type returned by WrapInstance

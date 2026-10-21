@@ -3,7 +3,7 @@ package host
 import (
 	"context"
 
-	"github.com/partite-ai/wacogo/internal/core"
+	"github.com/kjanat/wacogo/internal/core"
 )
 
 // ExportedFunc is a host-callable wrapper around an exported component

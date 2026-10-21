@@ -3,7 +3,7 @@ package fixturetests_test
 import (
 	"testing"
 
-	"github.com/partite-ai/wacogo/wasmtools"
+	"github.com/kjanat/wacogo/wasmtools"
 )
 
 func watToBinary(t *testing.T, wat string) []byte {

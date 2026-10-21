@@ -6,8 +6,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/partite-ai/wacogo"
-	"github.com/partite-ai/wacogo/internal/witgen/testdata/genfixtures/example/demo/concat"
+	"github.com/kjanat/wacogo"
+	"github.com/kjanat/wacogo/internal/witgen/testdata/genfixtures/example/demo/concat"
 )
 
 // oobJoinWAT is a component that exports a join function whose core

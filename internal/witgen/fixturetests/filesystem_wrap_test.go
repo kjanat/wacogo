@@ -4,10 +4,10 @@ import (
 	"context"
 	"testing"
 
-	"github.com/partite-ai/wacogo"
-	"github.com/partite-ai/wacogo/host"
-	"github.com/partite-ai/wacogo/internal/witgen/testdata/genfixtures/example/demo/filesystem"
-	streams "github.com/partite-ai/wacogo/internal/witgen/testdata/genfixtures/example/demo/streams"
+	"github.com/kjanat/wacogo"
+	"github.com/kjanat/wacogo/host"
+	"github.com/kjanat/wacogo/internal/witgen/testdata/genfixtures/example/demo/filesystem"
+	streams "github.com/kjanat/wacogo/internal/witgen/testdata/genfixtures/example/demo/streams"
 )
 
 // TestFilesystem_WrapInstance_OpenReturnsStreamsHandle verifies that a

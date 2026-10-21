@@ -6,10 +6,10 @@ import (
 	"io"
 	"net/http"
 
-	"github.com/partite-ai/wacogo/host"
-	"github.com/partite-ai/wacogo/internal/wasi/gen/wasi/http/types"
-	"github.com/partite-ai/wacogo/wasi/io/poll"
-	"github.com/partite-ai/wacogo/wasi/io/streams"
+	"github.com/kjanat/wacogo/host"
+	"github.com/kjanat/wacogo/internal/wasi/gen/wasi/http/types"
+	"github.com/kjanat/wacogo/wasi/io/poll"
+	"github.com/kjanat/wacogo/wasi/io/streams"
 )
 
 type incomingResponseImpl struct {

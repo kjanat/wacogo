@@ -1,7 +1,7 @@
 // Calculator example: implements a WIT interface in Go, wires it into
 // a wasm component, calls add through the wasm boundary.
 //
-// Run with: go run github.com/partite-ai/wacogo/examples/calculator
+// Run with: go run github.com/kjanat/wacogo/examples/calculator
 package main
 
 import (
@@ -10,12 +10,12 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/partite-ai/wacogo"
-	"github.com/partite-ai/wacogo/examples/calculator/gen/example/demo/calc"
-	"github.com/partite-ai/wacogo/wasmtools"
+	"github.com/kjanat/wacogo"
+	"github.com/kjanat/wacogo/examples/calculator/gen/example/demo/calc"
+	"github.com/kjanat/wacogo/wasmtools"
 )
 
-//go:generate go run github.com/partite-ai/wacogo/cmd/wacogo-witgen generate -w example:demo/arith -o ./gen -p github.com/partite-ai/wacogo/examples/calculator/gen ./calculator.wit
+//go:generate go run github.com/kjanat/wacogo/cmd/wacogo-witgen generate -w example:demo/arith -o ./gen -p github.com/kjanat/wacogo/examples/calculator/gen ./calculator.wit
 
 type myCalc struct{}
 

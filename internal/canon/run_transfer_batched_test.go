@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/partite-ai/wacogo/internal/wasm"
+	"github.com/kjanat/wacogo/internal/wasm"
 	"github.com/tetratelabs/wazero"
 	"github.com/tetratelabs/wazero/api"
 )

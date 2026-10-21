@@ -8,7 +8,7 @@ Go interface and calling `Factory.NewInstance(impl)`.
 ## Install
 
 ```sh
-go install github.com/partite-ai/wacogo/cmd/wacogo-witgen@latest
+go install github.com/kjanat/wacogo/cmd/wacogo-witgen@latest
 ```
 
 ## Usage
@@ -50,7 +50,7 @@ imports include interface `foo:bar/calc`, output is:
 Add to a `.go` file in your project:
 
 ```go
-//go:generate go run github.com/partite-ai/wacogo/cmd/wacogo-witgen generate -w foo:bar/my-world -o ./bindings -p github.com/x/y/bindings ./bindings.wit
+//go:generate go run github.com/kjanat/wacogo/cmd/wacogo-witgen generate -w foo:bar/my-world -o ./bindings -p github.com/x/y/bindings ./bindings.wit
 package bindings
 ```
 

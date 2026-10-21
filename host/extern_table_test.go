@@ -3,7 +3,7 @@ package host
 import (
 	"testing"
 
-	"github.com/partite-ai/wacogo/internal/core"
+	"github.com/kjanat/wacogo/internal/core"
 )
 
 func TestExternTable_PutLookupRelease_Basic(t *testing.T) {

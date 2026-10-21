@@ -5,8 +5,8 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/partite-ai/wacogo/internal/canon"
-	"github.com/partite-ai/wacogo/internal/core"
+	"github.com/kjanat/wacogo/internal/canon"
+	"github.com/kjanat/wacogo/internal/core"
 )
 
 // DestroyOrphan, when implemented by a value stored in the extern table,

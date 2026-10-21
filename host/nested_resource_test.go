@@ -5,9 +5,9 @@ import (
 	"context"
 	"testing"
 
-	"github.com/partite-ai/wacogo"
-	"github.com/partite-ai/wacogo/host"
-	"github.com/partite-ai/wacogo/internal/core"
+	"github.com/kjanat/wacogo"
+	"github.com/kjanat/wacogo/host"
+	"github.com/kjanat/wacogo/internal/core"
 )
 
 // A resource declared in a nested instance scope must be resolvable

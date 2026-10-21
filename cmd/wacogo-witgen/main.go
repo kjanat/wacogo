@@ -12,7 +12,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/partite-ai/wacogo/internal/witgen"
+	"github.com/kjanat/wacogo/internal/witgen"
 )
 
 func main() {

@@ -6,8 +6,8 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/partite-ai/wacogo/internal/canon"
-	"github.com/partite-ai/wacogo/wasmparser"
+	"github.com/kjanat/wacogo/internal/canon"
+	"github.com/kjanat/wacogo/wasmparser"
 	"github.com/tetratelabs/wazero"
 	"github.com/tetratelabs/wazero/api"
 	"github.com/tetratelabs/wazero/experimental"

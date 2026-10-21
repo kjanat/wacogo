@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"testing"
 
-	"github.com/partite-ai/wacogo/wasi/http/types"
+	"github.com/kjanat/wacogo/wasi/http/types"
 )
 
 func TestTranslateResultErr_CodedErrorHTTPRequestDenied(t *testing.T) {

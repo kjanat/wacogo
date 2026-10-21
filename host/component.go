@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"sync/atomic"
 
-	"github.com/partite-ai/wacogo/internal/canon"
-	"github.com/partite-ai/wacogo/internal/core"
-	"github.com/partite-ai/wacogo/wasmparser"
+	"github.com/kjanat/wacogo/internal/canon"
+	"github.com/kjanat/wacogo/internal/core"
+	"github.com/kjanat/wacogo/wasmparser"
 	"github.com/tetratelabs/wazero"
 	"github.com/tetratelabs/wazero/api"
 )

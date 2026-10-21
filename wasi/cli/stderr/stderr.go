@@ -7,10 +7,10 @@ import (
 	"context"
 	"io"
 
-	"github.com/partite-ai/wacogo"
-	"github.com/partite-ai/wacogo/host"
-	"github.com/partite-ai/wacogo/wasi/io/streams"
-	gen "github.com/partite-ai/wacogo/internal/wasi/gen/wasi/cli/stderr"
+	"github.com/kjanat/wacogo"
+	"github.com/kjanat/wacogo/host"
+	"github.com/kjanat/wacogo/wasi/io/streams"
+	gen "github.com/kjanat/wacogo/internal/wasi/gen/wasi/cli/stderr"
 )
 
 // InterfaceName is the canonical WIT id of this interface.

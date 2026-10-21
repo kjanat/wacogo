@@ -7,7 +7,7 @@ package terminalstdin
 import (
 	"context"
 
-	terminalinput "github.com/partite-ai/wacogo/internal/wasi/gen/wasi/cli/terminalinput"
+	terminalinput "github.com/kjanat/wacogo/internal/wasi/gen/wasi/cli/terminalinput"
 )
 
 // InterfaceName is the canonical WIT id of the interface this binding

@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/partite-ai/wacogo/internal/canon"
+	"github.com/kjanat/wacogo/internal/canon"
 )
 
 // This file bridges parent-package types to the canon package's interfaces.

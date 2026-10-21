@@ -11,7 +11,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/partite-ai/wacogo/wasmparser"
+	"github.com/kjanat/wacogo/wasmparser"
 )
 
 var depth int

@@ -5,8 +5,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/partite-ai/wacogo"
-	"github.com/partite-ai/wacogo/examples/calculator/gen/example/demo/calc"
+	"github.com/kjanat/wacogo"
+	"github.com/kjanat/wacogo/examples/calculator/gen/example/demo/calc"
 )
 
 func TestCalculator_Add(t *testing.T) {

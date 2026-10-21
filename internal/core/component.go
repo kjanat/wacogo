@@ -3,7 +3,7 @@ package core
 import (
 	"context"
 
-	"github.com/partite-ai/wacogo/wasmparser"
+	"github.com/kjanat/wacogo/wasmparser"
 	"github.com/tetratelabs/wazero"
 )
 

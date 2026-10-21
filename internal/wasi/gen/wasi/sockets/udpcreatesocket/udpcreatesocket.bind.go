@@ -8,11 +8,11 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/partite-ai/wacogo"
-	"github.com/partite-ai/wacogo/host"
-	poll "github.com/partite-ai/wacogo/internal/wasi/gen/wasi/io/poll"
-	network "github.com/partite-ai/wacogo/internal/wasi/gen/wasi/sockets/network"
-	udp "github.com/partite-ai/wacogo/internal/wasi/gen/wasi/sockets/udp"
+	"github.com/kjanat/wacogo"
+	"github.com/kjanat/wacogo/host"
+	poll "github.com/kjanat/wacogo/internal/wasi/gen/wasi/io/poll"
+	network "github.com/kjanat/wacogo/internal/wasi/gen/wasi/sockets/network"
+	udp "github.com/kjanat/wacogo/internal/wasi/gen/wasi/sockets/udp"
 )
 
 // Factory builds host-side instances of the UdpCreateSocket interface

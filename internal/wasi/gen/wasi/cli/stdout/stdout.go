@@ -6,7 +6,7 @@ package stdout
 import (
 	"context"
 
-	streams "github.com/partite-ai/wacogo/internal/wasi/gen/wasi/io/streams"
+	streams "github.com/kjanat/wacogo/internal/wasi/gen/wasi/io/streams"
 )
 
 // InterfaceName is the canonical WIT id of the interface this binding

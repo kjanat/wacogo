@@ -3,7 +3,7 @@ package types_test
 import (
 	"testing"
 
-	"github.com/partite-ai/wacogo/wasi/http/types"
+	"github.com/kjanat/wacogo/wasi/http/types"
 )
 
 func TestCodedError_Error_UsesMsgWhenSet(t *testing.T) {

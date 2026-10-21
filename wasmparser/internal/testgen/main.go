@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/partite-ai/wacogo/wasmtools"
+	"github.com/kjanat/wacogo/wasmtools"
 )
 
 func main() {

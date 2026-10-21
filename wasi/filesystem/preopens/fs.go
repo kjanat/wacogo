@@ -10,9 +10,9 @@ import (
 	"syscall"
 	"time"
 
-	wallclock "github.com/partite-ai/wacogo/wasi/clocks/wallclock"
-	types "github.com/partite-ai/wacogo/wasi/filesystem/types"
-	streams "github.com/partite-ai/wacogo/wasi/io/streams"
+	wallclock "github.com/kjanat/wacogo/wasi/clocks/wallclock"
+	types "github.com/kjanat/wacogo/wasi/filesystem/types"
+	streams "github.com/kjanat/wacogo/wasi/io/streams"
 )
 
 // Optional capability interfaces. fsDescriptor inspects its underlying

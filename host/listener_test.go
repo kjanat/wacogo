@@ -7,7 +7,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/partite-ai/wacogo/internal/core"
+	"github.com/kjanat/wacogo/internal/core"
 )
 
 type event struct {

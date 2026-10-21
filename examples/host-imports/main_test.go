@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 
-	"github.com/partite-ai/wacogo"
-	filesystem "github.com/partite-ai/wacogo/examples/host-imports/gen/example/host-imports/filesystem"
-	streams "github.com/partite-ai/wacogo/examples/host-imports/gen/example/host-imports/streams"
+	"github.com/kjanat/wacogo"
+	filesystem "github.com/kjanat/wacogo/examples/host-imports/gen/example/host-imports/filesystem"
+	streams "github.com/kjanat/wacogo/examples/host-imports/gen/example/host-imports/streams"
 )
 
 // TestHostImports_CrossPackageMint smoke-tests instantiation of both

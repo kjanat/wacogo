@@ -1,4 +1,4 @@
-module github.com/partite-ai/wacogo
+module github.com/kjanat/wacogo
 
 go 1.25.5
 

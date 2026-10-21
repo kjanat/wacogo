@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/partite-ai/wacogo/internal/canon"
-	"github.com/partite-ai/wacogo/internal/wasm"
-	"github.com/partite-ai/wacogo/wasmparser"
+	"github.com/kjanat/wacogo/internal/canon"
+	"github.com/kjanat/wacogo/internal/wasm"
+	"github.com/kjanat/wacogo/wasmparser"
 )
 
 // loadInstanceInfo tracks a component instance in the component instance index space.

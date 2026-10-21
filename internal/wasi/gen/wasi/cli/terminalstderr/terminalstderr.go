@@ -7,7 +7,7 @@ package terminalstderr
 import (
 	"context"
 
-	terminaloutput "github.com/partite-ai/wacogo/internal/wasi/gen/wasi/cli/terminaloutput"
+	terminaloutput "github.com/kjanat/wacogo/internal/wasi/gen/wasi/cli/terminaloutput"
 )
 
 // InterfaceName is the canonical WIT id of the interface this binding

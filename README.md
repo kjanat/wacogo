@@ -21,7 +21,7 @@ Not yet supported: `async`, `stream<T>`, `future<T>`, `error-context`,
 ## Install
 
 ```sh
-go get github.com/partite-ai/wacogo
+go get github.com/kjanat/wacogo
 ```
 
 Requires Go 1.25 or later.
@@ -40,8 +40,8 @@ import (
     "log"
     "os"
 
-    "github.com/partite-ai/wacogo"
-    "github.com/partite-ai/wacogo/wasi"
+    "github.com/kjanat/wacogo"
+    "github.com/kjanat/wacogo/wasi"
 )
 
 func main() {
@@ -109,7 +109,7 @@ interface for you to implement, and a `Factory` that produces a
 ### Install the generator
 
 ```sh
-go install github.com/partite-ai/wacogo/cmd/wacogo-witgen@latest
+go install github.com/kjanat/wacogo/cmd/wacogo-witgen@latest
 ```
 
 ### Generate bindings
@@ -141,7 +141,7 @@ wacogo-witgen generate \
 This is also a good fit for `go:generate`:
 
 ```go
-//go:generate go run github.com/partite-ai/wacogo/cmd/wacogo-witgen generate -w example:demo/arith -o ./gen -p github.com/x/y/gen ./calculator.wit
+//go:generate go run github.com/kjanat/wacogo/cmd/wacogo-witgen generate -w example:demo/arith -o ./gen -p github.com/x/y/gen ./calculator.wit
 ```
 
 ### Implement and wire it in
@@ -150,7 +150,7 @@ This is also a good fit for `go:generate`:
 import (
     "context"
 
-    "github.com/partite-ai/wacogo"
+    "github.com/kjanat/wacogo"
     "github.com/x/y/gen/example/demo/calc"
 )
 

@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/partite-ai/wacogo/host"
-	"github.com/partite-ai/wacogo/internal/wasi/gen/wasi/http/types"
-	"github.com/partite-ai/wacogo/internal/wasi/gen/wasi/io/wioerror"
-	wasierr "github.com/partite-ai/wacogo/wasi/internal/wasierr"
+	"github.com/kjanat/wacogo/host"
+	"github.com/kjanat/wacogo/internal/wasi/gen/wasi/http/types"
+	"github.com/kjanat/wacogo/internal/wasi/gen/wasi/io/wioerror"
+	wasierr "github.com/kjanat/wacogo/wasi/internal/wasierr"
 )
 
 // impl is the top-level Types implementation

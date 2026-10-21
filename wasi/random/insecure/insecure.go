@@ -11,9 +11,9 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/partite-ai/wacogo"
-	"github.com/partite-ai/wacogo/host"
-	gen "github.com/partite-ai/wacogo/internal/wasi/gen/wasi/random/insecure"
+	"github.com/kjanat/wacogo"
+	"github.com/kjanat/wacogo/host"
+	gen "github.com/kjanat/wacogo/internal/wasi/gen/wasi/random/insecure"
 )
 
 // InterfaceName is the canonical WIT id of this interface.

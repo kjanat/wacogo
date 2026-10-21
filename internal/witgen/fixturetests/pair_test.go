@@ -5,8 +5,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/partite-ai/wacogo"
-	"github.com/partite-ai/wacogo/internal/witgen/testdata/genfixtures/example/demo/pair"
+	"github.com/kjanat/wacogo"
+	"github.com/kjanat/wacogo/internal/witgen/testdata/genfixtures/example/demo/pair"
 )
 
 type myPair struct{}

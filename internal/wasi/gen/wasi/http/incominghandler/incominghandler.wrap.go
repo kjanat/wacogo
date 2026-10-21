@@ -8,9 +8,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/partite-ai/wacogo"
-	"github.com/partite-ai/wacogo/host"
-	types "github.com/partite-ai/wacogo/internal/wasi/gen/wasi/http/types"
+	"github.com/kjanat/wacogo"
+	"github.com/kjanat/wacogo/host"
+	types "github.com/kjanat/wacogo/internal/wasi/gen/wasi/http/types"
 )
 
 // incomingHandlerWrapper is the concrete type returned by WrapInstance

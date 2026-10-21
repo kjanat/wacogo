@@ -6,9 +6,9 @@ package preopens
 import (
 	"context"
 
-	"github.com/partite-ai/wacogo"
-	"github.com/partite-ai/wacogo/host"
-	gen "github.com/partite-ai/wacogo/internal/wasi/gen/wasi/filesystem/preopens"
+	"github.com/kjanat/wacogo"
+	"github.com/kjanat/wacogo/host"
+	gen "github.com/kjanat/wacogo/internal/wasi/gen/wasi/filesystem/preopens"
 )
 
 // InterfaceName is the canonical WIT id of this interface.

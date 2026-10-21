@@ -3,9 +3,9 @@ package wasi
 import (
 	"io"
 
-	"github.com/partite-ai/wacogo/host"
-	"github.com/partite-ai/wacogo/wasi/filesystem/preopens"
-	"github.com/partite-ai/wacogo/wasi/http/types"
+	"github.com/kjanat/wacogo/host"
+	"github.com/kjanat/wacogo/wasi/filesystem/preopens"
+	"github.com/kjanat/wacogo/wasi/http/types"
 )
 
 // HTTPDoer is the minimal interface wasi:http/outgoing-handler uses to

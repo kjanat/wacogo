@@ -14,9 +14,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/partite-ai/wacogo"
-	"github.com/partite-ai/wacogo/host"
-	poll "github.com/partite-ai/wacogo/internal/wasi/gen/wasi/io/poll"
+	"github.com/kjanat/wacogo"
+	"github.com/kjanat/wacogo/host"
+	poll "github.com/kjanat/wacogo/internal/wasi/gen/wasi/io/poll"
 )
 
 // Factory builds host-side instances of the MonotonicClock interface

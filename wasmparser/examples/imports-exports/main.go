@@ -9,7 +9,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/partite-ai/wacogo/wasmparser"
+	"github.com/kjanat/wacogo/wasmparser"
 )
 
 // typeRefKind returns a human-readable kind name for a ComponentTypeRef.

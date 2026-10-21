@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Wacogo is a WebAssembly Component Model (MVP) runtime in Go. It uses wazero as the core wasm execution engine and implements component model linking, loading, and instantiation on top.
 
-**Module path**: `github.com/partite-ai/wacogo`
+**Module path**: `github.com/kjanat/wacogo`
 
 ## Build & Test Commands
 

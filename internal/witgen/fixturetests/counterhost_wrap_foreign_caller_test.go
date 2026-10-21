@@ -4,10 +4,10 @@ import (
 	"context"
 	"testing"
 
-	"github.com/partite-ai/wacogo"
-	"github.com/partite-ai/wacogo/internal/witgen/testdata/genfixtures/example/demo/compounds"
-	"github.com/partite-ai/wacogo/internal/witgen/testdata/genfixtures/example/demo/counterhost"
-	"github.com/partite-ai/wacogo/internal/witgen/testdata/genfixtures/example/demo/echo"
+	"github.com/kjanat/wacogo"
+	"github.com/kjanat/wacogo/internal/witgen/testdata/genfixtures/example/demo/compounds"
+	"github.com/kjanat/wacogo/internal/witgen/testdata/genfixtures/example/demo/counterhost"
+	"github.com/kjanat/wacogo/internal/witgen/testdata/genfixtures/example/demo/echo"
 )
 
 // TestCounterhost_WrapInstance_ForeignCaller exercises WrapInstance with

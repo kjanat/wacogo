@@ -14,9 +14,9 @@ import (
 	"sync/atomic"
 	"testing"
 
-	"github.com/partite-ai/wacogo/internal/core"
-	"github.com/partite-ai/wacogo/internal/spectest"
-	"github.com/partite-ai/wacogo/wasmparser"
+	"github.com/kjanat/wacogo/internal/core"
+	"github.com/kjanat/wacogo/internal/spectest"
+	"github.com/kjanat/wacogo/wasmparser"
 )
 
 // --- JSON types for wasm-tools json-from-wast output ---

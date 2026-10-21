@@ -3,7 +3,7 @@ package core
 import (
 	"context"
 
-	"github.com/partite-ai/wacogo/internal/canon"
+	"github.com/kjanat/wacogo/internal/canon"
 )
 
 // canonicalOptions holds resolved canonical options for a lift/lower.

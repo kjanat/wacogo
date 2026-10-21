@@ -6,7 +6,7 @@ package preopens
 import (
 	"context"
 
-	types "github.com/partite-ai/wacogo/internal/wasi/gen/wasi/filesystem/types"
+	types "github.com/kjanat/wacogo/internal/wasi/gen/wasi/filesystem/types"
 )
 
 // InterfaceName is the canonical WIT id of the interface this binding

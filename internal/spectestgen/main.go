@@ -20,7 +20,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/partite-ai/wacogo/internal/spectest"
+	"github.com/kjanat/wacogo/internal/spectest"
 )
 
 type ioPair struct {

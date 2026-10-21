@@ -6,7 +6,7 @@ package instancenetwork
 import (
 	"context"
 
-	network "github.com/partite-ai/wacogo/internal/wasi/gen/wasi/sockets/network"
+	network "github.com/kjanat/wacogo/internal/wasi/gen/wasi/sockets/network"
 )
 
 // InterfaceName is the canonical WIT id of the interface this binding
