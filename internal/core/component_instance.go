@@ -5,23 +5,20 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/partite-ai/wacogo/internal/canon"
 	"github.com/partite-ai/wacogo/wasmparser"
-	"github.com/tetratelabs/wazero/api"
 )
 
 // ComponentInstance is a live instance of a Component.
 // ComponentInstance is NOT safe for concurrent use from multiple goroutines.
 // The component model defines components as single-threaded with no reentrance.
 type ComponentInstance struct {
-	engine        *Engine
-	component     *Component
-	coreInstances []api.Module
-	// auxiliaryAdapters holds cross-component adapter instances (host module +
-	// stub) created during instantiation. Closed in ComponentInstance.Close
-	// alongside coreInstances.
-	auxiliaryAdapters []*canon.CallAdapter
-	exports           map[string]exportEntry
+	engine    *Engine
+	component *Component
+	// owned records only newly instantiated modules, adapters and components,
+	// in creation order. Imported instances and aliases remain borrowed.
+	owned   []instanceCloser
+	closed  bool
+	exports map[string]exportEntry
 	// resources is the per-instance canonical-ABI resource table.
 	// Populated during instantiation.
 	resources *ResourceTable
@@ -41,6 +38,10 @@ type ComponentInstance struct {
 	// externTable, when non-nil, supplies LookupExtern. Set from
 	// InstanceSpec.ExternTable at construction time.
 	externTable ExternTable
+}
+
+type instanceCloser interface {
+	Close(context.Context) error
 }
 
 // LookupExtern returns the Go object registered at rep in this
@@ -240,32 +241,29 @@ func (i *ComponentInstance) RunInComponent(ctx context.Context, fn func() error)
 // Outstanding own-kind canonical-ABI handles are dropped first (running
 // each registered destructor under recover so one bad dtor does not
 // strand the rest) while the wazero runtime is still alive. Then the
-// core wasm instances and any cross-component adapters are closed.
+// owned modules, adapters and nested components are closed in reverse creation
+// order, keeping providers alive until their consumers have been released.
 // The instance is finally marked poisoned so any further Enter call
 // fails — Close is one-way. All errors are joined and returned;
 // teardown always completes.
 func (i *ComponentInstance) Close(ctx context.Context) error {
+	if i == nil || i.closed {
+		return nil
+	}
+	i.closed = true
+	owned := i.owned
+	i.owned = nil
 	var errs []error
-	if i != nil && i.resources != nil {
+	if i.resources != nil {
 		if err := i.resources.dropAllOwns(ctx, i); err != nil {
 			errs = append(errs, err)
 		}
 	}
-	// Close core instances in reverse declaration order. wazero modules
-	// often depend on memory/funcs exported by earlier modules, so LIFO
-	// teardown avoids closing a provider before its consumers.
-	for idx := len(i.coreInstances) - 1; idx >= 0; idx-- {
-		if err := i.coreInstances[idx].Close(ctx); err != nil {
+	for idx := len(owned) - 1; idx >= 0; idx-- {
+		if err := owned[idx].Close(ctx); err != nil {
 			errs = append(errs, err)
 		}
 	}
-	for _, a := range i.auxiliaryAdapters {
-		if err := a.Close(ctx); err != nil {
-			errs = append(errs, err)
-		}
-	}
-	if i != nil {
-		i.Poison(fmt.Errorf("component instance closed"))
-	}
+	i.Poison(fmt.Errorf("component instance closed"))
 	return errors.Join(errs...)
 }

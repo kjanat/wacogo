@@ -2,6 +2,7 @@ package core
 
 import (
 	"context"
+	"errors"
 
 	"github.com/partite-ai/wacogo/wasmparser"
 	"github.com/tetratelabs/wazero/api"
@@ -23,7 +24,7 @@ const (
 // cleanups, type-resource slot tables) live in the host package's
 // wrapper, not here.
 type InstanceSpec struct {
-	// Modules are closed in declared order during ComponentInstance.Close.
+	// Modules are closed in reverse declared order during ComponentInstance.Close.
 	// Callers control the order; core does not interpret which is which.
 	Modules []api.Module
 
@@ -85,8 +86,8 @@ func NewInstance(e *Engine, spec *InstanceSpec) (*ComponentInstance, error) {
 	inst.canLeave = true
 	inst.resources = NewResourceTable(inst)
 
-	if len(spec.Modules) > 0 {
-		inst.coreInstances = append(inst.coreInstances, spec.Modules...)
+	for _, module := range spec.Modules {
+		inst.owned = append(inst.owned, module)
 	}
 
 	if spec.ParserInstanceType != nil {
@@ -100,12 +101,8 @@ func NewInstance(e *Engine, spec *InstanceSpec) (*ComponentInstance, error) {
 	if spec.BuildExports != nil {
 		exports, err := spec.BuildExports(inst)
 		if err != nil {
-			// Close already-attached modules in reverse declaration order so
-			// the failed instance does not leak wazero state. Errors from
-			// the close are dropped — the BuildExports error is the cause.
-			closeCtx := context.Background()
-			for i := len(inst.coreInstances) - 1; i >= 0; i-- {
-				_ = inst.coreInstances[i].Close(closeCtx)
+			if closeErr := inst.Close(context.Background()); closeErr != nil {
+				return nil, errors.Join(err, closeErr)
 			}
 			return nil, err
 		}
