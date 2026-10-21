@@ -65,7 +65,7 @@ func (s *instantiationState) execLowerWithGoAdapter(ctx context.Context, step pl
 		return fmt.Errorf("wacogo: lower adapter: %w", err)
 	}
 
-	s.auxiliaryAdapters = append(s.auxiliaryAdapters, adapter)
+	s.inst.owned = append(s.inst.owned, adapter)
 	s.coreFuncs = append(s.coreFuncs, coreFunc{
 		instance: adapter.Module,
 		name:     adapter.Name,
@@ -97,7 +97,7 @@ func (step *planResourceNew) execute(ctx context.Context, s *instantiationState)
 	if err != nil {
 		return fmt.Errorf("wacogo: resource.new: %w", err)
 	}
-	s.auxiliaryAdapters = append(s.auxiliaryAdapters, adapter)
+	s.inst.owned = append(s.inst.owned, adapter)
 	s.coreFuncs = append(s.coreFuncs, coreFunc{
 		instance: adapter.Module,
 		name:     adapter.Name,
@@ -124,7 +124,7 @@ func (step *planResourceDrop) execute(ctx context.Context, s *instantiationState
 	if err != nil {
 		return fmt.Errorf("wacogo: resource.drop: %w", err)
 	}
-	s.auxiliaryAdapters = append(s.auxiliaryAdapters, adapter)
+	s.inst.owned = append(s.inst.owned, adapter)
 	s.coreFuncs = append(s.coreFuncs, coreFunc{
 		instance: adapter.Module,
 		name:     adapter.Name,
@@ -142,7 +142,7 @@ func (step *planResourceRep) execute(ctx context.Context, s *instantiationState)
 	if err != nil {
 		return fmt.Errorf("wacogo: resource.rep: %w", err)
 	}
-	s.auxiliaryAdapters = append(s.auxiliaryAdapters, adapter)
+	s.inst.owned = append(s.inst.owned, adapter)
 	s.coreFuncs = append(s.coreFuncs, coreFunc{
 		instance: adapter.Module,
 		name:     adapter.Name,

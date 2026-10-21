@@ -2,6 +2,7 @@ package core
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync/atomic"
 
@@ -60,11 +61,6 @@ type instantiationState struct {
 	// runs so buildLiftedFunc can stamp them at construction. Funcs not
 	// destined for export have a zero entry (empty Name, nil type).
 	funcExportInfo []funcExportInfo
-
-	// Auxiliary adapters created during instantiation (e.g., cross-component
-	// adapter host modules and stub wrappers). These are tracked separately
-	// from coreInstances so they don't shift the core instance index space.
-	auxiliaryAdapters []*canon.CallAdapter
 
 	// parentState provides access to the parent component's instantiation state,
 	// used to resolve outer aliases at runtime. Nil for top-level instantiations.
@@ -182,7 +178,7 @@ func (e *Engine) instantiateWithParent(ctx context.Context, component *Component
 // instantiateWithParentCfg is the shared body of instantiateWithParent, taking
 // an already-parsed config so callers that need to inspect imports before
 // running the plan don't have to apply InstantiateOptions twice.
-func (e *Engine) instantiateWithParentCfg(ctx context.Context, component *Component, parentState *instantiationState, cfg *instantiateConfig) (*ComponentInstance, error) {
+func (e *Engine) instantiateWithParentCfg(ctx context.Context, component *Component, parentState *instantiationState, cfg *instantiateConfig) (result *ComponentInstance, err error) {
 	// Copy the component's compiled modules and sub-components into the
 	// instantiation state so that module/component imports can extend them.
 	compiledModules := make([]CompiledModule, len(component.compiledModules))
@@ -241,6 +237,13 @@ func (e *Engine) instantiateWithParentCfg(ctx context.Context, component *Compon
 		canLeave:  true,
 	}
 	inst.resources = NewResourceTable(inst)
+	defer func() {
+		if result == nil {
+			if closeErr := inst.Close(ctx); closeErr != nil {
+				err = errors.Join(err, closeErr)
+			}
+		}
+	}()
 	state := &instantiationState{
 		inst:            inst,
 		imports:         cfg.imports,
@@ -264,13 +267,6 @@ func (e *Engine) instantiateWithParentCfg(ctx context.Context, component *Compon
 		return nil
 	})
 	if runErr != nil {
-		// Clean up any already-instantiated modules.
-		for _, m := range state.coreInstances {
-			_ = m.Close(ctx)
-		}
-		for _, a := range state.auxiliaryAdapters {
-			_ = a.Close(ctx)
-		}
 		return nil, runErr
 	}
 
@@ -335,8 +331,6 @@ func (e *Engine) instantiateWithParentCfg(ctx context.Context, component *Compon
 		}
 	}
 
-	inst.coreInstances = state.coreInstances
-	inst.auxiliaryAdapters = state.auxiliaryAdapters
 	return inst, nil
 }
 
@@ -463,6 +457,7 @@ func (step *planInstantiateModule) execute(ctx context.Context, s *instantiation
 	}
 
 	s.coreInstances = append(s.coreInstances, inst)
+	s.inst.owned = append(s.inst.owned, inst)
 	return nil
 }
 
@@ -946,6 +941,7 @@ func (step *planInstantiateComponent) execute(ctx context.Context, s *instantiat
 		return fmt.Errorf("wacogo: instantiate sub-component %d: %w", step.componentIndex, err)
 	}
 	s.componentInstances = append(s.componentInstances, inst)
+	s.inst.owned = append(s.inst.owned, inst)
 	return nil
 }
 
@@ -1154,6 +1150,7 @@ func (s *instantiationState) execInstantiateFromExportsWithWasm(ctx context.Cont
 	}
 
 	s.coreInstances = append(s.coreInstances, inst)
+	s.inst.owned = append(s.inst.owned, inst)
 	return nil
 }
 
