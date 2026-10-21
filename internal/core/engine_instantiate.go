@@ -451,12 +451,25 @@ func (step *planInstantiateModule) execute(ctx context.Context, s *instantiation
 	modName := fmt.Sprintf("__wacogo_inst_%d", instanceCounter.Add(1))
 	modCfg := wazero.NewModuleConfig().WithName(modName)
 
+	release, err := reserveCoreTables(ctx, cm.tables)
+	defer func() {
+		if release != nil {
+			release()
+		}
+	}()
+	if err != nil {
+		return fmt.Errorf("wacogo: core table allocation: %w", err)
+	}
 	inst, err := s.inst.engine.runtime.InstantiateModule(resolverCtx, cm.module, modCfg)
 	if err != nil {
 		return fmt.Errorf("wacogo: instantiate module %d: %w", step.moduleIndex, err)
 	}
 
 	s.coreInstances = append(s.coreInstances, inst)
+	if release != nil {
+		s.inst.owned = append(s.inst.owned, tableReservation{release: release})
+		release = nil
+	}
 	s.inst.owned = append(s.inst.owned, inst)
 	return nil
 }
