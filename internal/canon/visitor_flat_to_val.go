@@ -157,11 +157,12 @@ func (v *flatToValVisitor) VisitList(elem Type) {
 		elemAlign = 1
 	}
 	elemStep := child.out[0]
+	generatedSize := generatedInlineStorage(elem)
 
 	v.emit(func(ctx context.Context, gcc *gocallContext, _ uint32) (Val, error) {
 		ptr := uint32(gcc.registers[ptrSlot])
 		n := uint32(gcc.registers[lenSlot])
-		if err := gcc.listStorage(ptr, n, elemSize); err != nil {
+		if err := gcc.listStorage(ptr, n, elemSize, generatedSize); err != nil {
 			return nil, err
 		}
 		if n > 0 && elemAlign > 1 {

@@ -66,6 +66,7 @@ type gocallContext struct {
 	owned          []*ValOwnHandle // acquired during this call; dropped if lifting fails
 	limits         LiftLimits
 	validateOnly   bool // host-argument preflight; no materialization or handle transfers
+	rawResults     bool // include generated Go inline storage in allocation preflight
 	transferToHost bool // include source transcoding and destination string-copy storage
 }
 

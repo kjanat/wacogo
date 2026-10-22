@@ -4,13 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math"
 	"unsafe"
 )
 
-// LiftLimits bounds canonical values lifted into Go: Func.Call results and
-// arguments passed to host functions. Each zero field is unlimited.
-// CallRaw callers, including generated typed bindings, manage their own result
-// decoding and allocation limits. Generated results are not covered.
+// LiftLimits bounds canonical values lifted into Go: Func.Call results,
+// CallRaw/generated results, and host arguments. Each zero field is unlimited.
+// Raw results are preflighted before decoding, using conservative generated Go
+// storage charges. Additional allocations inside custom callbacks are not measured.
 type LiftLimits struct {
 	// MaxValues limits the aggregate number of values, including nested values.
 	MaxValues uint64
@@ -88,7 +89,7 @@ func (b *liftBudget) stringStorage(data []byte, coded uint32, enc StringEncoding
 	return b.storage(uint64(len(data)) * multiplier)
 }
 
-func (gcc *gocallContext) listStorage(ptr, count, elemSize uint32) error {
+func (gcc *gocallContext) listStorage(ptr, count, elemSize uint32, generatedSize uint64) error {
 	if err := checkListLen(count, elemSize); err != nil {
 		return err
 	}
@@ -100,7 +101,14 @@ func (gcc *gocallContext) listStorage(ptr, count, elemSize uint32) error {
 	if err := gcc.lift.reserveValues(uint64(count)); err != nil {
 		return err
 	}
-	return gcc.lift.storage(uint64(count) * valStorage)
+	storage := valStorage
+	if gcc.rawResults {
+		storage = max(storage, generatedSize)
+	}
+	if count != 0 && storage > math.MaxUint64/uint64(count) {
+		return fmt.Errorf("%w: list storage overflows uint64", ErrLiftLimit)
+	}
+	return gcc.lift.storage(uint64(count) * storage)
 }
 
 func (gcc *gocallContext) recordStorage(count int) error {

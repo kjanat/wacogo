@@ -5,16 +5,17 @@ import (
 	"github.com/tetratelabs/wazero"
 )
 
-// LiftLimits bounds Func.Call results and arguments lifted by host functions.
+// LiftLimits bounds Func.Call, CallRaw/generated results, and host arguments.
 // Zero fields are unlimited. Limits reset independently for every invocation.
 type LiftLimits = core.LiftLimits
 
 // ErrLiftLimit reports exhausted canonical lifting budgets.
 var ErrLiftLimit = core.ErrLiftLimit
 
-// WithLiftLimits sets canonical lifting budgets before host allocation. It
-// does not bound CallRaw result decoding, including generated typed bindings,
-// or allocations in user code. Generated result limits require separate support.
+// WithLiftLimits sets canonical lifting budgets before host allocation.
+// CallRaw results, including existing generated bindings, are preflighted before
+// decoding with conservative storage charges for generated Go layouts. Custom
+// callback allocations beyond the declared result representation are not measured.
 func WithLiftLimits(limits LiftLimits) EngineOption {
 	return core.WithLiftLimits(limits)
 }
