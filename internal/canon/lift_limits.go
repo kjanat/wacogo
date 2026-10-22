@@ -102,7 +102,7 @@ func (gcc *gocallContext) listStorage(ptr, count, elemSize uint32, generatedSize
 		return err
 	}
 	storage := valStorage
-	if gcc.rawResults {
+	if gcc.generatedStorage {
 		storage = max(storage, generatedSize)
 	}
 	if count != 0 && storage > math.MaxUint64/uint64(count) {
