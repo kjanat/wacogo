@@ -14,6 +14,7 @@ type cleanupLiftInstance struct {
 	testInstance
 	table   *stubResourceTable
 	entered bool
+	exitErr error
 }
 
 func (i *cleanupLiftInstance) Enter(context.Context) error {
@@ -23,7 +24,13 @@ func (i *cleanupLiftInstance) Enter(context.Context) error {
 	i.entered = true
 	return nil
 }
-func (i *cleanupLiftInstance) Exit(context.Context)         { i.entered = false }
+func (i *cleanupLiftInstance) Exit(context.Context) {
+	i.entered = false
+	if err := i.exitErr; err != nil {
+		i.exitErr = nil
+		panic(err)
+	}
+}
 func (i *cleanupLiftInstance) ResourceTable() ResourceTable { return i.table }
 
 type cleanupLiftResource struct {
@@ -34,10 +41,14 @@ type cleanupLiftResource struct {
 func (r *cleanupLiftResource) DefiningInstance() Instance { return r.instance }
 
 func TestLiftFailureReleasesAcquiredOwnAfterExit(t *testing.T) {
-	for _, failure := range []string{"budget", "cancellation", "post-return", "none"} {
+	for _, failure := range []string{"budget", "cancellation", "post-return", "exit", "budget and exit", "none"} {
 		t.Run(failure, func(t *testing.T) {
 			mem := setupMem(t, 0)
 			instance := &cleanupLiftInstance{table: newStubResourceTable()}
+			exitErr := errors.New("exit refund failed")
+			if failure == "exit" || failure == "budget and exit" {
+				instance.exitErr = exitErr
+			}
 			dropped := 0
 			resource := &cleanupLiftResource{
 				instance:                 instance,
@@ -48,7 +59,7 @@ func TestLiftFailureReleasesAcquiredOwnAfterExit(t *testing.T) {
 			mem.WriteUint32Le(4, 64)
 			mem.WriteUint32Le(8, 2)
 			limits := LiftLimits{MaxValues: 16}
-			if failure == "budget" {
+			if failure == "budget" || failure == "budget and exit" {
 				limits.MaxValues = 4
 			}
 			resultType := testTypeRecord{fields: []RecordField{
@@ -76,6 +87,9 @@ func TestLiftFailureReleasesAcquiredOwnAfterExit(t *testing.T) {
 				ctx = &cancelDuringLift{Context: base, cancel: cancel, checks: 6}
 			}
 			values, err := binding.Call(ctx, nil)
+			if (failure == "exit" || failure == "budget and exit") && !errors.Is(err, exitErr) {
+				t.Fatalf("lost exit failure: %v", err)
+			}
 			if failure == "none" {
 				if err != nil || dropped != 0 {
 					t.Fatalf("success dropped result: drops=%d err=%v", dropped, err)
@@ -90,7 +104,7 @@ func TestLiftFailureReleasesAcquiredOwnAfterExit(t *testing.T) {
 					t.Fatalf("failure leaked owned result: drops=%d values=%v err=%v", dropped, values, err)
 				}
 				switch failure {
-				case "budget":
+				case "budget", "budget and exit":
 					if !errors.Is(err, ErrLiftLimit) {
 						t.Fatal(err)
 					}

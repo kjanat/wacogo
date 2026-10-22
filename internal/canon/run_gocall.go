@@ -7,8 +7,8 @@ import (
 )
 
 // runGocallPlan executes a compiled gocallPlan for a Go→component call
-// (Func.Call). Returns the lifted result []Val or an error. No panic/recover
-// boundary — every failure flows through error returns.
+// (Func.Call). Returns the lifted result []Val or an error. Exit cleanup
+// failures are joined with the call error at the deferred boundary.
 func runGocallPlan(
 	ctx context.Context,
 	plan *gocallPlan,
@@ -32,9 +32,15 @@ func runGocallPlan(
 		// first so the nested call cannot consume or clear this call's owns.
 		owned := gcc.owned
 		gcc.owned = nil
-		gcc.callee.Instance.Exit(ctx)
+		exitWithError(ctx, gcc.callee.Instance, &err)
 		finishLift(ctx, owned, &results, &err, panicked != nil)
 		if panicked != nil {
+			if err != nil {
+				if cause, ok := panicked.(error); ok {
+					panic(errors.Join(cause, err))
+				}
+				panic(errors.Join(fmt.Errorf("component call panic: %v", panicked), err))
+			}
 			panic(panicked)
 		}
 	}()

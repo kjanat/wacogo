@@ -3,6 +3,7 @@ package core
 import (
 	"context"
 	"errors"
+	"slices"
 	"sync"
 	"sync/atomic"
 
@@ -50,6 +51,11 @@ type Engine struct {
 	closed     atomic.Bool
 	liftLimits canon.LiftLimits
 
+	lifecycleMu     sync.Mutex
+	runtimeClosed   bool
+	tableModules    map[uint64]*accountedModule
+	nextTableModule uint64
+
 	// bridges caches compiled instantiate-from-exports bridge modules by
 	// their bytes, which depend only on the component, not the instance.
 	bridgeMu sync.Mutex
@@ -92,14 +98,39 @@ func (e *Engine) compiledBridge(ctx context.Context, bridgeWasm []byte) (wazero.
 	return cm, nil
 }
 
-// Close releases all resources held by the engine. Idempotent: subsequent
-// calls are no-ops returning nil. Once closed, the engine will not accept
-// further LoadComponent / Instantiate calls.
+// Close releases resources held by the engine and rejects further loading or
+// instantiation. Reentrant and repeated calls are no-ops. Callbacks may call
+// Close synchronously; reservations acquired or already being torn down by an
+// in-flight callback are released when that operation unwinds.
 func (e *Engine) Close(ctx context.Context) error {
+	e.lifecycleMu.Lock()
 	if !e.closed.CompareAndSwap(false, true) {
+		e.lifecycleMu.Unlock()
 		return nil
 	}
-	return e.runtime.Close(ctx)
+	e.lifecycleMu.Unlock()
+	runtimeErr := e.runtime.Close(ctx)
+	e.lifecycleMu.Lock()
+	e.runtimeClosed = true
+	ids := make([]uint64, 0, len(e.tableModules))
+	for id := range e.tableModules {
+		if m := e.tableModules[id]; m.phase != moduleClosing && m.owner.activeOperations == 0 {
+			ids = append(ids, id)
+		}
+	}
+	slices.Sort(ids)
+	modules := make([]*accountedModule, 0, len(ids))
+	for _, id := range ids {
+		modules = append(modules, e.tableModules[id])
+	}
+	e.lifecycleMu.Unlock()
+	errs := []error{runtimeErr}
+	for i := len(modules) - 1; i >= 0; i-- {
+		if err := modules[i].refund(); err != nil {
+			errs = append(errs, err)
+		}
+	}
+	return errors.Join(errs...)
 }
 
 // IsClosed reports whether the engine has been closed.

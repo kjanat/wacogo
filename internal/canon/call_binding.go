@@ -97,7 +97,7 @@ func (cb *CallBinding) CallRaw(
 	if err := cb.callee.Instance.Enter(ctx); err != nil {
 		return err
 	}
-	defer cb.callee.Instance.Exit(ctx)
+	defer exitWithError(ctx, cb.callee.Instance, &err)
 
 	stack := cb.plan.coreStack
 	clear(stack)
