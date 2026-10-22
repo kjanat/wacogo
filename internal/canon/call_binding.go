@@ -127,7 +127,7 @@ func (cb *CallBinding) CallRaw(
 // resources or materializes collections. The budget is local to this invocation.
 func (cb *CallBinding) preflightRawResults(ctx context.Context, stack []uint64) error {
 	gcc := gocallContext{
-		callee: cb.side, registers: stack, validateOnly: true, rawResults: true,
+		callee: cb.side, registers: stack, validateOnly: true, generatedStorage: true,
 		lift: liftBudget{limits: cb.callee.LiftLimits},
 	}
 	var base uint32

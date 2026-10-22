@@ -10,6 +10,7 @@ import (
 // LiftValidator preflights canonical host arguments using the same layout and
 // traversal as result lifting. It never copies strings, builds collections, or
 // transfers handles. Its compiled steps are immutable and concurrent-safe.
+// Storage charges cover generated Go layouts, including inactive inline payloads.
 type LiftValidator struct {
 	steps    []gocallLiftStep
 	indirect bool
@@ -58,11 +59,12 @@ func (v *LiftValidator) validate(ctx context.Context, memory api.Memory, encodin
 		}
 	}()
 	gcc := gocallContext{
-		callee:         &transferSide{Memory: memory, StringEncoding: encoding},
-		registers:      stack,
-		lift:           liftBudget{limits: v.limits},
-		validateOnly:   true,
-		transferToHost: transfer,
+		callee:           &transferSide{Memory: memory, StringEncoding: encoding},
+		registers:        stack,
+		lift:             liftBudget{limits: v.limits},
+		validateOnly:     true,
+		generatedStorage: true,
+		transferToHost:   transfer,
 	}
 	var base uint32
 	if v.indirect {

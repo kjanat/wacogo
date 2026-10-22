@@ -13,9 +13,9 @@ type LiftLimits = core.LiftLimits
 var ErrLiftLimit = core.ErrLiftLimit
 
 // WithLiftLimits sets canonical lifting budgets before host allocation.
-// CallRaw results, including existing generated bindings, are preflighted before
-// decoding with conservative storage charges for generated Go layouts. Custom
-// callback allocations beyond the declared result representation are not measured.
+// Host arguments and CallRaw results, including existing generated bindings, are
+// preflighted before decoding with conservative charges for generated Go layouts.
+// Custom callback allocations beyond the declared representation are not measured.
 func WithLiftLimits(limits LiftLimits) EngineOption {
 	return core.WithLiftLimits(limits)
 }

@@ -59,15 +59,15 @@ func (tc *transferContext) endTaskOrTrap() {
 
 // gocallContext is the per-call state for a Go→component call.
 type gocallContext struct {
-	callee         *transferSide
-	registers      []uint64 // core args/results slice
-	Task           Task
-	lift           liftBudget
-	owned          []*ValOwnHandle // acquired during this call; dropped if lifting fails
-	limits         LiftLimits
-	validateOnly   bool // host-argument preflight; no materialization or handle transfers
-	rawResults     bool // include generated Go inline storage in allocation preflight
-	transferToHost bool // include source transcoding and destination string-copy storage
+	callee           *transferSide
+	registers        []uint64 // core args/results slice
+	Task             Task
+	lift             liftBudget
+	owned            []*ValOwnHandle // acquired during this call; dropped if lifting fails
+	limits           LiftLimits
+	validateOnly     bool // allocation preflight; no materialization or handle transfers
+	generatedStorage bool // include generated Go inline storage for arguments and results
+	transferToHost   bool // include source transcoding and destination string-copy storage
 }
 
 // endTask is the per-call End-of-task hook used as a method-bound defer
