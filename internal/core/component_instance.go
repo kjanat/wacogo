@@ -5,23 +5,20 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/partite-ai/wacogo/internal/canon"
 	"github.com/partite-ai/wacogo/wasmparser"
-	"github.com/tetratelabs/wazero/api"
 )
 
 // ComponentInstance is a live instance of a Component.
 // ComponentInstance is NOT safe for concurrent use from multiple goroutines.
 // The component model defines components as single-threaded with no reentrance.
 type ComponentInstance struct {
-	engine        *Engine
-	component     *Component
-	coreInstances []api.Module
-	// auxiliaryAdapters holds cross-component adapter instances (host module +
-	// stub) created during instantiation. Closed in ComponentInstance.Close
-	// alongside coreInstances.
-	auxiliaryAdapters []*canon.CallAdapter
-	exports           map[string]exportEntry
+	engine    *Engine
+	component *Component
+	// owned records only newly instantiated modules, adapters and components,
+	// in creation order. Imported instances and aliases remain borrowed.
+	owned   []instanceCloser
+	closed  bool
+	exports map[string]exportEntry
 	// resources is the per-instance canonical-ABI resource table.
 	// Populated during instantiation.
 	resources *ResourceTable
@@ -41,6 +38,10 @@ type ComponentInstance struct {
 	// externTable, when non-nil, supplies LookupExtern. Set from
 	// InstanceSpec.ExternTable at construction time.
 	externTable ExternTable
+}
+
+type instanceCloser interface {
+	Close(context.Context) error
 }
 
 // LookupExtern returns the Go object registered at rep in this
@@ -79,7 +80,11 @@ func (i *ComponentInstance) ExportedFunc(name string) *ExportedFunc {
 	return e.funcVal
 }
 
-// ExportedInstance returns the exported component instance with the given name, or nil if not found.
+// ExportedInstance returns the exported component instance with the given name,
+// or nil if not found. The result is borrowed: retaining it or importing it into
+// another component does not extend its lifetime. Closing its owning parent
+// closes it. Re-exporting a borrowed instance does not transfer ownership; its
+// original owner still controls its lifetime.
 func (i *ComponentInstance) ExportedInstance(name string) *ComponentInstance {
 	e, ok := i.exports[name]
 	if !ok || e.kind != SortInstance {
@@ -236,36 +241,64 @@ func (i *ComponentInstance) RunInComponent(ctx context.Context, fn func() error)
 	return fn()
 }
 
-// Close releases all resources held by the component instance.
-// Outstanding own-kind canonical-ABI handles are dropped first (running
-// each registered destructor under recover so one bad dtor does not
-// strand the rest) while the wazero runtime is still alive. Then the
-// core wasm instances and any cross-component adapters are closed.
-// The instance is finally marked poisoned so any further Enter call
-// fails — Close is one-way. All errors are joined and returned;
-// teardown always completes.
+// Close releases all resources held by the component and its owned descendants.
+// Resource destructors run to quiescence before any owned modules close, so
+// callbacks may use providers in the closing subtree and acquire new resources.
+// Handles are retired before destruction; repeated and reentrant Close calls
+// are no-ops. Modules and adapters then close in reverse ownership order.
+// Errors are joined, and individual destructor failures do not stop cleanup.
 func (i *ComponentInstance) Close(ctx context.Context) error {
+	if i == nil || i.closed {
+		return nil
+	}
+	var teardown instanceTeardown
+	teardown.collect(i)
 	var errs []error
-	if i != nil && i.resources != nil {
-		if err := i.resources.dropAllOwns(ctx, i); err != nil {
-			errs = append(errs, err)
+	for {
+		dropped := false
+		for _, instance := range teardown.instances {
+			more, err := instance.resources.dropAllOwns(ctx, instance)
+			dropped = dropped || more
+			if err != nil {
+				errs = append(errs, err)
+			}
+		}
+		if !dropped {
+			break
 		}
 	}
-	// Close core instances in reverse declaration order. wazero modules
-	// often depend on memory/funcs exported by earlier modules, so LIFO
-	// teardown avoids closing a provider before its consumers.
-	for idx := len(i.coreInstances) - 1; idx >= 0; idx-- {
-		if err := i.coreInstances[idx].Close(ctx); err != nil {
+	for _, instance := range teardown.instances {
+		instance.Poison(fmt.Errorf("component instance closed"))
+	}
+	for _, owned := range teardown.owned {
+		if err := owned.Close(ctx); err != nil {
 			errs = append(errs, err)
 		}
-	}
-	for _, a := range i.auxiliaryAdapters {
-		if err := a.Close(ctx); err != nil {
-			errs = append(errs, err)
-		}
-	}
-	if i != nil {
-		i.Poison(fmt.Errorf("component instance closed"))
 	}
 	return errors.Join(errs...)
+}
+
+// instanceTeardown separates resource destruction from physical teardown across
+// the complete owned subtree. Its flattened closer list preserves the original
+// reverse creation order without closing child providers during resource drains.
+type instanceTeardown struct {
+	instances []*ComponentInstance
+	owned     []instanceCloser
+}
+
+func (t *instanceTeardown) collect(i *ComponentInstance) {
+	if i == nil || i.closed {
+		return
+	}
+	i.closed = true
+	t.instances = append(t.instances, i)
+	owned := i.owned
+	i.owned = nil
+	for idx := len(owned) - 1; idx >= 0; idx-- {
+		if child, ok := owned[idx].(*ComponentInstance); ok {
+			t.collect(child)
+		} else {
+			t.owned = append(t.owned, owned[idx])
+		}
+	}
 }
