@@ -185,11 +185,11 @@ func (v *memToValVisitor) VisitString() {
 		}()
 		ptr, ok := gcc.callee.Memory.ReadUint32Le(base + ptrOff)
 		if !ok {
-			return nil, fmt.Errorf("oob string ptr read")
+			return nil, fmt.Errorf("guest memory out of bounds reading string pointer at %#x", base+ptrOff)
 		}
 		coded, ok := gcc.callee.Memory.ReadUint32Le(base + lenOff)
 		if !ok {
-			return nil, fmt.Errorf("oob string len read")
+			return nil, fmt.Errorf("guest memory out of bounds reading string length at %#x", base+lenOff)
 		}
 		enc := gcc.callee.StringEncoding
 		data := stringBytes(memShim{gcc.callee.Memory}, ptr, coded, enc)
