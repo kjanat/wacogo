@@ -8,8 +8,8 @@
 package terminaloutput
 
 import (
-	"github.com/partite-ai/wacogo"
-	"github.com/partite-ai/wacogo/host"
+	"github.com/kjanat/wacogo"
+	"github.com/kjanat/wacogo/host"
 )
 
 // terminalOutputWrapper is the concrete type returned by WrapInstance

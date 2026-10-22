@@ -4,9 +4,9 @@ import (
 	"context"
 	"testing"
 
-	"github.com/partite-ai/wacogo"
-	"github.com/partite-ai/wacogo/internal/witgen/testdata/genfixtures/example/demo/filesystem"
-	streams "github.com/partite-ai/wacogo/internal/witgen/testdata/genfixtures/example/demo/streams"
+	"github.com/kjanat/wacogo"
+	"github.com/kjanat/wacogo/internal/witgen/testdata/genfixtures/example/demo/filesystem"
+	streams "github.com/kjanat/wacogo/internal/witgen/testdata/genfixtures/example/demo/streams"
 )
 
 // TestFilesystem_CloseDrainsOutstandingHandles verifies that closing a

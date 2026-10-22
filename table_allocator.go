@@ -3,7 +3,7 @@ package wacogo
 import (
 	"context"
 
-	"github.com/partite-ai/wacogo/internal/core"
+	"github.com/kjanat/wacogo/internal/core"
 )
 
 // CoreTable describes the element type and limits of a defined core table.

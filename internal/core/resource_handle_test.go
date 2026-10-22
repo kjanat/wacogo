@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/partite-ai/wacogo/internal/canon"
+	"github.com/kjanat/wacogo/internal/canon"
 )
 
 // stubInstance is a test-only canon.Instance whose pointer-equality is

@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/partite-ai/wacogo"
-	"github.com/partite-ai/wacogo/internal/core"
+	"github.com/kjanat/wacogo"
+	"github.com/kjanat/wacogo/internal/core"
 )
 
 func TestResourceAlias_SharesIdentity(t *testing.T) {

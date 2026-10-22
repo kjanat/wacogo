@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/partite-ai/wacogo/internal/core"
+	"github.com/kjanat/wacogo/internal/core"
 )
 
 // TestStub_GrowsMemoryForLargeString exercises the host-stub bump

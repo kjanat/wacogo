@@ -52,8 +52,8 @@ func emitIfaceFile(iface *Interface, sourceFile string) ([]byte, error) {
 	buf.WriteString("import (\n")
 	buf.WriteString("\t\"context\"\n")
 	buf.WriteString("\t\"fmt\"\n\n")
-	buf.WriteString("\t\"github.com/partite-ai/wacogo\"\n")
-	buf.WriteString("\t\"github.com/partite-ai/wacogo/host\"\n")
+	buf.WriteString("\t\"github.com/kjanat/wacogo\"\n")
+	buf.WriteString("\t\"github.com/kjanat/wacogo/host\"\n")
 	for _, imp := range iface.Imports {
 		if imp.GoPackagePath != "" {
 			fmt.Fprintf(&buf, "\t%s %q\n", imp.GoPackage, imp.GoPackagePath)

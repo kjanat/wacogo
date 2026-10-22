@@ -9,9 +9,9 @@ import (
 	"testing"
 	"unsafe"
 
-	"github.com/partite-ai/wacogo"
-	"github.com/partite-ai/wacogo/host"
-	"github.com/partite-ai/wacogo/internal/witgen/testdata/genfixtures/example/demo/allocation"
+	"github.com/kjanat/wacogo"
+	"github.com/kjanat/wacogo/host"
+	"github.com/kjanat/wacogo/internal/witgen/testdata/genfixtures/example/demo/allocation"
 )
 
 type allocationObserver struct {

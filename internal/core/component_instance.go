@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/partite-ai/wacogo/wasmparser"
+	"github.com/kjanat/wacogo/wasmparser"
 )
 
 // ComponentInstance is a live instance of a Component.

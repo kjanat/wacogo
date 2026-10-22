@@ -5,8 +5,8 @@ import (
 	"net/http"
 	"net/url"
 
-	"github.com/partite-ai/wacogo/host"
-	"github.com/partite-ai/wacogo/internal/wasi/gen/wasi/http/types"
+	"github.com/kjanat/wacogo/host"
+	"github.com/kjanat/wacogo/internal/wasi/gen/wasi/http/types"
 )
 
 type GoOutgoingRequest interface {

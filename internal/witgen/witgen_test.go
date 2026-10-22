@@ -1,6 +1,7 @@
 package witgen
 
 import (
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -34,7 +35,7 @@ func TestGenerate_AddDryRun(t *testing.T) {
 	if ifacePath == "" || bindPath == "" || wrapPath == "" {
 		t.Fatalf("expected calc.go, calc.bind.go, and calc.wrap.go, got: %v", files)
 	}
-	if !strings.Contains(ifacePath, "example/demo/calc/") {
+	if !strings.Contains(filepath.ToSlash(ifacePath), "example/demo/calc/") {
 		t.Errorf("iface path %q missing namespace/package/iface segments", ifacePath)
 	}
 }

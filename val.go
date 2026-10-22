@@ -1,6 +1,6 @@
 package wacogo
 
-import "github.com/partite-ai/wacogo/internal/core"
+import "github.com/kjanat/wacogo/internal/core"
 
 // Val is the interface satisfied by every component-model runtime value.
 type Val = core.Val

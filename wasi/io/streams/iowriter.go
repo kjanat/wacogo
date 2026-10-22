@@ -7,9 +7,9 @@ import (
 	"sync"
 	"sync/atomic"
 
-	"github.com/partite-ai/wacogo/host"
-	"github.com/partite-ai/wacogo/wasi/io/poll"
-	"github.com/partite-ai/wacogo/wasi/io/wioerror"
+	"github.com/kjanat/wacogo/host"
+	"github.com/kjanat/wacogo/wasi/io/poll"
+	"github.com/kjanat/wacogo/wasi/io/wioerror"
 )
 
 const (

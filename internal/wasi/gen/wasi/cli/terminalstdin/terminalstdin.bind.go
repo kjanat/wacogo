@@ -8,9 +8,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/partite-ai/wacogo"
-	"github.com/partite-ai/wacogo/host"
-	terminalinput "github.com/partite-ai/wacogo/internal/wasi/gen/wasi/cli/terminalinput"
+	"github.com/kjanat/wacogo"
+	"github.com/kjanat/wacogo/host"
+	terminalinput "github.com/kjanat/wacogo/internal/wasi/gen/wasi/cli/terminalinput"
 )
 
 // Factory builds host-side instances of the TerminalStdin interface

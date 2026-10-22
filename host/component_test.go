@@ -4,7 +4,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/partite-ai/wacogo/internal/core"
+	"github.com/kjanat/wacogo/internal/core"
 )
 
 func TestInstantiate_PrimitiveFunc_ExportsVisibleAndCallable(t *testing.T) {

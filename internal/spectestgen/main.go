@@ -2,8 +2,9 @@
 // matching JSON + .wasm fixtures via `wasm-tools json-from-wast`.
 //
 // For each input file IN/<rel>/<name>.wast it writes:
-//   OUT/<rel>/<name>.json
-//   OUT/<rel>/<name>/*.wasm
+//
+//	OUT/<rel>/<name>.json
+//	OUT/<rel>/<name>/*.wasm
 //
 // Multiple -in/-out pairs may be supplied (repeat the flag); they are
 // processed in order. The output directory for each pair is wiped before
@@ -20,7 +21,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/partite-ai/wacogo/internal/spectest"
+	"github.com/kjanat/wacogo/internal/spectest"
 )
 
 type ioPair struct {

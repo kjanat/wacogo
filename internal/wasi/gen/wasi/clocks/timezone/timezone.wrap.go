@@ -7,9 +7,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/partite-ai/wacogo"
-	"github.com/partite-ai/wacogo/host"
-	wallclock "github.com/partite-ai/wacogo/internal/wasi/gen/wasi/clocks/wallclock"
+	"github.com/kjanat/wacogo"
+	"github.com/kjanat/wacogo/host"
+	wallclock "github.com/kjanat/wacogo/internal/wasi/gen/wasi/clocks/wallclock"
 )
 
 // timezoneWrapper is the concrete type returned by WrapInstance

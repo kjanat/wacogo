@@ -8,10 +8,10 @@ import (
 	"testing"
 	"testing/fstest"
 
-	"github.com/partite-ai/wacogo"
-	"github.com/partite-ai/wacogo/wasi"
-	"github.com/partite-ai/wacogo/wasi/filesystem/preopens"
-	"github.com/partite-ai/wacogo/wasi/filesystem/types"
+	"github.com/kjanat/wacogo"
+	"github.com/kjanat/wacogo/wasi"
+	"github.com/kjanat/wacogo/wasi/filesystem/preopens"
+	"github.com/kjanat/wacogo/wasi/filesystem/types"
 )
 
 func TestFSPreopens(t *testing.T) {

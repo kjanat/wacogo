@@ -6,7 +6,7 @@ import (
 	"net/http"
 	"strings"
 
-	"github.com/partite-ai/wacogo/internal/wasi/gen/wasi/http/types"
+	"github.com/kjanat/wacogo/internal/wasi/gen/wasi/http/types"
 )
 
 // forbiddenHeaders are request/response header names a guest is not allowed

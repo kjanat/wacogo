@@ -1,6 +1,6 @@
 package core
 
-import "github.com/partite-ai/wacogo/internal/canon"
+import "github.com/kjanat/wacogo/internal/canon"
 
 // The canonical definitions of Val and its concrete variants live in
 // internal/canon. This file re-exports them so user code can continue to

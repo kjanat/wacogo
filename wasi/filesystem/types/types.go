@@ -7,19 +7,19 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/partite-ai/wacogo"
-	"github.com/partite-ai/wacogo/host"
-	wasierr "github.com/partite-ai/wacogo/wasi/internal/wasierr"
-	gen "github.com/partite-ai/wacogo/internal/wasi/gen/wasi/filesystem/types"
-	"github.com/partite-ai/wacogo/wasi/io/wioerror"
+	"github.com/kjanat/wacogo"
+	"github.com/kjanat/wacogo/host"
+	gen "github.com/kjanat/wacogo/internal/wasi/gen/wasi/filesystem/types"
+	wasierr "github.com/kjanat/wacogo/wasi/internal/wasierr"
+	"github.com/kjanat/wacogo/wasi/io/wioerror"
 )
 
 // InterfaceName is the canonical WIT id of this interface.
 const InterfaceName = gen.InterfaceName
 
 type (
-	Types       = gen.Types
-	Descriptor  = gen.Descriptor
+	Types            = gen.Types
+	Descriptor       = gen.Descriptor
 	DescriptorHandle = gen.DescriptorHandle
 
 	DirectoryEntryStream       = gen.DirectoryEntryStream
@@ -89,10 +89,10 @@ type (
 	Result_ErrorCodeOk  = gen.Result_ErrorCodeOk
 	Result_ErrorCodeErr = gen.Result_ErrorCodeErr
 
-	DescriptorStat      = gen.DescriptorStat
-	DirectoryEntry      = gen.DirectoryEntry
-	MetadataHashValue   = gen.MetadataHashValue
-	TupleListU8Bool     = gen.TupleListU8Bool
+	DescriptorStat    = gen.DescriptorStat
+	DirectoryEntry    = gen.DirectoryEntry
+	MetadataHashValue = gen.MetadataHashValue
+	TupleListU8Bool   = gen.TupleListU8Bool
 
 	NewTimestamp          = gen.NewTimestamp
 	NewTimestampNoChange  = gen.NewTimestampNoChange
@@ -178,12 +178,12 @@ const (
 
 // Option constructors (re-exported from the generated bindings).
 var (
-	SomeDirectoryEntry      = gen.SomeDirectoryEntry
-	NoneDirectoryEntry      = gen.NoneDirectoryEntry
-	SomeErrorCode           = gen.SomeErrorCode
-	NoneErrorCode           = gen.NoneErrorCode
-	SomeWallclockDatetime   = gen.SomeWallclockDatetime
-	NoneWallclockDatetime   = gen.NoneWallclockDatetime
+	SomeDirectoryEntry    = gen.SomeDirectoryEntry
+	NoneDirectoryEntry    = gen.NoneDirectoryEntry
+	SomeErrorCode         = gen.SomeErrorCode
+	NoneErrorCode         = gen.NoneErrorCode
+	SomeWallclockDatetime = gen.SomeWallclockDatetime
+	NoneWallclockDatetime = gen.NoneWallclockDatetime
 )
 
 func NewDescriptorHandle(impl Descriptor) *DescriptorHandle {
@@ -296,8 +296,8 @@ func (directoryEntryStreamImpl) ReadDirectoryEntry(_ context.Context) (ResultOpt
 }
 
 var (
-	_ gen.Types               = impl{}
-	_ gen.Descriptor          = descriptorImpl{}
+	_ gen.Types                = impl{}
+	_ gen.Descriptor           = descriptorImpl{}
 	_ gen.DirectoryEntryStream = directoryEntryStreamImpl{}
 )
 

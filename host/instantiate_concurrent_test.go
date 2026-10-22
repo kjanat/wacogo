@@ -5,7 +5,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/partite-ai/wacogo/internal/core"
+	"github.com/kjanat/wacogo/internal/core"
 )
 
 // TestInstantiate_ParallelSameComponent guards against race conditions

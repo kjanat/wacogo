@@ -10,7 +10,7 @@ import (
 	"log"
 	"os"
 
-	"github.com/partite-ai/wacogo/wasmparser"
+	"github.com/kjanat/wacogo/wasmparser"
 )
 
 func main() {

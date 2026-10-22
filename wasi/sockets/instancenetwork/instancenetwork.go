@@ -7,11 +7,11 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/partite-ai/wacogo"
-	"github.com/partite-ai/wacogo/host"
-	wasierr "github.com/partite-ai/wacogo/wasi/internal/wasierr"
-	gen "github.com/partite-ai/wacogo/internal/wasi/gen/wasi/sockets/instancenetwork"
-	"github.com/partite-ai/wacogo/wasi/sockets/network"
+	"github.com/kjanat/wacogo"
+	"github.com/kjanat/wacogo/host"
+	gen "github.com/kjanat/wacogo/internal/wasi/gen/wasi/sockets/instancenetwork"
+	wasierr "github.com/kjanat/wacogo/wasi/internal/wasierr"
+	"github.com/kjanat/wacogo/wasi/sockets/network"
 )
 
 // InterfaceName is the canonical WIT id of this interface.

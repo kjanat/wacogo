@@ -7,7 +7,7 @@ import (
 	"testing/synctest"
 	"time"
 
-	"github.com/partite-ai/wacogo/wasi/io/poll"
+	"github.com/kjanat/wacogo/wasi/io/poll"
 )
 
 var bgCtx = context.Background()

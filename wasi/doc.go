@@ -22,4 +22,4 @@
 // the embedded ErrorCode to the guest unchanged.
 package wasi
 
-//go:generate go run github.com/partite-ai/wacogo/cmd/wacogo-witgen generate -w wasi:wacogo/imports -o ../internal/wasi/gen -p github.com/partite-ai/wacogo/internal/wasi/gen ../internal/wasi/wit/
+//go:generate go run github.com/kjanat/wacogo/cmd/wacogo-witgen generate -w wasi:wacogo/imports -o ../internal/wasi/gen -p github.com/kjanat/wacogo/internal/wasi/gen ../internal/wasi/wit/

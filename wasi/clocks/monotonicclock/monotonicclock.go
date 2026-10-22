@@ -8,10 +8,10 @@ import (
 	"math"
 	"time"
 
-	"github.com/partite-ai/wacogo"
-	"github.com/partite-ai/wacogo/host"
-	gen "github.com/partite-ai/wacogo/internal/wasi/gen/wasi/clocks/monotonicclock"
-	"github.com/partite-ai/wacogo/wasi/io/poll"
+	"github.com/kjanat/wacogo"
+	"github.com/kjanat/wacogo/host"
+	gen "github.com/kjanat/wacogo/internal/wasi/gen/wasi/clocks/monotonicclock"
+	"github.com/kjanat/wacogo/wasi/io/poll"
 )
 
 // InterfaceName is the canonical WIT id of this interface.

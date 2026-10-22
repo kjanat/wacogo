@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/partite-ai/wacogo/internal/canon"
+	"github.com/kjanat/wacogo/internal/canon"
 )
 
 const freeListNone = int32(-1)

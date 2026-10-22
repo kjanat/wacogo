@@ -9,8 +9,8 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/partite-ai/wacogo"
-	"github.com/partite-ai/wacogo/host"
+	"github.com/kjanat/wacogo"
+	"github.com/kjanat/wacogo/host"
 )
 
 // Factory builds host-side instances of the Compounds interface

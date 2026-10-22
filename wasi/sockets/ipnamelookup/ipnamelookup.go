@@ -7,20 +7,20 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/partite-ai/wacogo"
-	"github.com/partite-ai/wacogo/host"
-	wasierr "github.com/partite-ai/wacogo/wasi/internal/wasierr"
-	gen "github.com/partite-ai/wacogo/internal/wasi/gen/wasi/sockets/ipnamelookup"
-	"github.com/partite-ai/wacogo/wasi/io/poll"
-	"github.com/partite-ai/wacogo/wasi/sockets/network"
+	"github.com/kjanat/wacogo"
+	"github.com/kjanat/wacogo/host"
+	gen "github.com/kjanat/wacogo/internal/wasi/gen/wasi/sockets/ipnamelookup"
+	wasierr "github.com/kjanat/wacogo/wasi/internal/wasierr"
+	"github.com/kjanat/wacogo/wasi/io/poll"
+	"github.com/kjanat/wacogo/wasi/sockets/network"
 )
 
 // InterfaceName is the canonical WIT id of this interface.
 const InterfaceName = gen.InterfaceName
 
 type (
-	IpNameLookup            = gen.IpNameLookup
-	ResolveAddressStream    = gen.ResolveAddressStream
+	IpNameLookup               = gen.IpNameLookup
+	ResolveAddressStream       = gen.ResolveAddressStream
 	ResolveAddressStreamHandle = gen.ResolveAddressStreamHandle
 
 	OptionNetworkIpAddress = gen.OptionNetworkIpAddress

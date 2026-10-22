@@ -1,8 +1,8 @@
 package host
 
 import (
-	"github.com/partite-ai/wacogo/internal/core"
-	"github.com/partite-ai/wacogo/wasmparser"
+	"github.com/kjanat/wacogo/internal/core"
+	"github.com/kjanat/wacogo/wasmparser"
 )
 
 // scope holds the declarations contributed in one lexical scope of a

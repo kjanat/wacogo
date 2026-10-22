@@ -9,7 +9,7 @@ usable directly for embedding in other tools.
 ```
 WIT file
    │
-   ▼  Load (go.bytecodealliance.org/wit)
+   ▼  Load (github.com/kjanat/go-modules/wit)
    ▼  LowerWorld → IR  (lower.go, ir.go)
    ▼  Validate         (validate.go)
    ▼  For each interface:
@@ -25,7 +25,7 @@ WIT file
 | File | Responsibility |
 |------|---------------|
 | `witgen.go` | Top-level `Generate(opts)` API + orchestration |
-| `load.go` | WIT loader (wraps `go.bytecodealliance.org/wit`) |
+| `load.go` | WIT loader (wraps `github.com/kjanat/go-modules/wit`) |
 | `lower.go` | wit AST → IR (multi-pass with shared typeDefIR) |
 | `ir.go` | Go-side IR types |
 | `name.go` | `GoName`, `GoPackageName`, `TypeName`, `GoTypeOf` |

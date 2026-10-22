@@ -19,7 +19,7 @@ function that returns a `data-stream` owned handle.
 ## Run
 
 ```sh
-go run github.com/partite-ai/wacogo/examples/host-imports
+go run github.com/kjanat/wacogo/examples/host-imports
 ```
 
 Expected output:

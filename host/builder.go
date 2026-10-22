@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/partite-ai/wacogo/internal/core"
-	"github.com/partite-ai/wacogo/wasmparser"
+	"github.com/kjanat/wacogo/internal/core"
+	"github.com/kjanat/wacogo/wasmparser"
 )
 
 // Builder accumulates declarations for a host component. Register

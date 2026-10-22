@@ -7,10 +7,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/partite-ai/wacogo"
-	"github.com/partite-ai/wacogo/host"
-	"github.com/partite-ai/wacogo/internal/core"
-	"github.com/partite-ai/wacogo/wasmtools"
+	"github.com/kjanat/wacogo"
+	"github.com/kjanat/wacogo/host"
+	"github.com/kjanat/wacogo/internal/core"
+	"github.com/kjanat/wacogo/wasmtools"
 )
 
 // ----------------------------------------------------------------------------

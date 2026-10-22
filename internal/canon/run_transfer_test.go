@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/partite-ai/wacogo/internal/wasm"
+	"github.com/kjanat/wacogo/internal/wasm"
 )
 
 func TestRunTransferPlan_TrapInStepReleasesTask(t *testing.T) {

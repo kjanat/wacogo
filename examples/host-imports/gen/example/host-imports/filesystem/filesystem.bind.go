@@ -7,9 +7,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/partite-ai/wacogo"
-	streams "github.com/partite-ai/wacogo/examples/host-imports/gen/example/host-imports/streams"
-	"github.com/partite-ai/wacogo/host"
+	"github.com/kjanat/wacogo"
+	streams "github.com/kjanat/wacogo/examples/host-imports/gen/example/host-imports/streams"
+	"github.com/kjanat/wacogo/host"
 )
 
 // Factory builds host-side instances of the Filesystem interface

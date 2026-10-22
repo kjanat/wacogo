@@ -7,7 +7,7 @@ package incominghandler
 import (
 	"context"
 
-	types "github.com/partite-ai/wacogo/internal/wasi/gen/wasi/http/types"
+	types "github.com/kjanat/wacogo/internal/wasi/gen/wasi/http/types"
 )
 
 // InterfaceName is the canonical WIT id of the interface this binding

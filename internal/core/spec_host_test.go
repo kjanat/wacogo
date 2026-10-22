@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/partite-ai/wacogo/host"
-	"github.com/partite-ai/wacogo/internal/core"
+	"github.com/kjanat/wacogo/host"
+	"github.com/kjanat/wacogo/internal/core"
 )
 
 // dropCounters tracks the number of resource1 dtor invocations and

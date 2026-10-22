@@ -30,9 +30,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/partite-ai/wacogo"
-	"github.com/partite-ai/wacogo/host"
-	wioerror "github.com/partite-ai/wacogo/internal/wasi/gen/wasi/io/wioerror"
+	"github.com/kjanat/wacogo"
+	"github.com/kjanat/wacogo/host"
+	wioerror "github.com/kjanat/wacogo/internal/wasi/gen/wasi/io/wioerror"
 )
 
 // typesWrapper is the concrete type returned by WrapInstance

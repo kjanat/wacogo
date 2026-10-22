@@ -30,11 +30,11 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/partite-ai/wacogo"
-	"github.com/partite-ai/wacogo/host"
-	wallclock "github.com/partite-ai/wacogo/internal/wasi/gen/wasi/clocks/wallclock"
-	streams "github.com/partite-ai/wacogo/internal/wasi/gen/wasi/io/streams"
-	wioerror "github.com/partite-ai/wacogo/internal/wasi/gen/wasi/io/wioerror"
+	"github.com/kjanat/wacogo"
+	"github.com/kjanat/wacogo/host"
+	wallclock "github.com/kjanat/wacogo/internal/wasi/gen/wasi/clocks/wallclock"
+	streams "github.com/kjanat/wacogo/internal/wasi/gen/wasi/io/streams"
+	wioerror "github.com/kjanat/wacogo/internal/wasi/gen/wasi/io/wioerror"
 )
 
 // InterfaceName is the canonical WIT id of the interface this binding

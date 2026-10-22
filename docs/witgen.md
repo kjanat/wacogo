@@ -18,7 +18,7 @@ written by hand against `host.Builder` / `host.ComponentInstance` /
 ```
 WIT file
    │
-   ▼  Load (go.bytecodealliance.org/wit)        load.go
+   ▼  Load (github.com/kjanat/go-modules/wit)        load.go
    ▼  LowerWorld → IR                          lower.go, ir.go
    ▼  Validate                                 validate.go
    ▼  per Interface:

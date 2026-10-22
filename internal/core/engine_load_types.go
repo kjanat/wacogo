@@ -3,7 +3,7 @@ package core
 import (
 	"fmt"
 
-	"github.com/partite-ai/wacogo/wasmparser"
+	"github.com/kjanat/wacogo/wasmparser"
 )
 
 // primitiveTypeFor maps a wasmparser primitive kind to the corresponding

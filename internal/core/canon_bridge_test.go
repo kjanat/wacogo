@@ -3,7 +3,7 @@ package core
 import (
 	"testing"
 
-	"github.com/partite-ai/wacogo/internal/canon"
+	"github.com/kjanat/wacogo/internal/canon"
 )
 
 // TestFuncBindingCompiles verifies the bridge produces a compiled call binding

@@ -13,7 +13,7 @@ package monotonicclock
 import (
 	"context"
 
-	poll "github.com/partite-ai/wacogo/internal/wasi/gen/wasi/io/poll"
+	poll "github.com/kjanat/wacogo/internal/wasi/gen/wasi/io/poll"
 )
 
 // InterfaceName is the canonical WIT id of the interface this binding

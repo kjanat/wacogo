@@ -7,20 +7,20 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/partite-ai/wacogo"
-	"github.com/partite-ai/wacogo/host"
-	wasierr "github.com/partite-ai/wacogo/wasi/internal/wasierr"
-	gen "github.com/partite-ai/wacogo/internal/wasi/gen/wasi/sockets/tcp"
-	"github.com/partite-ai/wacogo/wasi/io/poll"
-	"github.com/partite-ai/wacogo/wasi/sockets/network"
+	"github.com/kjanat/wacogo"
+	"github.com/kjanat/wacogo/host"
+	gen "github.com/kjanat/wacogo/internal/wasi/gen/wasi/sockets/tcp"
+	wasierr "github.com/kjanat/wacogo/wasi/internal/wasierr"
+	"github.com/kjanat/wacogo/wasi/io/poll"
+	"github.com/kjanat/wacogo/wasi/sockets/network"
 )
 
 // InterfaceName is the canonical WIT id of this interface.
 const InterfaceName = gen.InterfaceName
 
 type (
-	Tcp          = gen.Tcp
-	TcpSocket    = gen.TcpSocket
+	Tcp             = gen.Tcp
+	TcpSocket       = gen.TcpSocket
 	TcpSocketHandle = gen.TcpSocketHandle
 
 	ShutdownType = gen.ShutdownType
@@ -57,8 +57,8 @@ type (
 	Result_NetworkErrorCodeOk  = gen.Result_NetworkErrorCodeOk
 	Result_NetworkErrorCodeErr = gen.Result_NetworkErrorCodeErr
 
-	TupleInputStreamOutputStream              = gen.TupleInputStreamOutputStream
-	TupleTcpSocketInputStreamOutputStream     = gen.TupleTcpSocketInputStreamOutputStream
+	TupleInputStreamOutputStream          = gen.TupleInputStreamOutputStream
+	TupleTcpSocketInputStreamOutputStream = gen.TupleTcpSocketInputStreamOutputStream
 )
 
 func NewTcpSocketHandle(impl TcpSocket) *TcpSocketHandle {

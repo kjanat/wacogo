@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/partite-ai/wacogo/internal/core"
+	"github.com/kjanat/wacogo/internal/core"
 )
 
 // InstanceBuilder accumulates declarations for a nested instance

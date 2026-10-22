@@ -1,7 +1,7 @@
 package host
 
 import (
-	"github.com/partite-ai/wacogo/internal/core"
+	"github.com/kjanat/wacogo/internal/core"
 )
 
 // InstantiateOption configures a single Component.Instantiate call.

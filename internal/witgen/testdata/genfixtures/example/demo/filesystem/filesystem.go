@@ -6,7 +6,7 @@ package filesystem
 import (
 	"context"
 
-	streams "github.com/partite-ai/wacogo/internal/witgen/testdata/genfixtures/example/demo/streams"
+	streams "github.com/kjanat/wacogo/internal/witgen/testdata/genfixtures/example/demo/streams"
 )
 
 // InterfaceName is the canonical WIT id of the interface this binding

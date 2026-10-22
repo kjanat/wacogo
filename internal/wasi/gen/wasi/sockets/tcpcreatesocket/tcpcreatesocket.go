@@ -6,8 +6,8 @@ package tcpcreatesocket
 import (
 	"context"
 
-	network "github.com/partite-ai/wacogo/internal/wasi/gen/wasi/sockets/network"
-	tcp "github.com/partite-ai/wacogo/internal/wasi/gen/wasi/sockets/tcp"
+	network "github.com/kjanat/wacogo/internal/wasi/gen/wasi/sockets/network"
+	tcp "github.com/kjanat/wacogo/internal/wasi/gen/wasi/sockets/tcp"
 )
 
 // InterfaceName is the canonical WIT id of the interface this binding

@@ -9,7 +9,7 @@
 // registers the impl in definer's resource table and returns an unbound
 // handle that the trampoline binds to the caller's canon resource table.
 //
-// Run with: go run github.com/partite-ai/wacogo/examples/host-imports
+// Run with: go run github.com/kjanat/wacogo/examples/host-imports
 package main
 
 import (
@@ -17,15 +17,15 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/partite-ai/wacogo"
-	filesystem "github.com/partite-ai/wacogo/examples/host-imports/gen/example/host-imports/filesystem"
-	streams "github.com/partite-ai/wacogo/examples/host-imports/gen/example/host-imports/streams"
-	"github.com/partite-ai/wacogo/host"
+	"github.com/kjanat/wacogo"
+	filesystem "github.com/kjanat/wacogo/examples/host-imports/gen/example/host-imports/filesystem"
+	streams "github.com/kjanat/wacogo/examples/host-imports/gen/example/host-imports/streams"
+	"github.com/kjanat/wacogo/host"
 )
 
 var _ = host.WithUserState // keep host import in scope for godoc cross-references
 
-//go:generate go run github.com/partite-ai/wacogo/cmd/wacogo-witgen generate -w example:host-imports/host-imports -o ./gen -p github.com/partite-ai/wacogo/examples/host-imports/gen ./host-imports.wit
+//go:generate go run github.com/kjanat/wacogo/cmd/wacogo-witgen generate -w example:host-imports/host-imports -o ./gen -p github.com/kjanat/wacogo/examples/host-imports/gen ./host-imports.wit
 
 // myStreams is the Go implementation of the streams interface.
 type myStreams struct{}
@@ -37,7 +37,7 @@ func (myStreams) NewDataStream(ctx context.Context, seed uint32) (*streams.DataS
 // myDataStream is a single in-memory data-stream resource.
 type myDataStream struct{ value uint32 }
 
-func (s *myDataStream) Read(ctx context.Context) (uint32, error)   { return s.value, nil }
+func (s *myDataStream) Read(ctx context.Context) (uint32, error)  { return s.value, nil }
 func (s *myDataStream) Write(ctx context.Context, v uint32) error { s.value = v; return nil }
 
 // myFilesystem is the Go implementation of the filesystem interface.

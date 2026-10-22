@@ -7,26 +7,26 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/partite-ai/wacogo"
-	"github.com/partite-ai/wacogo/host"
-	wasierr "github.com/partite-ai/wacogo/wasi/internal/wasierr"
-	gen "github.com/partite-ai/wacogo/internal/wasi/gen/wasi/io/streams"
-	"github.com/partite-ai/wacogo/wasi/io/poll"
+	"github.com/kjanat/wacogo"
+	"github.com/kjanat/wacogo/host"
+	gen "github.com/kjanat/wacogo/internal/wasi/gen/wasi/io/streams"
+	wasierr "github.com/kjanat/wacogo/wasi/internal/wasierr"
+	"github.com/kjanat/wacogo/wasi/io/poll"
 )
 
 // InterfaceName is the canonical WIT id of this interface.
 const InterfaceName = gen.InterfaceName
 
 type (
-	Streams             = gen.Streams
-	InputStream         = gen.InputStream
-	InputStreamHandle   = gen.InputStreamHandle
-	OutputStream        = gen.OutputStream
-	OutputStreamHandle  = gen.OutputStreamHandle
+	Streams            = gen.Streams
+	InputStream        = gen.InputStream
+	InputStreamHandle  = gen.InputStreamHandle
+	OutputStream       = gen.OutputStream
+	OutputStreamHandle = gen.OutputStreamHandle
 
-	StreamError                      = gen.StreamError
-	StreamErrorLastOperationFailed   = gen.StreamErrorLastOperationFailed
-	StreamErrorClosed                = gen.StreamErrorClosed
+	StreamError                    = gen.StreamError
+	StreamErrorLastOperationFailed = gen.StreamErrorLastOperationFailed
+	StreamErrorClosed              = gen.StreamErrorClosed
 
 	ResultListU8StreamError    = gen.ResultListU8StreamError
 	ResultListU8StreamErrorOk  = gen.ResultListU8StreamErrorOk

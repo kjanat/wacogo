@@ -6,7 +6,7 @@ package timezone
 import (
 	"context"
 
-	wallclock "github.com/partite-ai/wacogo/internal/wasi/gen/wasi/clocks/wallclock"
+	wallclock "github.com/kjanat/wacogo/internal/wasi/gen/wasi/clocks/wallclock"
 )
 
 // InterfaceName is the canonical WIT id of the interface this binding

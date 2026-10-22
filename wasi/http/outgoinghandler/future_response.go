@@ -10,9 +10,9 @@ import (
 	"os"
 	"syscall"
 
-	"github.com/partite-ai/wacogo/host"
-	"github.com/partite-ai/wacogo/wasi/http/types"
-	"github.com/partite-ai/wacogo/wasi/io/poll"
+	"github.com/kjanat/wacogo/host"
+	"github.com/kjanat/wacogo/wasi/http/types"
+	"github.com/kjanat/wacogo/wasi/io/poll"
 )
 
 type httpResponseFuture struct {

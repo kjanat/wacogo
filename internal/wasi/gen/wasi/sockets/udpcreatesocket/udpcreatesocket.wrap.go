@@ -7,9 +7,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/partite-ai/wacogo"
-	"github.com/partite-ai/wacogo/host"
-	network "github.com/partite-ai/wacogo/internal/wasi/gen/wasi/sockets/network"
+	"github.com/kjanat/wacogo"
+	"github.com/kjanat/wacogo/host"
+	network "github.com/kjanat/wacogo/internal/wasi/gen/wasi/sockets/network"
 )
 
 // udpCreateSocketWrapper is the concrete type returned by WrapInstance

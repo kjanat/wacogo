@@ -7,36 +7,36 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/partite-ai/wacogo"
-	"github.com/partite-ai/wacogo/host"
-	wasierr "github.com/partite-ai/wacogo/wasi/internal/wasierr"
-	gen "github.com/partite-ai/wacogo/internal/wasi/gen/wasi/sockets/network"
-	"github.com/partite-ai/wacogo/wasi/io/wioerror"
+	"github.com/kjanat/wacogo"
+	"github.com/kjanat/wacogo/host"
+	gen "github.com/kjanat/wacogo/internal/wasi/gen/wasi/sockets/network"
+	wasierr "github.com/kjanat/wacogo/wasi/internal/wasierr"
+	"github.com/kjanat/wacogo/wasi/io/wioerror"
 )
 
 // InterfaceName is the canonical WIT id of this interface.
 const InterfaceName = gen.InterfaceName
 
 type (
-	Network             = gen.Network
-	NetworkResource     = gen.NetworkResource
+	Network               = gen.Network
+	NetworkResource       = gen.NetworkResource
 	NetworkResourceHandle = gen.NetworkResourceHandle
 
-	ErrorCode        = gen.ErrorCode
-	IpAddressFamily  = gen.IpAddressFamily
-	OptionErrorCode  = gen.OptionErrorCode
+	ErrorCode       = gen.ErrorCode
+	IpAddressFamily = gen.IpAddressFamily
+	OptionErrorCode = gen.OptionErrorCode
 
-	IpAddress        = gen.IpAddress
-	IpAddressIpv4    = gen.IpAddressIpv4
-	IpAddressIpv6    = gen.IpAddressIpv6
-	IpSocketAddress  = gen.IpSocketAddress
+	IpAddress           = gen.IpAddress
+	IpAddressIpv4       = gen.IpAddressIpv4
+	IpAddressIpv6       = gen.IpAddressIpv6
+	IpSocketAddress     = gen.IpSocketAddress
 	IpSocketAddressIpv4 = gen.IpSocketAddressIpv4
 	IpSocketAddressIpv6 = gen.IpSocketAddressIpv6
 
 	Ipv4SocketAddress = gen.Ipv4SocketAddress
 	Ipv6SocketAddress = gen.Ipv6SocketAddress
 
-	TupleU8U8U8U8              = gen.TupleU8U8U8U8
+	TupleU8U8U8U8                 = gen.TupleU8U8U8U8
 	TupleU16U16U16U16U16U16U16U16 = gen.TupleU16U16U16U16U16U16U16U16
 )
 

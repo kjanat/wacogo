@@ -5,7 +5,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/partite-ai/wacogo"
+	"github.com/kjanat/wacogo"
 )
 
 func TestCoreTableAllocatorPublicAPI(t *testing.T) {

@@ -6,7 +6,7 @@ import (
 	"sort"
 	"strings"
 
-	"go.bytecodealliance.org/wit"
+	"github.com/kjanat/go-modules/wit"
 )
 
 // LowerWorld walks the chosen world's imported interfaces and lowers

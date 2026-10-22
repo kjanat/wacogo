@@ -2,9 +2,9 @@
 //
 // Usage:
 //
-//   wacogo-witgen generate -w <world> -o <out-dir> -p <pkg-root> <wit-file>
-//   wacogo-witgen --help
-//   wacogo-witgen generate --help
+//	wacogo-witgen generate -w <world> -o <out-dir> -p <pkg-root> <wit-file>
+//	wacogo-witgen --help
+//	wacogo-witgen generate --help
 package main
 
 import (
@@ -12,7 +12,7 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/partite-ai/wacogo/internal/witgen"
+	"github.com/kjanat/wacogo/internal/witgen"
 )
 
 func main() {
@@ -48,13 +48,13 @@ Run "wacogo-witgen <command> --help" for command-specific help.`)
 func cmdGenerate(args []string) {
 	fs := flag.NewFlagSet("generate", flag.ExitOnError)
 	var (
-		world       = fs.String("world", "", "fully-qualified world id (required), e.g. foo:bar/world")
-		worldShort  = fs.String("w", "", "short alias for --world")
-		outDir      = fs.String("out", "", "output directory (required)")
-		outDirShort = fs.String("o", "", "short alias for --out")
-		pkgRoot     = fs.String("package-root", "", "Go module path prefix that maps to --out (required)")
+		world        = fs.String("world", "", "fully-qualified world id (required), e.g. foo:bar/world")
+		worldShort   = fs.String("w", "", "short alias for --world")
+		outDir       = fs.String("out", "", "output directory (required)")
+		outDirShort  = fs.String("o", "", "short alias for --out")
+		pkgRoot      = fs.String("package-root", "", "Go module path prefix that maps to --out (required)")
 		pkgRootShort = fs.String("p", "", "short alias for --package-root")
-		dryRun      = fs.Bool("dry-run", false, "print files that would be written; no disk writes")
+		dryRun       = fs.Bool("dry-run", false, "print files that would be written; no disk writes")
 	)
 	fs.Usage = func() {
 		fmt.Fprintln(os.Stderr, `wacogo-witgen generate — generate Go bindings from a WIT file

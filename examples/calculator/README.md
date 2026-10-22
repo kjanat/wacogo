@@ -13,7 +13,7 @@ wires it into a wasm component.
 ## Run
 
 ```sh
-go run github.com/partite-ai/wacogo/examples/calculator
+go run github.com/kjanat/wacogo/examples/calculator
 ```
 
 Expected: `7 + 35 = 42`.
@@ -24,4 +24,4 @@ Expected: `7 + 35 = 42`.
 go generate ./examples/calculator/...
 ```
 
-(Also possible: `cd examples/calculator && wacogo-witgen generate -w example:demo/arith -o ./gen -p github.com/partite-ai/wacogo/examples/calculator/gen ./calculator.wit`)
+(Also possible: `cd examples/calculator && wacogo-witgen generate -w example:demo/arith -o ./gen -p github.com/kjanat/wacogo/examples/calculator/gen ./calculator.wit`)

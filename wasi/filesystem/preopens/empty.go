@@ -3,7 +3,7 @@ package preopens
 import (
 	"context"
 
-	gen "github.com/partite-ai/wacogo/internal/wasi/gen/wasi/filesystem/preopens"
+	gen "github.com/kjanat/wacogo/internal/wasi/gen/wasi/filesystem/preopens"
 )
 
 type EmptyFS struct{}

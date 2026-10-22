@@ -1,6 +1,6 @@
 package wacogo
 
-import "github.com/partite-ai/wacogo/internal/core"
+import "github.com/kjanat/wacogo/internal/core"
 
 // EngineOption configures an Engine at construction time. Pass instances
 // to NewEngine.

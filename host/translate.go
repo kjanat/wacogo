@@ -3,9 +3,9 @@ package host
 import (
 	"fmt"
 
-	"github.com/partite-ai/wacogo/internal/core"
-	"github.com/partite-ai/wacogo/internal/wasm"
-	"github.com/partite-ai/wacogo/wasmparser"
+	"github.com/kjanat/wacogo/internal/core"
+	"github.com/kjanat/wacogo/internal/wasm"
+	"github.com/kjanat/wacogo/wasmparser"
 )
 
 // buildCoreFuncType produces a per-instance *core.FuncType by walking
