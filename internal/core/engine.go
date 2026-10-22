@@ -29,8 +29,8 @@ type LiftLimits = canon.LiftLimits
 var ErrLiftLimit = canon.ErrLiftLimit
 
 // WithLiftLimits configures per-call canonical lifting budgets. Zero fields
-// are unlimited. CallRaw result decoders, including generated typed bindings,
-// remain the caller's responsibility and are not covered by these limits.
+// are unlimited. CallRaw/generated results are preflighted before decoding;
+// allocations beyond the declared representation remain the caller's responsibility.
 func WithLiftLimits(limits LiftLimits) EngineOption {
 	return func(c *engineConfig) { c.liftLimits = limits }
 }

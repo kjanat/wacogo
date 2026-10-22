@@ -217,6 +217,7 @@ func (v *memToValVisitor) VisitList(elem Type) {
 		elemAlign = 1
 	}
 	elemStep := child.out[0]
+	generatedSize := generatedInlineStorage(elem)
 
 	v.emit(func(ctx context.Context, gcc *gocallContext, base uint32) (Val, error) {
 		ptr, ok := gcc.callee.Memory.ReadUint32Le(base + ptrOff)
@@ -227,7 +228,7 @@ func (v *memToValVisitor) VisitList(elem Type) {
 		if !ok {
 			return nil, fmt.Errorf("oob list len read")
 		}
-		if err := gcc.listStorage(ptr, n, elemSize); err != nil {
+		if err := gcc.listStorage(ptr, n, elemSize, generatedSize); err != nil {
 			return nil, err
 		}
 		if n > 0 && elemAlign > 1 {
