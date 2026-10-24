@@ -81,6 +81,7 @@ func (i *ComponentInstance) ExportedFunc(name string) *ExportedFunc {
 }
 
 // ExportedInstance returns the exported component instance with the given name, or nil if not found.
+// If the returned instance is closed, calls that reach it through this instance fail.
 func (i *ComponentInstance) ExportedInstance(name string) *ComponentInstance {
 	e, ok := i.exports[name]
 	if !ok || e.kind != SortInstance {
