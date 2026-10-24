@@ -12,7 +12,7 @@ import (
 	"github.com/kjanat/wacogo/host"
 )
 
-func TestNestedCloseDrainsResourcesAcquiredByChildDestructor(t *testing.T) {
+func TestNestedCloseDoesNotInvokeGuestDestructor(t *testing.T) {
 	ctx := t.Context()
 	e := wacogo.NewEngine(ctx)
 	t.Cleanup(func() { _ = e.Close(context.Background()) })
@@ -46,7 +46,7 @@ func TestNestedCloseDrainsResourcesAcquiredByChildDestructor(t *testing.T) {
 	t.Cleanup(func() { _ = provider.Close(context.Background()) })
 
 	// The child's own resource has a real guest destructor. That destructor
-	// calls back into its parent, whose acquire function retains a new host
+	// would call into its parent, whose acquire function retains a new host
 	// resource in the parent's canonical resource table.
 	component, err := e.LoadComponent(ctx, bytes.NewReader(nestedCloseWasm(t, `(component
   (import "provider" (instance $provider
@@ -100,8 +100,8 @@ func TestNestedCloseDrainsResourcesAcquiredByChildDestructor(t *testing.T) {
 	if err := parent.Close(ctx); err != nil {
 		t.Fatal(err)
 	}
-	if opened != 1 || dropped != 1 {
-		t.Fatalf("after close: opened=%d dropped=%d; want 1, 1", opened, dropped)
+	if opened != 0 || dropped != 0 {
+		t.Fatalf("after close: opened=%d dropped=%d; want 0, 0", opened, dropped)
 	}
 	if err := parent.Close(ctx); err != nil {
 		t.Fatal(err)
@@ -109,8 +109,8 @@ func TestNestedCloseDrainsResourcesAcquiredByChildDestructor(t *testing.T) {
 	if err := child.Close(ctx); err != nil {
 		t.Fatal(err)
 	}
-	if opened != 1 || dropped != 1 {
-		t.Fatalf("after repeated closes: opened=%d dropped=%d; want 1, 1", opened, dropped)
+	if opened != 0 || dropped != 0 {
+		t.Fatalf("after repeated closes: opened=%d dropped=%d; want 0, 0", opened, dropped)
 	}
 }
 

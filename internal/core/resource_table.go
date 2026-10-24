@@ -1,8 +1,6 @@
 package core
 
 import (
-	"context"
-	"errors"
 	"fmt"
 
 	"github.com/kjanat/wacogo/internal/canon"
@@ -62,43 +60,6 @@ type resourceEntry struct {
 // the same-component borrow shortcut. May be nil for tests.
 func NewResourceTable(owner *ComponentInstance) *ResourceTable {
 	return &ResourceTable{owner: owner, freeList: freeListNone}
-}
-
-// dropAllOwns retires and destroys occupied own-kind slots in one pass,
-// in reverse slot order. It reports whether any owns were dropped. Used by
-// ComponentInstance.Close to run wasm and host destructors before the
-// underlying wazero modules tear down. Panics inside individual dtors
-// are recovered so one bad destructor does not strand the remaining
-// slots; the recovered value (or returned error) is collected and the
-// joined error is returned. caller is the closing instance, passed to
-// runDtor so its Enter/Exit gating picks the correct side.
-func (t *ResourceTable) dropAllOwns(ctx context.Context, caller *ComponentInstance) (dropped bool, err error) {
-	if t == nil {
-		return false, nil
-	}
-	var errs []error
-	for slot := len(t.entries) - 1; slot >= 0; slot-- {
-		e := &t.entries[slot]
-		if !e.occupied || e.kind != kindOwn {
-			continue
-		}
-		tr, rep := e.tr, e.rep
-		// Retire before calling user code: reentrant drains and later passes
-		// must never invoke this destructor a second time.
-		t.free(uint32(slot))
-		dropped = true
-		func() {
-			defer func() {
-				if r := recover(); r != nil {
-					errs = append(errs, fmt.Errorf("dtor(slot=%d): %v", slot+1, r))
-				}
-			}()
-			if err := runDtor(ctx, tr, rep, caller); err != nil {
-				errs = append(errs, fmt.Errorf("dtor(slot=%d): %w", slot+1, err))
-			}
-		}()
-	}
-	return dropped, errors.Join(errs...)
 }
 
 // IssueOwn allocates a fresh own-kind handle.

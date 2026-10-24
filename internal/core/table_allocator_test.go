@@ -363,7 +363,7 @@ func TestCoreTableAdmissionCancellationNotifierShutdown(t *testing.T) {
       (core module $m (table 0 2 funcref) (memory 1) (func (export "run")))
       (core instance $i (instantiate $m))
       (func (export "run") (canon lift (core func $i "run"))))`)
-	for _, call := range []string{"Call", "CallRaw", "CloseDestructor"} {
+	for _, call := range []string{"Call", "CallRaw", "Drop"} {
 		t.Run(call, func(t *testing.T) {
 			allocator := &teardownAllocator{}
 			ctx := experimental.WithMemoryAllocator(t.Context(), allocator)
@@ -400,16 +400,17 @@ func TestCoreTableAdmissionCancellationNotifierShutdown(t *testing.T) {
 			canceled, cancel := context.WithCancel(ctx)
 			cancel()
 			fn := instance.ExportedFunc("run")
-			if call == "CloseDestructor" {
+			if call == "Drop" {
 				for _, owned := range instance.owned {
 					if m, ok := owned.(*accountedModule); ok {
-						instance.resources.IssueOwn(&TypeResource{instance: instance, dtor: func(ctx context.Context, _ uint32) error {
+						table := NewResourceTable(&ComponentInstance{})
+						handle := table.IssueOwn(&TypeResource{instance: instance, dtor: func(ctx context.Context, _ uint32) error {
 							_, err := m.module.ExportedFunction("run").Call(ctx)
 							return err
 						}}, 1)
+						err = handle.Drop(canceled)
 					}
 				}
-				err = instance.Close(canceled)
 			} else if call == "CallRaw" {
 				err = fn.CallRaw(canceled, nil, func(*CallContext, *CallContext, []uint64) {}, func(*CallContext, *CallContext, []uint64) {})
 			} else {
