@@ -80,11 +80,8 @@ func (i *ComponentInstance) ExportedFunc(name string) *ExportedFunc {
 	return e.funcVal
 }
 
-// ExportedInstance returns the exported component instance with the given name,
-// or nil if not found. The result is borrowed: retaining it or importing it into
-// another component does not extend its lifetime. Closing its owning parent
-// closes it. Re-exporting a borrowed instance does not transfer ownership; its
-// original owner still controls its lifetime.
+// ExportedInstance returns the exported component instance with the given name, or nil if not found.
+// If the returned instance is closed, calls that reach it through this instance fail.
 func (i *ComponentInstance) ExportedInstance(name string) *ComponentInstance {
 	e, ok := i.exports[name]
 	if !ok || e.kind != SortInstance {
@@ -241,64 +238,25 @@ func (i *ComponentInstance) RunInComponent(ctx context.Context, fn func() error)
 	return fn()
 }
 
-// Close releases all resources held by the component and its owned descendants.
-// Resource destructors run to quiescence before any owned modules close, so
-// callbacks may use providers in the closing subtree and acquire new resources.
-// Handles are retired before destruction; repeated and reentrant Close calls
-// are no-ops. Modules and adapters then close in reverse ownership order.
-// Errors are joined, and individual destructor failures do not stop cleanup.
+// Close releases all resources held by the component instance and the
+// modules, adapters and nested components it created. Further Enter calls
+// fail. Resource destructors are not run for handles still outstanding at
+// Close. Repeated calls are no-ops. All errors are joined and returned;
+// teardown always completes.
 func (i *ComponentInstance) Close(ctx context.Context) error {
 	if i == nil || i.closed {
 		return nil
 	}
-	var teardown instanceTeardown
-	teardown.collect(i)
+	i.closed = true
+	i.Poison(fmt.Errorf("component instance closed"))
+	owned := i.owned
+	i.owned = nil
 	var errs []error
-	for {
-		dropped := false
-		for _, instance := range teardown.instances {
-			more, err := instance.resources.dropAllOwns(ctx, instance)
-			dropped = dropped || more
-			if err != nil {
-				errs = append(errs, err)
-			}
-		}
-		if !dropped {
-			break
-		}
-	}
-	for _, instance := range teardown.instances {
-		instance.Poison(fmt.Errorf("component instance closed"))
-	}
-	for _, owned := range teardown.owned {
-		if err := owned.Close(ctx); err != nil {
+	// Close in reverse creation order so providers outlive their consumers.
+	for idx := len(owned) - 1; idx >= 0; idx-- {
+		if err := owned[idx].Close(ctx); err != nil {
 			errs = append(errs, err)
 		}
 	}
 	return errors.Join(errs...)
-}
-
-// instanceTeardown separates resource destruction from physical teardown across
-// the complete owned subtree. Its flattened closer list preserves the original
-// reverse creation order without closing child providers during resource drains.
-type instanceTeardown struct {
-	instances []*ComponentInstance
-	owned     []instanceCloser
-}
-
-func (t *instanceTeardown) collect(i *ComponentInstance) {
-	if i == nil || i.closed {
-		return
-	}
-	i.closed = true
-	t.instances = append(t.instances, i)
-	owned := i.owned
-	i.owned = nil
-	for idx := len(owned) - 1; idx >= 0; idx-- {
-		if child, ok := owned[idx].(*ComponentInstance); ok {
-			t.collect(child)
-		} else {
-			t.owned = append(t.owned, owned[idx])
-		}
-	}
 }

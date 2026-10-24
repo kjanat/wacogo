@@ -18,8 +18,8 @@ type DestroyOrphan interface {
 }
 
 // Drop, when implemented by a value stored in the extern table, is
-// invoked during Close drain on entries that survived normal teardown
-// and do not implement DestroyOrphan. Matches the signature witgen-
+// invoked during Close on entries that are still registered and do not
+// implement DestroyOrphan. Matches the signature witgen-
 // emitted resourceDtors call on guest-driven resource.drop, so one
 // Drop method covers both cleanup paths.
 type Drop interface {
@@ -68,13 +68,12 @@ func (h *ComponentInstance) LookupResource(eh ExternHandle) (any, bool) {
 // WithUserState. UserState is set once and is immutable.
 func (h *ComponentInstance) UserState() any { return h.userState }
 
-// Close releases the resources held by this instance. The core
-// instance closes first — that pass drops any outstanding own-kind
-// canon handles via their registered destructors before the wazero
-// runtime tears down. User cleanups run next, then the extern table
-// is drained in LIFO insertion order: each entry's DestroyOrphan is
-// called when implemented, otherwise Drop. All errors are joined and
-// returned; teardown always completes.
+// Close releases the resources held by this instance. Resource
+// destructors are not run for handles still outstanding at Close.
+// User cleanups run first, then every object still registered via
+// RegisterResource is released in LIFO insertion order: its
+// DestroyOrphan is called when implemented, otherwise Drop. All errors
+// are joined and returned; teardown always completes.
 func (h *ComponentInstance) Close(ctx context.Context) error {
 	var errs []error
 	if h.core != nil {
