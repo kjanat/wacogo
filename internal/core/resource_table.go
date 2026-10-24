@@ -64,32 +64,30 @@ func NewResourceTable(owner *ComponentInstance) *ResourceTable {
 	return &ResourceTable{owner: owner, freeList: freeListNone}
 }
 
-// dropAllOwns retires and destroys occupied own-kind slots in one pass,
-// in reverse slot order. It reports whether any owns were dropped. Used by
-// ComponentInstance.Close to run wasm and host destructors before the
+// dropAllOwns invokes the destructor for every occupied own-kind slot,
+// in LIFO insertion order. Used by ComponentInstance.Close to give wasm
+// and host destructors a chance to release their resources before the
 // underlying wazero modules tear down. Panics inside individual dtors
 // are recovered so one bad destructor does not strand the remaining
 // slots; the recovered value (or returned error) is collected and the
 // joined error is returned. caller is the closing instance, passed to
 // runDtor so its Enter/Exit gating picks the correct side.
-func (t *ResourceTable) dropAllOwns(ctx context.Context, caller *ComponentInstance) (dropped bool, err error) {
+func (t *ResourceTable) dropAllOwns(ctx context.Context, caller *ComponentInstance) error {
 	if t == nil {
-		return false, nil
+		return nil
 	}
 	var errs []error
+	dtorPanicked := false
 	for slot := len(t.entries) - 1; slot >= 0; slot-- {
 		e := &t.entries[slot]
 		if !e.occupied || e.kind != kindOwn {
 			continue
 		}
 		tr, rep := e.tr, e.rep
-		// Retire before calling user code: reentrant drains and later passes
-		// must never invoke this destructor a second time.
-		t.free(uint32(slot))
-		dropped = true
 		func() {
 			defer func() {
 				if r := recover(); r != nil {
+					dtorPanicked = true
 					errs = append(errs, fmt.Errorf("dtor(slot=%d): %v", slot+1, r))
 				}
 			}()
@@ -98,7 +96,13 @@ func (t *ResourceTable) dropAllOwns(ctx context.Context, caller *ComponentInstan
 			}
 		}()
 	}
-	return dropped, errors.Join(errs...)
+	if dtorPanicked && caller != nil {
+		// A panicking dtor leaves the resource graph in an indeterminate
+		// state — poison the instance so any leftover handles cannot be
+		// reused via Enter once Close finishes.
+		caller.Poison(fmt.Errorf("dtor panicked during Close"))
+	}
+	return errors.Join(errs...)
 }
 
 // IssueOwn allocates a fresh own-kind handle.
