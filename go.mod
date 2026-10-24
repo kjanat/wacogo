@@ -1,11 +1,13 @@
 module github.com/kjanat/wacogo
 
-go 1.25.5
+go 1.27.0
+
+toolchain go1.27.3
 
 require (
-	github.com/kjanat/go-modules v0.7.1
 	github.com/tetratelabs/wazero v1.11.1-0.20260418165552-5cb4bb3ec0c1
-	golang.org/x/sys v0.43.0
+	go-modules.kjanat.dev v0.8.0
+	golang.org/x/sys v0.45.0
 	golang.org/x/tools v0.44.0
 )
 

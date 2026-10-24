@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/kjanat/go-modules/wit"
+	"go-modules.kjanat.dev/wit"
 )
 
 // Options drives one Generate invocation.

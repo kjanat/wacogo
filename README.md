@@ -1,6 +1,6 @@
 # wacogo
 
-Actionlint's maintained fork of [partite-ai/wacogo](https://github.com/partite-ai/wacogo), including the ownership, lifting-budget, table-accounting and generated-decoder fixes in upstream PRs #13–16. Import `github.com/kjanat/wacogo` directly. This fork uses `github.com/kjanat/go-modules` for the repaired WIT loader and publishes from `master` under its own module path and version tags.
+Actionlint's maintained fork of [partite-ai/wacogo](https://github.com/partite-ai/wacogo), including the ownership, lifting-budget, table-accounting and generated-decoder fixes in upstream PRs #13 through #16. Import `github.com/kjanat/wacogo` directly. This fork uses `go-modules.kjanat.dev` for the repaired WIT loader and publishes from `master` under its own module path and version tags.
 
 A WebAssembly Component Model (MVP) runtime for Go, built on [wazero].
 

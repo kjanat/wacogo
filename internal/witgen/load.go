@@ -5,7 +5,7 @@ package witgen
 import (
 	"fmt"
 
-	"github.com/kjanat/go-modules/wit"
+	"go-modules.kjanat.dev/wit"
 )
 
 // Load reads a WIT text or JSON file from path and returns the
