@@ -237,33 +237,25 @@ func (i *ComponentInstance) RunInComponent(ctx context.Context, fn func() error)
 	return fn()
 }
 
-// Close releases all resources held by the component instance.
-// Outstanding own-kind canonical-ABI handles are dropped first (running
-// each registered destructor under recover so one bad dtor does not
-// strand the rest) while the wazero runtime is still alive. Then the
-// owned modules, adapters and nested components are closed in reverse creation
-// order, keeping providers alive until their consumers have been released.
-// The instance is finally marked poisoned so any further Enter call
-// fails — Close is one-way. All errors are joined and returned;
+// Close releases all resources held by the component instance and the
+// modules, adapters and nested components it created. Further Enter calls
+// fail. Resource destructors are not run for handles still outstanding at
+// Close. Repeated calls are no-ops. All errors are joined and returned;
 // teardown always completes.
 func (i *ComponentInstance) Close(ctx context.Context) error {
 	if i == nil || i.closed {
 		return nil
 	}
 	i.closed = true
+	i.Poison(fmt.Errorf("component instance closed"))
 	owned := i.owned
 	i.owned = nil
 	var errs []error
-	if i.resources != nil {
-		if err := i.resources.dropAllOwns(ctx, i); err != nil {
-			errs = append(errs, err)
-		}
-	}
+	// Close in reverse creation order so providers outlive their consumers.
 	for idx := len(owned) - 1; idx >= 0; idx-- {
 		if err := owned[idx].Close(ctx); err != nil {
 			errs = append(errs, err)
 		}
 	}
-	i.Poison(fmt.Errorf("component instance closed"))
 	return errors.Join(errs...)
 }

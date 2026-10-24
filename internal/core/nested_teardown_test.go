@@ -8,9 +8,7 @@ import (
 	"reflect"
 	"sync"
 	"testing"
-	"time"
 
-	"github.com/tetratelabs/wazero"
 	"github.com/tetratelabs/wazero/experimental"
 )
 
@@ -261,52 +259,26 @@ func TestFailedInstantiationJoinsCleanupErrorsAfterCancellation(t *testing.T) {
 	}
 }
 
-func TestFailedInstantiationPreservesGuestDestructorCancellation(t *testing.T) {
-	for _, deadline := range []bool{false, true} {
-		t.Run(fmt.Sprintf("deadline=%t", deadline), func(t *testing.T) {
-			allocator := &teardownAllocator{}
-			base := experimental.WithMemoryAllocator(t.Context(), allocator)
-			e := NewEngine(base, WithRuntimeConfig(wazero.NewRuntimeConfig().WithCloseOnContextDone(true)))
-			t.Cleanup(func() { _ = e.Close(context.Background()) })
-			source := nestedMemoryComponent[:len(nestedMemoryComponent)-1] + `(core module $dtor (func (export "dtor"))) (core instance (instantiate $dtor)))`
-			component, err := e.LoadComponent(base, bytes.NewReader(buildComponentBytes(t, source)))
-			if err != nil {
-				t.Fatal(err)
-			}
-			ctx, cancel := context.WithCancel(base)
-			want := context.Canceled
-			if deadline {
-				cancel()
-				ctx, cancel = context.WithTimeout(base, time.Second)
-				want = context.DeadlineExceeded
-			}
-			defer cancel()
-			primaryErr := errors.New("instantiation failed")
-			var calls int
-			component.plan = append(component.plan, teardownStep{run: func(ctx context.Context, state *instantiationState) error {
-				module := state.coreInstances[len(state.coreInstances)-1]
-				state.inst.resources.IssueOwn(&TypeResource{instance: state.inst, dtor: func(ctx context.Context, _ uint32) error {
-					calls++
-					if !errors.Is(ctx.Err(), want) {
-						t.Errorf("guest destructor lost cancellation: %v", ctx.Err())
-					}
-					_, err := module.ExportedFunction("dtor").Call(ctx)
-					if err == nil {
-						t.Error("guest destructor accepted canceled context")
-					}
-					return ctx.Err()
-				}}, 1)
-				if !deadline {
-					cancel()
-				}
-				<-ctx.Done()
-				return primaryErr
-			}})
-			instance, err := component.Instantiate(ctx)
-			if instance != nil || !errors.Is(err, primaryErr) || !errors.Is(err, want) || calls != 1 {
-				t.Fatalf("failed teardown: instance=%v calls=%d error=%v", instance, calls, err)
-			}
-			allocator.check(t, 3, 0, []uint64{3 * 65536, 2 * 65536, 65536})
-		})
+func TestCloseDoesNotRunResourceDestructors(t *testing.T) {
+	parent := &ComponentInstance{}
+	child := &ComponentInstance{}
+	parent.resources = NewResourceTable(parent)
+	child.resources = NewResourceTable(child)
+	parent.owned = []instanceCloser{child}
+	var calls int
+	dtor := func(context.Context, uint32) error {
+		calls++
+		return nil
+	}
+	parent.resources.IssueOwn(&TypeResource{instance: parent, dtor: dtor}, 1)
+	child.resources.IssueOwn(&TypeResource{instance: child, dtor: dtor}, 1)
+	if err := parent.Close(t.Context()); err != nil {
+		t.Fatal(err)
+	}
+	if calls != 0 {
+		t.Fatalf("destructor calls = %d, want 0", calls)
+	}
+	if err := child.Enter(t.Context()); err == nil {
+		t.Fatal("closed child accepted Enter")
 	}
 }
