@@ -688,18 +688,18 @@ func hashInfo(p string, info fs.FileInfo) types.MetadataHashValue {
 	h.Write([]byte{0})
 	var sz [8]byte
 	v := uint64(info.Size())
-	for i := 0; i < 8; i++ {
+	for i := range 8 {
 		sz[i] = byte(v >> (8 * i))
 	}
 	h.Write(sz[:])
 	mt := info.ModTime().UnixNano()
-	for i := 0; i < 8; i++ {
+	for i := range 8 {
 		sz[i] = byte(uint64(mt) >> (8 * i))
 	}
 	h.Write(sz[:])
 	sum := h.Sum(nil)
 	var lower, upper uint64
-	for i := 0; i < 8; i++ {
+	for i := range 8 {
 		lower |= uint64(sum[i]) << (8 * i)
 		upper |= uint64(sum[8+i]) << (8 * i)
 	}

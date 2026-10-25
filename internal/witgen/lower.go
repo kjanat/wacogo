@@ -2,7 +2,9 @@ package witgen
 
 import (
 	"fmt"
+	"maps"
 	"path"
+	"slices"
 	"sort"
 	"strings"
 
@@ -145,10 +147,8 @@ func preRegisterNominals(wif *wit.Interface, globalTypeDefIR map[*wit.TypeDef]Ty
 // interfaces.
 func findOwnerInterface(r *TypeResource, all []*Interface) *Interface {
 	for _, iface := range all {
-		for _, x := range iface.Resources {
-			if x == r {
-				return iface
-			}
+		if slices.Contains(iface.Resources, r) {
+			return iface
 		}
 	}
 	return nil
@@ -782,12 +782,12 @@ func importInterface(item wit.WorldItem) (*wit.Interface, error) {
 }
 
 func findWorld(res *wit.Resolve, worldID string) (*wit.World, error) {
-	slash := strings.LastIndex(worldID, "/")
-	if slash < 0 {
+	before, after, ok := strings.CutLast(worldID, "/")
+	if !ok {
 		return nil, fmt.Errorf("witgen: world id %q must be of form ns:pkg/name", worldID)
 	}
-	pkgPart := worldID[:slash]
-	nameSought := worldID[slash+1:]
+	pkgPart := before
+	nameSought := after
 	for _, w := range res.Worlds {
 		if w.Name != nameSought {
 			continue
@@ -853,9 +853,7 @@ func lowerInterface(wif *wit.Interface, globalTypeDefIR map[*wit.TypeDef]Type) (
 	// Iterate TypeDefs in declaration order (ordered.Map.All) so the
 	// emitter gets a stable output shape.
 	typeDefIR := make(map[*wit.TypeDef]Type, len(globalTypeDefIR))
-	for k, v := range globalTypeDefIR {
-		typeDefIR[k] = v
-	}
+	maps.Copy(typeDefIR, globalTypeDefIR)
 	var typeDefErr error
 	wif.TypeDefs.All()(func(_ string, td *wit.TypeDef) bool {
 		if td.Name == nil {

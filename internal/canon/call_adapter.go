@@ -2,6 +2,7 @@ package canon
 
 import (
 	"context"
+	"slices"
 
 	"github.com/tetratelabs/wazero"
 	"github.com/tetratelabs/wazero/api"
@@ -32,8 +33,8 @@ func (a *CallAdapter) Close(ctx context.Context) error {
 	}
 	a.closed = true
 	var firstErr error
-	for i := len(a.aux) - 1; i >= 0; i-- {
-		if err := a.aux[i].Close(ctx); err != nil && firstErr == nil {
+	for _, v := range slices.Backward(a.aux) {
+		if err := v.Close(ctx); err != nil && firstErr == nil {
 			firstErr = err
 		}
 	}

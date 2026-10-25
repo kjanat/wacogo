@@ -82,17 +82,15 @@ func TestInsecureSeedShortReadIsError(t *testing.T) {
 func TestConcurrentCallsDoNotRace(t *testing.T) {
 	s := newSeeder()
 	var wg sync.WaitGroup
-	for i := 0; i < 16; i++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			for j := 0; j < 100; j++ {
+	for range 16 {
+		wg.Go(func() {
+			for range 100 {
 				if _, err := s.InsecureSeed(bgCtx); err != nil {
 					t.Errorf("InsecureSeed: %v", err)
 					return
 				}
 			}
-		}()
+		})
 	}
 	wg.Wait()
 }

@@ -138,11 +138,9 @@ func TestGetRandomBytesShortReadIsError(t *testing.T) {
 func TestConcurrentCallsDoNotRace(t *testing.T) {
 	r := newRNG()
 	var wg sync.WaitGroup
-	for i := 0; i < 16; i++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			for j := 0; j < 100; j++ {
+	for range 16 {
+		wg.Go(func() {
+			for range 100 {
 				if _, err := r.GetRandomU64(bgCtx); err != nil {
 					t.Errorf("GetRandomU64: %v", err)
 					return
@@ -152,7 +150,7 @@ func TestConcurrentCallsDoNotRace(t *testing.T) {
 					return
 				}
 			}
-		}()
+		})
 	}
 	wg.Wait()
 }

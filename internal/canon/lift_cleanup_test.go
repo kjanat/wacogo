@@ -51,8 +51,8 @@ func TestLiftFailureReleasesAcquiredOwnAfterExit(t *testing.T) {
 			}
 			dropped := 0
 			resource := &cleanupLiftResource{
-				instance:                 instance,
-				testResourceTypeWithDtor: testResourceTypeWithDtor{dtor: func(context.Context, uint32) error { dropped++; return nil }},
+				instance: instance,
+				dtor:     func(context.Context, uint32) error { dropped++; return nil },
 			}
 			handle := instance.table.IssueOwn(resource, 42)
 			mem.WriteUint32Le(0, handle.HandleID())
@@ -67,7 +67,7 @@ func TestLiftFailureReleasesAcquiredOwnAfterExit(t *testing.T) {
 				{Name: "payload", Type: testTypeList{elem: testU8Type{}}},
 			}}
 			binding := NewCallBinding(nil, []Type{resultType}, Callee{
-				CallSide: CallSide{Instance: instance, Memory: mem}, LiftLimits: limits,
+				Instance: instance, Memory: mem, LiftLimits: limits,
 				Direct: func(_ context.Context, stack []uint64) { stack[0] = 0 },
 			})
 			cleanupErr := errors.New("post-return failed")
@@ -189,8 +189,8 @@ func TestHostAdapterSourcePreflightBeforeAllocation(t *testing.T) {
 	adapter, err := NewHost(runtime).BuildAdapter(ctx, "bounded-source",
 		CallSide{Instance: &testInstance{}, Memory: source, StringEncoding: EncUTF16},
 		Callee{
-			CallSide: CallSide{Instance: &testInstance{}, Memory: destination, StringEncoding: EncUTF8,
-				GoRealloc: func(context.Context, uint32, uint32, uint32, uint32) (uint32, error) { reallocs++; return 0, nil }},
+			Instance: &testInstance{}, Memory: destination, StringEncoding: EncUTF8,
+			GoRealloc: func(context.Context, uint32, uint32, uint32, uint32) (uint32, error) { reallocs++; return 0, nil },
 			Arguments: NewLiftValidator(params, LiftLimits{MaxBytes: 16}),
 			Direct:    func(context.Context, []uint64) { calls++ },
 		}, params, nil)
@@ -215,7 +215,7 @@ func TestLiftCleanupAllowsDestructorToReenterBinding(t *testing.T) {
 	drops := 0
 	resource := &cleanupLiftResource{
 		instance: owner,
-		testResourceTypeWithDtor: testResourceTypeWithDtor{dtor: func(ctx context.Context, _ uint32) error {
+		dtor: func(ctx context.Context, _ uint32) error {
 			drops++
 			if drops == 1 {
 				nested = true
@@ -226,7 +226,7 @@ func TestLiftCleanupAllowsDestructorToReenterBinding(t *testing.T) {
 				}
 			}
 			return nil
-		}},
+		},
 	}
 	first := callee.table.IssueOwn(resource, 1)
 	second := callee.table.IssueOwn(resource, 2)
@@ -240,7 +240,7 @@ func TestLiftCleanupAllowsDestructorToReenterBinding(t *testing.T) {
 		{Name: "payload", Type: testTypeList{elem: testU8Type{}}},
 	}}
 	binding = NewCallBinding(nil, []Type{resultType}, Callee{
-		CallSide: CallSide{Instance: callee, Memory: mem}, LiftLimits: LiftLimits{MaxValues: 5},
+		Instance: callee, Memory: mem, LiftLimits: LiftLimits{MaxValues: 5},
 		Direct: func(_ context.Context, stack []uint64) {
 			if nested {
 				panic(nestedErr)
@@ -264,14 +264,14 @@ func TestLiftCleanupContinuesAfterDestructorPanic(t *testing.T) {
 	drops := 0
 	resource := &cleanupLiftResource{
 		instance: owner,
-		testResourceTypeWithDtor: testResourceTypeWithDtor{dtor: func(_ context.Context, rep uint32) error {
+		dtor: func(_ context.Context, rep uint32) error {
 			drops++
 			order = append(order, rep)
 			if rep == 2 {
 				panic(dtorErr)
 			}
 			return nil
-		}},
+		},
 	}
 	first := callee.table.IssueOwn(resource, 1)
 	second := callee.table.IssueOwn(resource, 2)
@@ -285,7 +285,7 @@ func TestLiftCleanupContinuesAfterDestructorPanic(t *testing.T) {
 		{Name: "payload", Type: testTypeList{elem: testU8Type{}}},
 	}}
 	binding := NewCallBinding(nil, []Type{resultType}, Callee{
-		CallSide: CallSide{Instance: callee, Memory: mem}, LiftLimits: LiftLimits{MaxValues: 5},
+		Instance: callee, Memory: mem, LiftLimits: LiftLimits{MaxValues: 5},
 		Direct: func(_ context.Context, stack []uint64) {
 			stack[0] = 0
 		},

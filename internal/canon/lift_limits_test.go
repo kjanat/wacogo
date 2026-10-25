@@ -13,8 +13,8 @@ func TestLiftRejectsOutOfBoundsListBeforeAllocation(t *testing.T) {
 	mem.WriteUint32Le(0, mem.Size()-4)
 	mem.WriteUint32Le(4, 65536)
 	binding := NewCallBinding(nil, []Type{testTypeList{elem: testU8Type{}}}, Callee{
-		CallSide: CallSide{Instance: &testInstance{}, Memory: mem},
-		Direct:   func(_ context.Context, stack []uint64) { stack[0] = 0 },
+		Instance: &testInstance{}, Memory: mem,
+		Direct: func(_ context.Context, stack []uint64) { stack[0] = 0 },
 	})
 	runtime.GC()
 	var before, after runtime.MemStats
@@ -33,7 +33,7 @@ func TestLiftLimitsNestedAliasesAndReset(t *testing.T) {
 	mem := setupMem(t, 0)
 	mem.WriteUint32Le(0, 64)
 	mem.WriteUint32Le(4, 4)
-	for i := uint32(0); i < 4; i++ {
+	for i := range uint32(4) {
 		mem.WriteUint32Le(64+i*8, 128)
 		mem.WriteUint32Le(68+i*8, 16)
 	}
@@ -54,7 +54,7 @@ func TestLiftLimitsNestedAliasesAndReset(t *testing.T) {
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			binding := NewCallBinding(nil, []Type{testTypeList{elem: testTypeString{}}}, Callee{
-				CallSide: CallSide{Instance: &testInstance{}, Memory: mem}, LiftLimits: tc.limits,
+				Instance: &testInstance{}, Memory: mem, LiftLimits: tc.limits,
 				Direct: func(_ context.Context, stack []uint64) { stack[0] = 0 },
 			})
 			for range 2 {
@@ -82,7 +82,7 @@ func TestLiftLimitsZeroStrideList(t *testing.T) {
 	mem.WriteUint32Le(0, 0)
 	mem.WriteUint32Le(4, ^uint32(0))
 	binding := NewCallBinding(nil, []Type{testTypeList{elem: testTypeRecord{}}}, Callee{
-		CallSide: CallSide{Instance: &testInstance{}, Memory: mem}, LiftLimits: LiftLimits{MaxValues: 32, MaxBytes: 4096},
+		Instance: &testInstance{}, Memory: mem, LiftLimits: LiftLimits{MaxValues: 32, MaxBytes: 4096},
 		Direct: func(_ context.Context, stack []uint64) { stack[0] = 0 },
 	})
 	if _, err := binding.Call(context.Background(), nil); !errors.Is(err, ErrLiftLimit) {
@@ -98,7 +98,7 @@ func TestLiftLimitsIndependentConcurrentCalls(t *testing.T) {
 	errs := make(chan error, 2)
 	for range 2 {
 		binding := NewCallBinding(nil, []Type{testTypeList{elem: testU8Type{}}}, Callee{
-			CallSide: CallSide{Instance: &testInstance{}, Memory: mem}, LiftLimits: LiftLimits{MaxValues: 3, MaxBytes: 3 * valStorage},
+			Instance: &testInstance{}, Memory: mem, LiftLimits: LiftLimits{MaxValues: 3, MaxBytes: 3 * valStorage},
 			Direct: func(_ context.Context, stack []uint64) { stack[0] = 0 },
 		})
 		wg.Go(func() {
@@ -122,7 +122,7 @@ func TestLiftLimitStillRunsPostReturn(t *testing.T) {
 	mem.WriteUint32Le(0, 64)
 	mem.WriteUint32Le(4, 4)
 	binding := NewCallBinding(nil, []Type{testTypeList{elem: testU8Type{}}}, Callee{
-		CallSide: CallSide{Instance: &testInstance{}, Memory: mem}, LiftLimits: LiftLimits{MaxValues: 2},
+		Instance: &testInstance{}, Memory: mem, LiftLimits: LiftLimits{MaxValues: 2},
 		Direct: func(_ context.Context, stack []uint64) { stack[0] = 0 },
 	})
 	cleanups := 0
@@ -162,8 +162,8 @@ func TestLiftChecksCancellationInsideList(t *testing.T) {
 	mem.WriteUint32Le(0, 64)
 	mem.WriteUint32Le(4, 100)
 	binding := NewCallBinding(nil, []Type{testTypeList{elem: testU8Type{}}}, Callee{
-		CallSide: CallSide{Instance: &testInstance{}, Memory: mem},
-		Direct:   func(_ context.Context, stack []uint64) { stack[0] = 0 },
+		Instance: &testInstance{}, Memory: mem,
+		Direct: func(_ context.Context, stack []uint64) { stack[0] = 0 },
 	})
 	base, cancel := context.WithCancel(context.Background())
 	defer cancel()

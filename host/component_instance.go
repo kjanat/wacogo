@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 
 	"github.com/kjanat/wacogo/internal/canon"
 	"github.com/kjanat/wacogo/internal/core"
@@ -42,7 +43,6 @@ type ComponentInstance struct {
 	extTable     *externTable
 	userState    any
 	callListener CallListener
-	cleanups     []func()
 	hostCallCC   *core.CallContext
 	validateArgs map[*funcRuntime]*canon.LiftValidator
 }
@@ -70,12 +70,9 @@ func (h *ComponentInstance) LookupResource(eh ExternHandle) (any, bool) {
 // WithUserState. UserState is set once and is immutable.
 func (h *ComponentInstance) UserState() any { return h.userState }
 
-// Close releases the resources held by this instance. Resource
-// destructors are not run for handles still outstanding at Close.
-// User cleanups run first, then every object still registered via
-// RegisterResource is released in LIFO insertion order: its
-// DestroyOrphan is called when implemented, otherwise Drop. All errors
-// are joined and returned; teardown always completes.
+// Close closes the core instance, then releases Go objects by descending handle.
+// It prefers DestroyOrphan over Drop and joins returned errors.
+// Outstanding guest handles receive no destructor calls.
 func (h *ComponentInstance) Close(ctx context.Context) error {
 	var errs []error
 	if h.core != nil {
@@ -83,26 +80,22 @@ func (h *ComponentInstance) Close(ctx context.Context) error {
 			errs = append(errs, err)
 		}
 	}
-	for _, fn := range h.cleanups {
-		fn()
-	}
 	if err := h.drainExternTable(ctx); err != nil {
 		errs = append(errs, err)
 	}
 	return errors.Join(errs...)
 }
 
-// drainExternTable walks the extern table from highest ExternHandle
-// down (LIFO of insertion). For each live entry, DestroyOrphan is
-// preferred over Drop; entries that implement neither are released
-// without invoking cleanup. Errors are collected and joined.
+// drainExternTable releases live entries from highest handle to lowest.
+// DestroyOrphan takes precedence over Drop. Entries without either are removed;
+// cleanup errors are joined.
 func (h *ComponentInstance) drainExternTable(ctx context.Context) error {
 	if h.extTable == nil || h.extTable.liveCount() == 0 {
 		return nil
 	}
 	var errs []error
-	for i := len(h.extTable.entries) - 1; i >= 0; i-- {
-		if !h.extTable.entries[i].occupied {
+	for i, v := range slices.Backward(h.extTable.entries) {
+		if !v.occupied {
 			continue
 		}
 		eh := ExternHandle(uint32(i) + 1)

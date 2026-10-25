@@ -141,7 +141,6 @@ func TestSpecConformance(t *testing.T) {
 			}
 
 			for i, cmd := range spec.Commands {
-				cmd := cmd
 				testName := fmt.Sprintf("%s-%d-line%d", cmd.Type, i, cmd.Line)
 				t.Run(testName, func(t *testing.T) {
 					if f.Source == spectest.SourceSpec {

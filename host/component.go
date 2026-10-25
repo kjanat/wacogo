@@ -248,16 +248,14 @@ func (c *Component) buildFuncExports(
 			h.validateArgs[fr] = validator
 		}
 		callee := canon.Callee{
-			LiftLimits: limits,
-			Arguments:  validator,
-			CallSide: canon.CallSide{
-				Instance:       core.InstanceAsCanon(inst),
-				Memory:         stubMemory,
-				Realloc:        reallocAPI,
-				GoRealloc:      alloc.realloc,
-				StringEncoding: canon.EncUTF8,
-			},
-			CoreFunc: coreFn,
+			LiftLimits:     limits,
+			Arguments:      validator,
+			Instance:       core.InstanceAsCanon(inst),
+			Memory:         stubMemory,
+			Realloc:        reallocAPI,
+			GoRealloc:      alloc.realloc,
+			StringEncoding: canon.EncUTF8,
+			CoreFunc:       coreFn,
 			// What coreFn does - the stub wrapper resetting the bump
 			// allocator, then the host module's Go function - without
 			// going through wasm.

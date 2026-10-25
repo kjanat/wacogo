@@ -18,7 +18,7 @@ func TestCallRawReportsResultMemoryBounds(t *testing.T) {
 			}
 			inst := &cleanupLiftInstance{table: newStubResourceTable()}
 			binding := NewCallBinding(nil, []Type{testStringType{}}, Callee{
-				CallSide: CallSide{Instance: inst, Memory: mem},
+				Instance: inst, Memory: mem,
 				Direct: func(_ context.Context, stack []uint64) {
 					stack[0] = uint64(base)
 				},

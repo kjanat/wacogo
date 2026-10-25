@@ -30,8 +30,8 @@ func TestHostGeneratedStorageRejectsBeforeTransfer(t *testing.T) {
 			adapter, err := NewHost(runtime).BuildAdapter(ctx, "bounded-generated-args",
 				CallSide{Instance: &testInstance{}, Memory: source, StringEncoding: EncUTF8},
 				Callee{
-					CallSide: CallSide{Instance: &testInstance{}, Memory: destination, StringEncoding: EncUTF8,
-						GoRealloc: func(context.Context, uint32, uint32, uint32, uint32) (uint32, error) { reallocs++; return 0, nil }},
+					Instance: &testInstance{}, Memory: destination, StringEncoding: EncUTF8,
+					GoRealloc: func(context.Context, uint32, uint32, uint32, uint32) (uint32, error) { reallocs++; return 0, nil },
 					Arguments: NewLiftValidator(params, LiftLimits{MaxBytes: 32, MaxValues: 3}),
 					Direct:    func(context.Context, []uint64) { calls++ },
 				}, params, nil)

@@ -21,7 +21,7 @@ const (
 
 // InstanceSpec is the parameter struct for NewInstance. It carries
 // only wasm-level pieces — host-specific concerns (user state,
-// cleanups, type-resource slot tables) live in the host package's
+// type-resource slot tables) live in the host package's
 // wrapper, not here.
 type InstanceSpec struct {
 	// Modules are closed in reverse declared order during ComponentInstance.Close.

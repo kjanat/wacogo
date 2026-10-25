@@ -140,7 +140,7 @@ func listContentSizes(
 	sink *allocSink,
 ) {
 	sink.add(n*elemSize, elemAlign)
-	for i := uint32(0); i < n; i++ {
+	for i := range n {
 		elemSrc := srcPtr + i*elemSize
 		for _, step := range subSteps {
 			if step.sizes != nil {

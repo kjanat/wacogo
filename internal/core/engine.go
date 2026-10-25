@@ -125,8 +125,8 @@ func (e *Engine) Close(ctx context.Context) error {
 	}
 	e.lifecycleMu.Unlock()
 	errs := []error{runtimeErr}
-	for i := len(modules) - 1; i >= 0; i-- {
-		if err := modules[i].refund(); err != nil {
+	for _, module := range slices.Backward(modules) {
+		if err := module.refund(); err != nil {
 			errs = append(errs, err)
 		}
 	}

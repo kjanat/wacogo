@@ -60,7 +60,6 @@ type SubtypeChecker struct {
 	// flow through to the outer's arg types — wasm-tools' substitution.
 	definedTypeMapping map[ComponentDefinedTypeID]ComponentDefinedTypeID
 
-
 	// hostBinding relaxes function subtyping to match how host imports
 	// are linked: parameter names are not compared, only count and
 	// types. Validator-internal checks leave this false and keep the
@@ -298,7 +297,7 @@ func (sc *SubtypeChecker) isDefinedTypeSubtypeImpl(a, b ComponentDefinedTypeID) 
 func (sc *SubtypeChecker) checkResourceMatch(aRes, bRes ResourceID) error {
 	aScope := sc.aScope
 	aArena := sc.aArena
-	for hops := 0; hops < 8; hops++ {
+	for range 8 {
 		it, ok := aScope.(*InstanceType)
 		if !ok || it.resourceOrigin == nil {
 			break
@@ -726,10 +725,8 @@ func (sc *SubtypeChecker) definedTypeReferencesMapped(dt *DefinedTypeDesc) bool 
 	case DefinedKindList:
 		return sc.valTypeReferencesMapped(dt.List)
 	case DefinedKindTuple:
-		for _, t := range dt.Tuple {
-			if sc.valTypeReferencesMapped(t) {
-				return true
-			}
+		if slices.ContainsFunc(dt.Tuple, sc.valTypeReferencesMapped) {
+			return true
 		}
 	case DefinedKindOption:
 		return sc.valTypeReferencesMapped(dt.Option)

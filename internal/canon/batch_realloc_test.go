@@ -252,9 +252,9 @@ func TestBatchReallocHelper_OverridesCallerMemoryAllocator(t *testing.T) {
 	}
 
 	// Caller installs a counting allocator in the ctx, as an embedder would.
-	var calls int32
+	var calls atomic.Int32
 	callerAlloc := experimental.MemoryAllocatorFunc(func(_, _ uint64) experimental.LinearMemory {
-		atomic.AddInt32(&calls, 1)
+		calls.Add(1)
 		return &sliceMemory{}
 	})
 	cctx := experimental.WithMemoryAllocator(ctx, callerAlloc)
@@ -265,7 +265,7 @@ func TestBatchReallocHelper_OverridesCallerMemoryAllocator(t *testing.T) {
 	}
 	t.Cleanup(func() { _ = helper.close(ctx) })
 
-	if got := atomic.LoadInt32(&calls); got != 0 {
+	if got := calls.Load(); got != 0 {
 		t.Fatalf("caller allocator used for internal helper scratch: %d calls, want 0", got)
 	}
 

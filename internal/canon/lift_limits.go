@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"slices"
 	"unsafe"
 )
 
@@ -149,7 +150,7 @@ func (gcc *gocallContext) takeOwn(rt ResourceType, handle uint32) (Val, error) {
 // destructors may reenter their defining instance, so Exit must run first.
 func finishLift(ctx context.Context, owned []*ValOwnHandle, results *[]Val, err *error, panicked bool) {
 	if *err != nil || panicked {
-		for i := len(owned) - 1; i >= 0; i-- {
+		for _, o := range slices.Backward(owned) {
 			func() {
 				defer func() {
 					if recovered := recover(); recovered != nil {
@@ -160,7 +161,7 @@ func finishLift(ctx context.Context, owned []*ValOwnHandle, results *[]Val, err 
 						}
 					}
 				}()
-				*err = errors.Join(*err, owned[i].Drop(ctx))
+				*err = errors.Join(*err, o.Drop(ctx))
 			}()
 		}
 		*results = nil

@@ -24,7 +24,7 @@ func TestLoadComponent_ParallelDistinctArenas(t *testing.T) {
 	var wg sync.WaitGroup
 	comps := make([]*Component, N)
 	errs := make(chan error, N)
-	for i := 0; i < N; i++ {
+	for i := range N {
 		wg.Add(1)
 		go func(i int) {
 			defer wg.Done()

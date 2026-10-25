@@ -491,10 +491,7 @@ func (v *memTransferVisitor) VisitVariant(cases []VariantCase) {
 	// max(disc-align, max payload alignment). Aligning the disc to that
 	// ensures the variant starts on a properly-aligned boundary in any
 	// enclosing record/list/etc.
-	overallAlign := discSize
-	if maxPayloadAlign > overallAlign {
-		overallAlign = maxPayloadAlign
-	}
+	overallAlign := max(maxPayloadAlign, discSize)
 	discOff := v.assignBytes(discSize, overallAlign)
 	if maxPayloadAlign > 0 {
 		v.byteOff = alignUp(v.byteOff, maxPayloadAlign)

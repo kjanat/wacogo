@@ -28,17 +28,15 @@ func TestInstantiate_ParallelSameComponent(t *testing.T) {
 	const N = 16
 	var wg sync.WaitGroup
 	errs := make(chan error, N)
-	for i := 0; i < N; i++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+	for range N {
+		wg.Go(func() {
 			inst, err := comp.Instantiate(ctx)
 			if err != nil {
 				errs <- err
 				return
 			}
 			_ = inst.Close(ctx)
-		}()
+		})
 	}
 	wg.Wait()
 	close(errs)

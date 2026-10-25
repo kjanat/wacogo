@@ -1975,7 +1975,7 @@ func emitFromGoFlatOption(w *strings.Builder, v *TypeOption, helperName string, 
 	emitFlatSlotWriteFromGo(w, v.Elem, "v.Value", 1, elemSlots, helperName, "Some payload", sink, "\t")
 	fmt.Fprintf(w, "} else {\n")
 	fmt.Fprintf(w, "\tstack[0] = 0\n")
-	for i := 0; i < elemSlots; i++ {
+	for i := range elemSlots {
 		fmt.Fprintf(w, "\tstack[%d] = 0\n", 1+i)
 	}
 	fmt.Fprintf(w, "}\n")
@@ -1994,10 +1994,7 @@ func emitFromGoFlatResult(w *strings.Builder, v *TypeResult, helperName string, 
 	if v.Err != nil {
 		errSlots = FlatSlots(v.Err)
 	}
-	joinedSlots := okSlots
-	if errSlots > joinedSlots {
-		joinedSlots = errSlots
-	}
+	joinedSlots := max(errSlots, okSlots)
 	fmt.Fprintf(w, "switch x := v.(type) {\n")
 	fmt.Fprintf(w, "case %s:\n", okName)
 	fmt.Fprintf(w, "\tstack[0] = 0\n")
@@ -2008,7 +2005,7 @@ func emitFromGoFlatResult(w *strings.Builder, v *TypeResult, helperName string, 
 		}
 	} else {
 		fmt.Fprint(w, "\t_ = x\n")
-		for i := 0; i < joinedSlots; i++ {
+		for i := range joinedSlots {
 			fmt.Fprintf(w, "\tstack[%d] = 0\n", 1+i)
 		}
 	}
@@ -2021,7 +2018,7 @@ func emitFromGoFlatResult(w *strings.Builder, v *TypeResult, helperName string, 
 		}
 	} else {
 		fmt.Fprint(w, "\t_ = x\n")
-		for i := 0; i < joinedSlots; i++ {
+		for i := range joinedSlots {
 			fmt.Fprintf(w, "\tstack[%d] = 0\n", 1+i)
 		}
 	}
@@ -2564,7 +2561,7 @@ func emitLowerFlatOption(w *strings.Builder, v *TypeOption, helperName string, s
 	fmt.Fprintf(w, "} else {\n")
 	fmt.Fprintf(w, "\t_ = optT_\n")
 	fmt.Fprintf(w, "\tstack[0] = 0\n")
-	for i := 0; i < elemSlots; i++ {
+	for i := range elemSlots {
 		fmt.Fprintf(w, "\tstack[%d] = 0\n", 1+i)
 	}
 	fmt.Fprintf(w, "}\n")
@@ -2583,10 +2580,7 @@ func emitLowerFlatResult(w *strings.Builder, v *TypeResult, helperName string, s
 	if v.Err != nil {
 		errSlots = FlatSlots(v.Err)
 	}
-	joinedSlots := okSlots
-	if errSlots > joinedSlots {
-		joinedSlots = errSlots
-	}
+	joinedSlots := max(errSlots, okSlots)
 	fmt.Fprintf(w, "resT_ := ty.(wacogo.TypeResult)\n")
 	fmt.Fprintf(w, "_ = resT_\n")
 	fmt.Fprintf(w, "switch x := v.(type) {\n")
@@ -2599,7 +2593,7 @@ func emitLowerFlatResult(w *strings.Builder, v *TypeResult, helperName string, s
 		}
 	} else {
 		fmt.Fprint(w, "\t_ = x\n")
-		for i := 0; i < joinedSlots; i++ {
+		for i := range joinedSlots {
 			fmt.Fprintf(w, "\tstack[%d] = 0\n", 1+i)
 		}
 	}
@@ -2612,7 +2606,7 @@ func emitLowerFlatResult(w *strings.Builder, v *TypeResult, helperName string, s
 		}
 	} else {
 		fmt.Fprint(w, "\t_ = x\n")
-		for i := 0; i < joinedSlots; i++ {
+		for i := range joinedSlots {
 			fmt.Fprintf(w, "\tstack[%d] = 0\n", 1+i)
 		}
 	}

@@ -137,8 +137,7 @@ func translateResultErr(err error) types.ErrorCode {
 		return types.ErrorCodeInternalError{Value: types.SomeString(err.Error())}
 	}
 
-	var dnsErr *net.DNSError
-	if errors.As(err, &dnsErr) {
+	if dnsErr, ok := errors.AsType[*net.DNSError](err); ok {
 		switch {
 		case dnsErr.IsTimeout:
 			return types.ErrorCodeDNSTimeout{}
@@ -150,17 +149,14 @@ func translateResultErr(err error) types.ErrorCode {
 		}
 	}
 
-	var certErr *tls.CertificateVerificationError
-	if errors.As(err, &certErr) {
+	if _, ok := errors.AsType[*tls.CertificateVerificationError](err); ok {
 		return types.ErrorCodeTLSCertificateError{}
 	}
-	var recordHeaderErr tls.RecordHeaderError
-	if errors.As(err, &recordHeaderErr) {
+	if _, ok := errors.AsType[tls.RecordHeaderError](err); ok {
 		return types.ErrorCodeTLSProtocolError{}
 	}
 
-	var opErr *net.OpError
-	if errors.As(err, &opErr) {
+	if opErr, ok := errors.AsType[*net.OpError](err); ok {
 		if opErr.Timeout() {
 			switch opErr.Op {
 			case "read":
@@ -170,8 +166,7 @@ func translateResultErr(err error) types.ErrorCode {
 			}
 			return types.ErrorCodeConnectionTimeout{}
 		}
-		var sysErr *os.SyscallError
-		if errors.As(opErr.Err, &sysErr) {
+		if sysErr, ok := errors.AsType[*os.SyscallError](opErr.Err); ok {
 			if errno, ok := sysErr.Err.(syscall.Errno); ok {
 				switch errno {
 				case syscall.ECONNREFUSED:

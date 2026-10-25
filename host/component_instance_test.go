@@ -2,6 +2,7 @@ package host
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/kjanat/wacogo/internal/core"
@@ -52,6 +53,48 @@ func TestComponentInstance_LookupResource_ZeroHandle(t *testing.T) {
 	}
 	if _, ok := h.releaseResource(0); ok {
 		t.Error("releaseResource(0) should return ok=false")
+	}
+}
+
+type dropCallback func(ctx context.Context) error
+
+func (f dropCallback) Drop(ctx context.Context) error { return f(ctx) }
+
+func TestComponentInstance_Close_DropsLIFOAfterCoreClosed(t *testing.T) {
+	ctx := context.Background()
+	e := core.NewEngine(ctx)
+	defer e.Close(ctx)
+	b := NewBuilder(e, "closeorder")
+	c, err := b.Build(ctx)
+	if err != nil {
+		t.Fatalf("Build: %v", err)
+	}
+	defer c.Close(ctx)
+	inst, err := c.Instantiate(ctx)
+	if err != nil {
+		t.Fatalf("Instantiate: %v", err)
+	}
+
+	errDrop := errors.New("drop failed")
+	var order []string
+	record := func(name string, dropErr error) dropCallback {
+		return func(_ context.Context) error {
+			if inst.Core().Poisoned() == nil {
+				t.Errorf("Drop(%s) ran while core instance was still usable", name)
+			}
+			order = append(order, name)
+			return dropErr
+		}
+	}
+	inst.RegisterResource(record("first", nil))
+	inst.RegisterResource(record("second", errDrop))
+
+	err = inst.Close(ctx)
+	if !errors.Is(err, errDrop) {
+		t.Errorf("Close() error = %v, want it to wrap %v", err, errDrop)
+	}
+	if len(order) != 2 || order[0] != "second" || order[1] != "first" {
+		t.Errorf("Drop order = %v, want [second first]", order)
 	}
 }
 

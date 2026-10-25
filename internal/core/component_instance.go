@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"slices"
 
 	"github.com/kjanat/wacogo/wasmparser"
 )
@@ -130,20 +131,10 @@ func (i *ComponentInstance) ExportedType(name string) Type {
 	return i.exportedType(name)
 }
 
-// Enter acquires the instance's reentrance lock for the duration of a
-// component-model call. It returns an exit closure that the caller MUST
-// invoke exactly once (typically via defer) to release the lock; failure
-// to do so leaves the instance permanently inaccessible. If the instance
-// is already entered, Enter returns a "reentrance trap" error per the
-// component-model spec. If the instance was previously poisoned by a
-// trap, Enter returns an error wrapping the original trap reason.
-//
-// Most users should never call this directly: the runtime invokes Enter
-// around every cross-component call. Misuse — calling without a matching
-// exit, or calling concurrently from another goroutine — corrupts the
-// runtime's invariants and can cause deadlocks or trap leaks. Touch this
-// only when implementing a low-level call path that the canonical-ABI
-// runners do not already cover.
+// Enter acquires the instance's reentrance lock. Reentrance and poisoned instances
+// return errors; poisoning errors wrap the original trap. Pair each successful
+// Enter with exactly one Exit; a failed Enter must not call Exit.
+// Enter and Exit are not safe for concurrent use. RunInComponent pairs them.
 func (i *ComponentInstance) Enter(ctx context.Context) error {
 	if i == nil {
 		return nil
@@ -266,8 +257,8 @@ func (i *ComponentInstance) Close(ctx context.Context) (err error) {
 	i.owned = nil
 	var errs []error
 	// Close in reverse creation order so providers outlive their consumers.
-	for idx := len(owned) - 1; idx >= 0; idx-- {
-		if err := owned[idx].Close(ctx); err != nil {
+	for _, o := range slices.Backward(owned) {
+		if err := o.Close(ctx); err != nil {
 			errs = append(errs, err)
 		}
 	}

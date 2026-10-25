@@ -25,7 +25,7 @@ func TestCallRawPreflightsResultAllocations(t *testing.T) {
 			}
 			inst := &cleanupLiftInstance{table: newStubResourceTable()}
 			binding := NewCallBinding(nil, []Type{testTypeList{elem: testU8Type{}}}, Callee{
-				CallSide: CallSide{Instance: inst, Memory: mem}, LiftLimits: limits,
+				Instance: inst, Memory: mem, LiftLimits: limits,
 				Direct: func(_ context.Context, stack []uint64) { stack[0] = 0 },
 			})
 			decoded, posted := 0, 0
@@ -109,7 +109,7 @@ func TestCallRawBudgetsInactiveInlinePayloads(t *testing.T) {
 				mem.WriteUint32Le(0, 128)
 				mem.WriteUint32Le(4, 2)
 				binding := NewCallBinding(nil, []Type{testTypeList{elem: tc.element}}, Callee{
-					CallSide:   CallSide{Instance: &testInstance{}, Memory: mem},
+					Instance: &testInstance{}, Memory: mem,
 					LiftLimits: LiftLimits{MaxBytes: budget, MaxValues: 3},
 					Direct:     func(_ context.Context, stack []uint64) { stack[0] = 0 },
 				})
@@ -140,7 +140,7 @@ func TestCallRawRejectedResultKeepsOwnInCallee(t *testing.T) {
 		{Name: "list", Type: testTypeList{elem: testU8Type{}}},
 	}}
 	binding := NewCallBinding(nil, []Type{result}, Callee{
-		CallSide: CallSide{Instance: inst, Memory: mem}, LiftLimits: LiftLimits{MaxValues: 16},
+		Instance: inst, Memory: mem, LiftLimits: LiftLimits{MaxValues: 16},
 		Direct: func(_ context.Context, stack []uint64) { stack[0] = 0 },
 	})
 	err := binding.CallRaw(t.Context(), func([]uint64) {}, func([]uint64) { t.Fatal("decoded rejected result") })

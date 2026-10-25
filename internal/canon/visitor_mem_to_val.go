@@ -440,10 +440,7 @@ func (v *memToValVisitor) VisitVariant(cases []VariantCase) {
 		}
 		steps[i] = child.out[0]
 	}
-	overallAlign := discSize
-	if maxPayloadAlign > overallAlign {
-		overallAlign = maxPayloadAlign
-	}
+	overallAlign := max(maxPayloadAlign, discSize)
 	discOff := v.assignBytes(discSize, overallAlign)
 	if maxPayloadAlign > 0 {
 		v.byteOff = alignUp(v.byteOff, maxPayloadAlign)
@@ -485,10 +482,7 @@ func (v *memToValVisitor) VisitOption(inner Type) {
 	payloadAlign := child.maxAlign
 	childStep := child.out[0]
 
-	overallAlign := discSize
-	if payloadAlign > overallAlign {
-		overallAlign = payloadAlign
-	}
+	overallAlign := max(payloadAlign, discSize)
 	discOff := v.assignBytes(discSize, overallAlign)
 	if payloadAlign > 0 {
 		v.byteOff = alignUp(v.byteOff, payloadAlign)
@@ -545,10 +539,7 @@ func (v *memToValVisitor) VisitResult(okT, errT Type) {
 	okStep := compileCase(okT)
 	errStep := compileCase(errT)
 
-	overallAlign := discSize
-	if maxAlignP > overallAlign {
-		overallAlign = maxAlignP
-	}
+	overallAlign := max(maxAlignP, discSize)
 	discOff := v.assignBytes(discSize, overallAlign)
 	if maxAlignP > 0 {
 		v.byteOff = alignUp(v.byteOff, maxAlignP)

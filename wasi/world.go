@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"slices"
 
 	"github.com/kjanat/wacogo"
 	"github.com/kjanat/wacogo/host"
@@ -267,8 +268,8 @@ func (w *World) Imports() []wacogo.InstantiateOption {
 // accumulating all errors via errors.Join.
 func (w *World) Close(ctx context.Context) error {
 	var errs []error
-	for i := len(w.closeOrder) - 1; i >= 0; i-- {
-		if err := w.closeOrder[i].Close(ctx); err != nil {
+	for _, v := range slices.Backward(w.closeOrder) {
+		if err := v.Close(ctx); err != nil {
 			errs = append(errs, err)
 		}
 	}

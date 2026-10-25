@@ -187,7 +187,7 @@ func errSkip(t *testing.T, s *IOReaderInputStream, n uint64) StreamError {
 func drainAll(t *testing.T, s *IOReaderInputStream) ([]byte, StreamError) {
 	t.Helper()
 	var out []byte
-	for i := 0; i < 1024; i++ {
+	for range 1024 {
 		res, err := s.BlockingRead(bgCtx, 4096)
 		if err != nil {
 			t.Fatalf("BlockingRead: %v", err)

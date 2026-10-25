@@ -436,10 +436,7 @@ func flattenTypeExprBytes(te TypeExpr) ([]byte, error) {
 		}
 		return append([]byte{wasm.ValI32}, joined...), nil
 	case Flags:
-		n := (len(v.Names) + 31) / 32
-		if n < 1 {
-			n = 1
-		}
+		n := max((len(v.Names)+31)/32, 1)
 		out := make([]byte, n)
 		for i := range out {
 			out[i] = wasm.ValI32

@@ -109,8 +109,7 @@ func (t *Tool) run(ctx context.Context, cfg runConfig) error {
 		_ = mod.Close(ctx)
 	}
 	if err != nil {
-		var exitErr *sys.ExitError
-		if errors.As(err, &exitErr) {
+		if exitErr, ok := errors.AsType[*sys.ExitError](err); ok {
 			if exitErr.ExitCode() == 0 {
 				return nil
 			}

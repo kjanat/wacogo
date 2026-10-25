@@ -761,17 +761,15 @@ func (s *instantiationState) buildLiftedFunc(
 		}
 	}
 	callee := canon.Callee{
-		CallSide: canon.CallSide{
-			Instance:        canonInstanceView{i: s.inst},
-			Memory:          mem,
-			Realloc:         reallocFn,
-			StringEncoding:  options.stringEncoding,
-			ReallocModName:  reallocModName,
-			ReallocFnExport: reallocFnExport,
-		},
-		CoreFunc:   coreFn,
-		PostReturn: postReturnFn,
-		LiftLimits: s.inst.engine.liftLimits,
+		Instance:        canonInstanceView{i: s.inst},
+		Memory:          mem,
+		Realloc:         reallocFn,
+		StringEncoding:  options.stringEncoding,
+		ReallocModName:  reallocModName,
+		ReallocFnExport: reallocFnExport,
+		CoreFunc:        coreFn,
+		PostReturn:      postReturnFn,
+		LiftLimits:      s.inst.engine.liftLimits,
 	}
 	fn := &Func{
 		funcType: funcType,
