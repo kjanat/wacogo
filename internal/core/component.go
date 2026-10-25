@@ -4,7 +4,7 @@ import (
 	"context"
 
 	"github.com/kjanat/wacogo/wasmparser"
-	"github.com/tetratelabs/wazero"
+	"github.com/kjanat/wazero"
 )
 
 // ExportDesc describes a component export.

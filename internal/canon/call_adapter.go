@@ -4,8 +4,8 @@ import (
 	"context"
 	"slices"
 
-	"github.com/tetratelabs/wazero"
-	"github.com/tetratelabs/wazero/api"
+	"github.com/kjanat/wazero"
+	"github.com/kjanat/wazero/api"
 )
 
 // CallAdapter is the factory return: a core func (Module/Name) plus any

@@ -6,7 +6,7 @@ import (
 	"runtime"
 	"runtime/debug"
 
-	"github.com/tetratelabs/wazero/api"
+	"github.com/kjanat/wazero/api"
 )
 
 // CallSide describes one side of a canonical-ABI call: a component instance

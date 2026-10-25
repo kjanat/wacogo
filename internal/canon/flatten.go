@@ -1,6 +1,6 @@
 package canon
 
-import "github.com/tetratelabs/wazero/api"
+import "github.com/kjanat/wazero/api"
 
 // coreValueType is a core WebAssembly value type byte used in the canonical
 // ABI flat representation (i32=0x7f, i64=0x7e, f32=0x7d, f64=0x7c).

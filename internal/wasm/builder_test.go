@@ -4,8 +4,8 @@ import (
 	"context"
 	"testing"
 
-	"github.com/tetratelabs/wazero"
-	"github.com/tetratelabs/wazero/api"
+	"github.com/kjanat/wazero"
+	"github.com/kjanat/wazero/api"
 )
 
 func compileModule(t *testing.T, r wazero.Runtime, data []byte) wazero.CompiledModule {
@@ -202,12 +202,12 @@ func TestGlobal(t *testing.T) {
 
 	// Function that reads the global, adds 1, writes it back, and returns old value.
 	var code CodeBuilder
-	code.GlobalGet(0)     // push old value
-	code.GlobalGet(0)     // push old value again
-	code.I32Const(1)      // push 1
-	code.I32Add()         // old + 1
-	code.GlobalSet(0)     // write new value
-	code.End()            // return old value (still on stack)
+	code.GlobalGet(0) // push old value
+	code.GlobalGet(0) // push old value again
+	code.I32Const(1)  // push 1
+	code.I32Add()     // old + 1
+	code.GlobalSet(0) // write new value
+	code.End()        // return old value (still on stack)
 
 	funcIdx := b.AddFunc(
 		FuncSig{Params: nil, Results: []byte{ValI32}},

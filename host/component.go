@@ -8,8 +8,8 @@ import (
 	"github.com/kjanat/wacogo/internal/canon"
 	"github.com/kjanat/wacogo/internal/core"
 	"github.com/kjanat/wacogo/wasmparser"
-	"github.com/tetratelabs/wazero"
-	"github.com/tetratelabs/wazero/api"
+	"github.com/kjanat/wazero"
+	"github.com/kjanat/wazero/api"
 )
 
 // Component is a reusable host-component template returned by

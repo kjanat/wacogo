@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/tetratelabs/wazero"
+	"github.com/kjanat/wazero"
 )
 
 // TestRewriteBlankImportNames_NoBlank verifies that a module with no blank import

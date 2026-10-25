@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/tetratelabs/wazero/api"
+	"github.com/kjanat/wazero/api"
 )
 
 // StringEncoding selects between the three canonical-ABI string encodings.

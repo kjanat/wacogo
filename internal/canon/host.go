@@ -3,7 +3,7 @@ package canon
 import (
 	"sync"
 
-	"github.com/tetratelabs/wazero"
+	"github.com/kjanat/wazero"
 )
 
 // Host is the canon-side factory hub. Owns the wazero runtime used to build

@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/tetratelabs/wazero/api"
+	"github.com/kjanat/wazero/api"
 )
 
 // LiftValidator preflights canonical host arguments using the same layout and

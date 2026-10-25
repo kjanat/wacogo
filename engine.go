@@ -14,7 +14,7 @@ import (
 
 	"github.com/kjanat/wacogo/host"
 	"github.com/kjanat/wacogo/internal/core"
-	"github.com/tetratelabs/wazero"
+	"github.com/kjanat/wazero"
 )
 
 // Engine owns the wazero runtime and is the entry point for loading

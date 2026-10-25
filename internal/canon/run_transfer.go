@@ -3,7 +3,7 @@ package canon
 import (
 	"context"
 
-	"github.com/tetratelabs/wazero/api"
+	"github.com/kjanat/wazero/api"
 )
 
 // runTransferPlan executes a compiled transferPlan for a component→component

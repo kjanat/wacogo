@@ -10,7 +10,7 @@ import (
 	"sync/atomic"
 
 	"github.com/kjanat/wacogo/wasmparser"
-	"github.com/tetratelabs/wazero/api"
+	"github.com/kjanat/wazero/api"
 )
 
 // CoreTable describes a table defined by a core module. Imported tables are

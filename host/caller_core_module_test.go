@@ -8,7 +8,7 @@ import (
 	"github.com/kjanat/wacogo"
 	"github.com/kjanat/wacogo/host"
 	"github.com/kjanat/wacogo/internal/core"
-	"github.com/tetratelabs/wazero/api"
+	"github.com/kjanat/wazero/api"
 )
 
 // TestCallerCoreModule_FlowsFromWasmCallerThroughCanon verifies that a

@@ -3,7 +3,7 @@ package canon
 import (
 	"context"
 
-	"github.com/tetratelabs/wazero/api"
+	"github.com/kjanat/wazero/api"
 )
 
 // callerCoreModuleKey is the unexported key used to attach the caller's

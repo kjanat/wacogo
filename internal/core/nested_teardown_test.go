@@ -9,7 +9,7 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/tetratelabs/wazero/experimental"
+	"github.com/kjanat/wazero/experimental"
 )
 
 type teardownAllocator struct {

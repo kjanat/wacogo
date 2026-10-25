@@ -6,8 +6,8 @@ import (
 	"sync/atomic"
 
 	"github.com/kjanat/wacogo/internal/canon"
-	"github.com/tetratelabs/wazero"
-	"github.com/tetratelabs/wazero/api"
+	"github.com/kjanat/wazero"
+	"github.com/kjanat/wazero/api"
 )
 
 // hostCounter provides unique per-instance host-module names.

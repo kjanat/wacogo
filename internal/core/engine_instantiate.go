@@ -9,9 +9,9 @@ import (
 	"github.com/kjanat/wacogo/internal/canon"
 	"github.com/kjanat/wacogo/internal/wasm"
 	"github.com/kjanat/wacogo/wasmparser"
-	"github.com/tetratelabs/wazero"
-	"github.com/tetratelabs/wazero/api"
-	"github.com/tetratelabs/wazero/experimental"
+	"github.com/kjanat/wazero"
+	"github.com/kjanat/wazero/api"
+	"github.com/kjanat/wazero/experimental"
 )
 
 var instanceCounter atomic.Uint64

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"math"
 
-	"github.com/tetratelabs/wazero/api"
+	"github.com/kjanat/wazero/api"
 )
 
 // valToMemVisitor emits gocallLowerStep closures for Go → component calls

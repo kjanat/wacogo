@@ -5,7 +5,7 @@ import (
 	"errors"
 
 	"github.com/kjanat/wacogo/wasmparser"
-	"github.com/tetratelabs/wazero/api"
+	"github.com/kjanat/wazero/api"
 )
 
 // InstanceKind is the subset of Sort enumerants that NewInstance

@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/kjanat/wacogo/internal/canon"
-	"github.com/tetratelabs/wazero/api"
+	"github.com/kjanat/wazero/api"
 )
 
 // execLowerWithGoAdapter creates a cross-component adapter via canon.Host.BuildAdapter.

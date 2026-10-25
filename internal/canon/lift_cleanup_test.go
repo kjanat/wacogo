@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/tetratelabs/wazero"
+	"github.com/kjanat/wazero"
 	"runtime"
 	"strings"
 	"testing"

@@ -6,7 +6,7 @@ import (
 	"testing"
 
 	"github.com/kjanat/wacogo/internal/core"
-	"github.com/tetratelabs/wazero/api"
+	"github.com/kjanat/wazero/api"
 )
 
 // TestStubAllocator_MatchesWasmRealloc runs the same allocations through

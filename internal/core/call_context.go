@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/kjanat/wacogo/internal/canon"
-	"github.com/tetratelabs/wazero/api"
+	"github.com/kjanat/wazero/api"
 )
 
 // ReallocFunc is the Go-level signature of the canonical-ABI realloc

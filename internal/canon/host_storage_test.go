@@ -5,7 +5,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/tetratelabs/wazero"
+	"github.com/kjanat/wazero"
 )
 
 func TestHostGeneratedStorageRejectsBeforeTransfer(t *testing.T) {

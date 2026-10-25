@@ -1,6 +1,6 @@
 package canon
 
-import "github.com/tetratelabs/wazero/experimental"
+import "github.com/kjanat/wazero/experimental"
 
 // internalMemoryAllocator backs the linear memory of wacogo's internal
 // helper modules (import/re-export stubs and batch-realloc helpers) with

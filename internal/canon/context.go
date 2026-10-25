@@ -1,7 +1,7 @@
 package canon
 
 import (
-	"github.com/tetratelabs/wazero/api"
+	"github.com/kjanat/wazero/api"
 )
 
 // transferSide describes one side of a call: the component instance

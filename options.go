@@ -2,7 +2,7 @@ package wacogo
 
 import (
 	"github.com/kjanat/wacogo/internal/core"
-	"github.com/tetratelabs/wazero"
+	"github.com/kjanat/wazero"
 )
 
 // LiftLimits bounds Func.Call, CallRaw/generated results, and host arguments.
