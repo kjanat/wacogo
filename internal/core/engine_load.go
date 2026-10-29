@@ -559,11 +559,12 @@ func (l *componentLoader) processImportSection(sec *wasmparser.ValidatedComponen
 			})
 		case SortType:
 			// If the bound of the imported type is an eq bound, we know the type
-			// without actually needing to import it
+			// without actually needing to import it. Later imports in the
+			// same section still need their slots.
 			if tr, ok := item.Import.Type.(wasmparser.TypeRefType); ok {
 				if eq, ok := tr.Bounds.(wasmparser.TypeBoundsEq); ok {
 					l.allocType(indexResolver{idx: eq.Index})
-					return nil
+					continue
 				}
 			}
 
