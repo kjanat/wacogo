@@ -217,11 +217,13 @@ func validateFuncType(ft *FuncType) error {
 
 // validateTopLevelTypeExpr admits nominal compounds (Record/Variant/
 // Flags/Enum) at the top level (the only legal position) and recurses
-// into their children with validateValTypeExpr.
+// into their children with validateValTypeExpr. A primitive is admitted
+// as a named alias export (`type id = string`): an importing component
+// can name the type, while uses still lower the primitive inline.
 func validateTopLevelTypeExpr(te TypeExpr) error {
 	switch v := te.(type) {
 	case prim:
-		return fmt.Errorf("cannot register primitive via AddType (use primitives inline)")
+		return nil
 	case Record:
 		for _, f := range v.Fields {
 			if err := validateValTypeExpr(f.Type); err != nil {

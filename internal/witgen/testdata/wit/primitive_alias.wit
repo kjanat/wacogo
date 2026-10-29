@@ -1,0 +1,17 @@
+package example:demo;
+
+interface ids {
+    type occurrence-id = string;
+    type count = u32;
+
+    record entry {
+        id: occurrence-id,
+        n: count,
+    }
+
+    lookup: func(id: occurrence-id) -> option<entry>;
+}
+
+world idshost {
+    import ids;
+}

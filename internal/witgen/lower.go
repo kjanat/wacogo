@@ -964,6 +964,25 @@ func lowerInterface(wif *wit.Interface, globalTypeDefIR map[*wit.TypeDef]Type) (
 			vt.OwnerInterface = iface
 			vt.Docs = td.Docs.Contents
 			iface.Variants = append(iface.Variants, vt)
+		case wit.Bool, wit.U8, wit.U16, wit.U32, wit.U64, wit.S8, wit.S16, wit.S32, wit.S64,
+			wit.F32, wit.F64, wit.Char, wit.String:
+			if td.Owner != wif {
+				return true
+			}
+			lowered, err := lowerTypeDefKind(k, typeDefIR)
+			if err != nil {
+				typeDefErr = fmt.Errorf("type alias %q: %w", tdName, err)
+				return false
+			}
+			alias, ok := lowered.(interface {
+				Type
+				HostTypeExpr() string
+			})
+			if !ok {
+				typeDefErr = fmt.Errorf("type alias %q lowered to %T, expected a primitive", tdName, lowered)
+				return false
+			}
+			iface.PrimitiveAliases = append(iface.PrimitiveAliases, PrimitiveAlias{Name: tdName, Type: alias})
 		case *wit.Resource:
 			// *wit.Resource is a marker — its methods, ctor and statics
 			// live on the interface's Functions list and are classified

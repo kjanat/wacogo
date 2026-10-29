@@ -8,16 +8,16 @@ type Type interface {
 	isType()
 }
 
-func (Prim) isType()         {}
-func (TypeString) isType()   {}
-func (*TypeList) isType()    {}
-func (*TypeTuple) isType()   {}
-func (*TypeOption) isType()  {}
-func (*TypeResult) isType()  {}
-func (*TypeEnum) isType()    {}
-func (*TypeFlags) isType()   {}
-func (*TypeRecord) isType()  {}
-func (*TypeVariant) isType() {}
+func (Prim) isType()          {}
+func (TypeString) isType()    {}
+func (*TypeList) isType()     {}
+func (*TypeTuple) isType()    {}
+func (*TypeOption) isType()   {}
+func (*TypeResult) isType()   {}
+func (*TypeEnum) isType()     {}
+func (*TypeFlags) isType()    {}
+func (*TypeRecord) isType()   {}
+func (*TypeVariant) isType()  {}
 func (*TypeResource) isType() {}
 func (*TypeOwn) isType()      {}
 func (*TypeBorrow) isType()   {}
@@ -322,6 +322,12 @@ type Interface struct {
 	Variants  []*TypeVariant
 	Resources []*TypeResource
 
+	// PrimitiveAliases lists named aliases of primitive types owned by
+	// this interface (`type duration = u64`). Uses lower them inline; the
+	// factory still exports each name so an importing component can
+	// resolve the type it names.
+	PrimitiveAliases []PrimitiveAlias
+
 	// Imports lists cross-interface imports referenced by this interface's
 	// signatures. Empty for self-contained interfaces. Populated after
 	// all interfaces in the package have been lowered.
@@ -330,6 +336,16 @@ type Interface struct {
 	// Docs is the WIT doc-comment text on this interface, with WIT '///'
 	// prefixes stripped. Empty when the interface has no doc.
 	Docs string
+}
+
+// PrimitiveAlias is a named WIT alias of a primitive type. Type is a
+// Prim or TypeString.
+type PrimitiveAlias struct {
+	Name string
+	Type interface {
+		Type
+		HostTypeExpr() string
+	}
 }
 
 // Func is one WIT function on an interface.
