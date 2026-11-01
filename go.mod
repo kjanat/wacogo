@@ -5,7 +5,7 @@ go 1.27.0
 toolchain go1.27.3
 
 require (
-	github.com/kjanat/go-modules v0.9.0
+	github.com/kjanat/go-modules v0.9.1
 	github.com/kjanat/wazero v1.11.1
 	golang.org/x/sys v0.45.0
 	golang.org/x/tools v0.44.0
