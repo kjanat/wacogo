@@ -8,7 +8,7 @@ import (
 	"sort"
 	"strings"
 
-	"go-modules.kjanat.dev/wit"
+	"github.com/kjanat/go-modules/wit"
 )
 
 // LowerWorld walks the chosen world's imported interfaces and lowers

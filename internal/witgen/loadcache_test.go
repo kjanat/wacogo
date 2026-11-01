@@ -4,7 +4,7 @@ import (
 	"sync"
 	"testing"
 
-	"go-modules.kjanat.dev/wit"
+	"github.com/kjanat/go-modules/wit"
 )
 
 // loadCache memoizes Load results across a test process. wit.LoadWIT
