@@ -6,8 +6,39 @@ import (
 	"testing"
 
 	"github.com/kjanat/wacogo/internal/core"
+	"github.com/kjanat/wacogo/internal/wasm"
+	"github.com/kjanat/wazero"
 	"github.com/kjanat/wazero/api"
 )
+
+func newOnePageStub(t *testing.T) (context.Context, api.Module) {
+	t.Helper()
+	ctx := context.Background()
+	rt := wazero.NewRuntime(ctx)
+	t.Cleanup(func() { _ = rt.Close(ctx) })
+	var mb wasm.ModuleBuilder
+	bumpIdx := mb.AddGlobal(wasm.ValI32, true, stubBumpInitial)
+	mb.AddExportGlobal("bump", bumpIdx)
+	memIdx := mb.AddMemory(1, 1)
+	mb.AddExportMemory("memory", memIdx)
+	sig := wasm.FuncSig{
+		Params:  []byte{wasm.ValI32, wasm.ValI32, wasm.ValI32, wasm.ValI32},
+		Results: []byte{wasm.ValI32},
+	}
+	body, locals := emitReallocBody(bumpIdx)
+	fnIdx := mb.AddFunc(sig, locals, body)
+	mb.AddExportFunc("realloc", fnIdx)
+	compiled, err := rt.CompileModule(ctx, mb.Encode())
+	if err != nil {
+		t.Fatalf("compile one-page stub: %v", err)
+	}
+	mod, err := rt.InstantiateModule(ctx, compiled, wazero.NewModuleConfig().WithName("one_page_stub"))
+	if err != nil {
+		t.Fatalf("instantiate one-page stub: %v", err)
+	}
+	t.Cleanup(func() { _ = mod.Close(ctx) })
+	return ctx, mod
+}
 
 // TestStubAllocator_MatchesWasmRealloc runs the same allocations through
 // the stub's wasm realloc and through stubAllocator, on two instances of
@@ -99,6 +130,114 @@ func TestStubAllocator_MatchesWasmRealloc(t *testing.T) {
 		bg, _ := mg.Read(0, mg.Size())
 		if !bytes.Equal(bw, bg) {
 			t.Fatalf("op %d: memory contents differ", i)
+		}
+	}
+
+	for _, tc := range []struct {
+		name  string
+		bump  uint32
+		align uint32
+		size  uint32
+	}{
+		{name: "alignment overflow", bump: 0xfffffffc, align: 8, size: 1},
+		{name: "size overflow", bump: 0xfffffff8, align: 8, size: 32},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			bumpW.Set(uint64(tc.bump))
+			alloc.bump.Set(uint64(tc.bump))
+			if _, err := wasmRealloc.Call(ctx, 0, 0, uint64(tc.align), uint64(tc.size)); err == nil {
+				t.Fatal("wasm realloc succeeded, want an overflow trap")
+			}
+			if _, err := alloc.realloc(ctx, 0, 0, tc.align, tc.size); err == nil {
+				t.Fatal("Go realloc succeeded, want an overflow error")
+			}
+			if got := bumpW.Get(); got != uint64(tc.bump) {
+				t.Fatalf("wasm bump = %d, want unchanged %d", got, tc.bump)
+			}
+			if got := alloc.bump.Get(); got != uint64(tc.bump) {
+				t.Fatalf("Go bump = %d, want unchanged %d", got, tc.bump)
+			}
+		})
+	}
+}
+
+func TestStubAllocatorGrowFailureLeavesBumpUnchanged(t *testing.T) {
+	ctx, mod := newOnePageStub(t)
+	alloc, err := newStubAllocator(mod)
+	if err != nil {
+		t.Fatal(err)
+	}
+	bump := alloc.bump.Get()
+
+	if _, err := mod.ExportedFunction("realloc").Call(ctx, 0, 0, 1, 1<<16); err == nil {
+		t.Fatal("wasm realloc succeeded despite memory maximum")
+	}
+	if got := alloc.bump.Get(); got != bump {
+		t.Fatalf("wasm bump = %d after failed growth, want %d", got, bump)
+	}
+
+	if _, err := alloc.realloc(ctx, 0, 0, 1, 1<<16); err == nil {
+		t.Fatal("Go realloc succeeded despite memory maximum")
+	}
+	if got := alloc.bump.Get(); got != bump {
+		t.Fatalf("Go bump = %d after failed growth, want %d", got, bump)
+	}
+}
+
+func TestStubRequiredPagesAtWasm32Limit(t *testing.T) {
+	ctx := context.Background()
+	rt := wazero.NewRuntime(ctx)
+	t.Cleanup(func() { _ = rt.Close(ctx) })
+	var mb wasm.ModuleBuilder
+	sig := wasm.FuncSig{Params: []byte{wasm.ValI32}, Results: []byte{wasm.ValI32}}
+	var cb wasm.CodeBuilder
+	emitRequiredPages(&cb, 0)
+	cb.End()
+	fnIdx := mb.AddFunc(sig, nil, cb.Bytes())
+	mb.AddExportFunc("required_pages", fnIdx)
+	compiled, err := rt.CompileModule(ctx, mb.Encode())
+	if err != nil {
+		t.Fatalf("compile page-count helper: %v", err)
+	}
+	mod, err := rt.InstantiateModule(ctx, compiled, wazero.NewModuleConfig().WithName("required_pages"))
+	if err != nil {
+		t.Fatalf("instantiate page-count helper: %v", err)
+	}
+	t.Cleanup(func() { _ = mod.Close(ctx) })
+
+	for _, tc := range []struct {
+		bytes uint32
+		pages uint32
+	}{
+		{bytes: 0, pages: 0},
+		{bytes: 1, pages: 1},
+		{bytes: 65535, pages: 1},
+		{bytes: 65536, pages: 1},
+		{bytes: 65537, pages: 2},
+		{bytes: ^uint32(0), pages: 65536},
+	} {
+		goPages := stubRequiredPages(tc.bytes)
+		res, err := mod.ExportedFunction("required_pages").Call(ctx, uint64(tc.bytes))
+		if err != nil {
+			t.Fatalf("wasm required_pages(%d): %v", tc.bytes, err)
+		}
+		if goPages != tc.pages || uint32(res[0]) != tc.pages {
+			t.Errorf("required pages for %d bytes: Go=%d wasm=%d, want %d", tc.bytes, goPages, res[0], tc.pages)
+		}
+	}
+
+	for _, tc := range []struct {
+		current uint32
+		bytes   uint32
+		grow    uint32
+	}{
+		{current: 65536, bytes: ^uint32(0), grow: 0},
+		{current: 65535, bytes: ^uint32(0), grow: 1},
+		{current: 1, bytes: 65536, grow: 0},
+		{current: 1, bytes: 65537, grow: 1},
+	} {
+		if got := stubPagesToGrow(tc.current, tc.bytes); got != tc.grow {
+			t.Errorf("pages to grow from %d for %d bytes = %d, want %d", tc.current, tc.bytes, got, tc.grow)
 		}
 	}
 }

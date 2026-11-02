@@ -57,11 +57,11 @@ to thread through.
 `host/` mirrors `wacogo`'s own load/instantiate split, scaled down
 one level:
 
-| Object | What it is | Lifetime |
-|---|---|---|
-| `*host.Builder` | Mutable accumulator for declarations | One per declaration session |
-| `*host.Component` | Reusable, immutable template | Long-lived; closed when no more instances will be minted |
-| `*host.ComponentInstance` | Live, stateful instance | One per consumer wiring |
+| Object                    | What it is                           | Lifetime                                                 |
+| ------------------------- | ------------------------------------ | -------------------------------------------------------- |
+| `*host.Builder`           | Mutable accumulator for declarations | One per declaration session                              |
+| `*host.Component`         | Reusable, immutable template         | Long-lived; closed when no more instances will be minted |
+| `*host.ComponentInstance` | Live, stateful instance              | One per consumer wiring                                  |
 
 `Builder.Build` (`host/builder.go`) finalises declarations into a
 `*host.Component`. `Component.Instantiate` (`host/component.go`)
@@ -117,11 +117,11 @@ static functions on a resource type. Spec-level resource methods
 are registered with `AddFunction` using the canonical bracketed
 WIT names:
 
-| WIT shape | `AddFunction` name |
-|-----------|-------------------|
+| WIT shape          | `AddFunction` name |
+| ------------------ | ------------------ |
 | `[constructor]<R>` | `[constructor]<R>` |
-| `[method]<R>.<f>` | `[method]<R>.<f>` |
-| `[static]<R>.<f>` | `[static]<R>.<f>` |
+| `[method]<R>.<f>`  | `[method]<R>.<f>`  |
+| `[static]<R>.<f>`  | `[static]<R>.<f>`  |
 
 The bracketed prefixes are component-model conventions encoded in
 the export name; they're not separate Builder kinds. Witgen-emitted
@@ -242,13 +242,13 @@ ABI traps on null pointers).
 
 `*host.ComponentInstance` (`host/component_instance.go`) carries:
 
-| Field | Source | Purpose |
-|---|---|---|
-| `core *core.ComponentInstance` | `core.NewInstance` | Wasm-runtime backing |
-| `extTable *externTable` | Allocated at construction | Extern handle → Go `any` |
-| `userState any` | `WithUserState` | Witgen-emitted impl state |
-| `cleanups []func()` | Internal | Run after `core.Close` |
-| `preCloseChecks []func() error` | Internal | Run before `core.Close` |
+| Field                           | Source                    | Purpose                   |
+| ------------------------------- | ------------------------- | ------------------------- |
+| `core *core.ComponentInstance`  | `core.NewInstance`        | Wasm-runtime backing      |
+| `extTable *externTable`         | Allocated at construction | Extern handle → Go `any`  |
+| `userState any`                 | `WithUserState`           | Witgen-emitted impl state |
+| `cleanups []func()`             | Internal                  | Run after `core.Close`    |
+| `preCloseChecks []func() error` | Internal                  | Run before `core.Close`   |
 
 Per-instance `*core.TypeResource` values do not live on the wrapper
 — they are pushed into `core.ComponentInstance.types` via
@@ -333,11 +333,11 @@ The extern table itself (`externTable`, `host/extern_table.go`) is
 unexported. There is no `host.LookupRep` or `host.externTableOf`
 package helper. All access goes through methods on the wrapper:
 
-| Method | Purpose |
-|---|---|
-| `RegisterResource(obj) ExternHandle` | Stash `obj`; allocate fresh handle |
-| `LookupResource(eh) (any, bool)` | Read `obj`; do not free |
-| `releaseResource(eh) (any, bool)` (unexported) | Free entry; return `obj` |
+| Method                                         | Purpose                            |
+| ---------------------------------------------- | ---------------------------------- |
+| `RegisterResource(obj) ExternHandle`           | Stash `obj`; allocate fresh handle |
+| `LookupResource(eh) (any, bool)`               | Read `obj`; do not free            |
+| `releaseResource(eh) (any, bool)` (unexported) | Free entry; return `obj`           |
 
 `RegisterResource` is called by user code (or witgen-emitted
 trampolines) when minting a host-defined resource. `LookupResource`
@@ -482,7 +482,7 @@ reaches resource-table ops through the CallContext.
 `host.ExportedFunc` (`host/exported_func.go`) is a slim wrapper
 around `*core.ExportedFunc` for the consumer side of cross-component
 host-to-host calls. Its `CallRaw` method runs two callbacks
-(`write`, `read`) with caller and callee CallContexts that share a
+(`write`, `read`) returning `error`, with caller and callee CallContexts that share a
 single `*canon.Task` — borrow bookkeeping is drained at call
 resolution by `Task.End`, which returns an error if any borrows
 remain outstanding (see `internal/core/func.go`'s `CallRaw`). The
@@ -492,23 +492,30 @@ host-wrapper closures on the caller side need a separate CallContext
 to perform the consumer-side lift/lower against the consumer's
 canon table.
 
+Returning an error from `write` aborts before the guest function runs. Returning
+an error from `read` skips post-return. A failed canonical conversion poisons the
+callee, so later calls fail with the original cause. Generated wrappers return
+conversion errors through these callbacks rather than capturing an error and
+continuing the call. Existing Go bindings must be regenerated for this callback
+signature.
+
 ## File map
 
-| File | Role |
-|---|---|
-| `host/builder.go` | `Builder` accumulator + `Build` (compiles the stub) |
-| `host/instance_builder.go` | `InstanceBuilder` for nested-instance scopes |
-| `host/scope.go` | Internal scope-tree shape used by Builder + Component |
-| `host/component.go` | `Component` template + `Instantiate`, `resolveResourceRefs`, `buildPerInstanceWpType` |
-| `host/component_instance.go` | `*ComponentInstance` wrapper, `ExternHandle`, resource methods |
-| `host/extern_table.go` | unexported `externTable` storage |
-| `host/options.go` | `WithUserState`, `WithResourceFrom`, `InstantiateOption` |
-| `host/resource.go` | `ResourceType`, `ResourceDtor`, `Own`/`Borrow` |
-| `host/resource_ref.go` | `ResourceTypeRef` placeholder |
-| `host/types.go` | `TypeExpr` union + `TypeRef` + `CallContext` alias |
-| `host/translate.go` | `TypeExpr` → wasmparser arena + `core.Type` |
-| `host/stub.go` | Stub bytecode synthesis + per-instance instantiation |
-| `host/host_module.go` | Per-instance host module construction |
-| `host/func.go` | `host.Func` callback signature |
-| `host/exported_func.go` | `*ExportedFunc` consumer-side wrapper |
-| `host/doc.go` | Package doc |
+| File                         | Role                                                                                  |
+| ---------------------------- | ------------------------------------------------------------------------------------- |
+| `host/builder.go`            | `Builder` accumulator + `Build` (compiles the stub)                                   |
+| `host/instance_builder.go`   | `InstanceBuilder` for nested-instance scopes                                          |
+| `host/scope.go`              | Internal scope-tree shape used by Builder + Component                                 |
+| `host/component.go`          | `Component` template + `Instantiate`, `resolveResourceRefs`, `buildPerInstanceWpType` |
+| `host/component_instance.go` | `*ComponentInstance` wrapper, `ExternHandle`, resource methods                        |
+| `host/extern_table.go`       | unexported `externTable` storage                                                      |
+| `host/options.go`            | `WithUserState`, `WithResourceFrom`, `InstantiateOption`                              |
+| `host/resource.go`           | `ResourceType`, `ResourceDtor`, `Own`/`Borrow`                                        |
+| `host/resource_ref.go`       | `ResourceTypeRef` placeholder                                                         |
+| `host/types.go`              | `TypeExpr` union + `TypeRef` + `CallContext` alias                                    |
+| `host/translate.go`          | `TypeExpr` → wasmparser arena + `core.Type`                                           |
+| `host/stub.go`               | Stub bytecode synthesis + per-instance instantiation                                  |
+| `host/host_module.go`        | Per-instance host module construction                                                 |
+| `host/func.go`               | `host.Func` callback signature                                                        |
+| `host/exported_func.go`      | `*ExportedFunc` consumer-side wrapper                                                 |
+| `host/doc.go`                | Package doc                                                                           |

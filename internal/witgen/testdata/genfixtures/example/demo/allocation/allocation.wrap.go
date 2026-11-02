@@ -30,48 +30,42 @@ func WrapInstance(caller *host.ComponentInstance, callee *wacogo.ComponentInstan
 	return w_
 }
 func (w *allocationWrapper) Absent(ctx context.Context, xs []OptionWide) error {
-	var resErr_ error
 	arg0_ := xs
 	{
 		callErr_ := w.fnAbsent.CallRaw(ctx, w.callerInst,
-			func(caller, callee *host.CallContext, stack []uint64) {
+			func(caller, callee *host.CallContext, stack []uint64) error {
 				if err_ := lowerFlatListOptionWide(ctx, caller, callee, w.callerInst, w.fnAbsent.ParamType(0), stack[0:2], arg0_); err_ != nil {
-					resErr_ = err_
-					return
+					return err_
 				}
+				return nil
 			},
-			func(caller, callee *host.CallContext, stack []uint64) {
+			func(caller, callee *host.CallContext, stack []uint64) error {
+				return nil
 			},
 		)
 		if callErr_ != nil {
 			return fmt.Errorf("wacogo/witgen: CallRaw failed: %w", callErr_)
-		}
-		if resErr_ != nil {
-			return resErr_
 		}
 	}
 	return nil
 }
 
 func (w *allocationWrapper) Nested(ctx context.Context, xs [][]uint8) error {
-	var resErr_ error
 	arg0_ := xs
 	{
 		callErr_ := w.fnNested.CallRaw(ctx, w.callerInst,
-			func(caller, callee *host.CallContext, stack []uint64) {
+			func(caller, callee *host.CallContext, stack []uint64) error {
 				if err_ := lowerFlatListListU8(ctx, caller, callee, w.callerInst, w.fnNested.ParamType(0), stack[0:2], arg0_); err_ != nil {
-					resErr_ = err_
-					return
+					return err_
 				}
+				return nil
 			},
-			func(caller, callee *host.CallContext, stack []uint64) {
+			func(caller, callee *host.CallContext, stack []uint64) error {
+				return nil
 			},
 		)
 		if callErr_ != nil {
 			return fmt.Errorf("wacogo/witgen: CallRaw failed: %w", callErr_)
-		}
-		if resErr_ != nil {
-			return resErr_
 		}
 	}
 	return nil

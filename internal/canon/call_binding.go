@@ -59,15 +59,7 @@ func (cb *CallBinding) Callee() Callee { return cb.callee }
 // pipeline are recovered and returned as errors; no *Trap sentinel leaks
 // past this boundary.
 func (cb *CallBinding) Call(ctx context.Context, args []Val) (results []Val, err error) {
-	defer func() {
-		if r := recover(); r != nil {
-			if t, ok := r.(*Trap); ok {
-				err = fmt.Errorf("%s", t.Error())
-				return
-			}
-			panic(r)
-		}
-	}()
+	defer cb.recoverTrap(&err)
 
 	cb.gcc.Task.NumBorrows = 0
 	return runGocallPlan(ctx, cb.plan, &cb.gcc, args, cb.core, cb.postReturn)
@@ -77,49 +69,130 @@ func (cb *CallBinding) Call(ctx context.Context, args []Val) (results []Val, err
 // bypassing the gocall plan's Val lift/lower steps. writeArgs populates the
 // stack before the wasm call; readResult reads from it after.
 //
+// A write error stops the call before guest execution. A read error stops it
+// before post-return. Either failure poisons the entered instance.
+//
 // The reentrance gate and post-return hook are still honoured. No resource
 // table or realloc operations are performed — the caller is responsible for
 // all encoding.
 func (cb *CallBinding) CallRaw(
 	ctx context.Context,
-	writeArgs func(stack []uint64),
-	readResult func(stack []uint64),
+	writeArgs func(stack []uint64) error,
+	readResult func(stack []uint64) error,
+) error {
+	return cb.CallRawWithFinalizer(ctx, writeArgs, readResult, nil)
+}
+
+// CallRawWithFinalizer additionally ends caller-side resource accounting before
+// poison and Exit, including on callback panic. finish must not call the guest.
+// It is invoked once for an entered call and never if Enter fails.
+func (cb *CallBinding) CallRawWithFinalizer(
+	ctx context.Context,
+	writeArgs func(stack []uint64) error,
+	readResult func(stack []uint64) error,
+	finish func() error,
 ) (err error) {
-	defer func() {
-		if r := recover(); r != nil {
-			if t, ok := r.(*Trap); ok {
-				err = fmt.Errorf("%s", t.Error())
-				return
-			}
-			panic(r)
-		}
-	}()
+	defer cb.recoverTrap(&err)
 
 	if err := cb.callee.Instance.Enter(ctx); err != nil {
 		return err
 	}
 	defer exitWithError(ctx, cb.callee.Instance, &err)
+	defer poisonOnFailure(cb.callee.Instance, &err)
+	if finish != nil {
+		defer finalizeRawCall(&err, finish)
+	}
 
 	stack := cb.plan.coreStack
 	clear(stack)
-	writeArgs(stack)
+	if err = func() error {
+		prev := cb.callee.Instance.SuspendLeave()
+		defer cb.callee.Instance.RestoreLeave(prev)
+		return writeArgs(stack)
+	}(); err != nil {
+		return err
+	}
 
 	if err = cb.core.CallWithStack(ctx, stack); err != nil {
 		return err
 	}
 
-	if cb.postReturn != nil {
-		defer func() {
-			prev := cb.callee.Instance.SuspendLeave()
-			defer cb.callee.Instance.RestoreLeave(prev)
-			err = errors.Join(err, cb.postReturn(ctx, stack[:cb.plan.nResultRegs]))
-		}()
-	}
-	if err := cb.preflightRawResults(ctx, stack); err != nil {
+	if err = ctx.Err(); err != nil {
 		return err
 	}
-	readResult(stack)
-	return nil
+	if err = cb.preflightRawResults(ctx, stack); err != nil {
+		return err
+	}
+	if err = readResult(stack); err != nil {
+		return err
+	}
+	return cb.finishPostReturn(ctx, stack[:cb.plan.nResultRegs])
+}
+
+func finalizeRawCall(result *error, finish func() error) {
+	panicked := recover()
+	endErr := func() (err error) {
+		defer func() {
+			if p := recover(); p != nil {
+				if cause, ok := p.(error); ok {
+					err = fmt.Errorf("raw call finalizer: %w", cause)
+				} else {
+					err = fmt.Errorf("raw call finalizer: %v", p)
+				}
+			}
+		}()
+		return finish()
+	}()
+	*result = errors.Join(*result, endErr)
+	if panicked != nil {
+		if endErr == nil {
+			panic(panicked)
+		}
+		if cause, ok := panicked.(error); ok {
+			panic(errors.Join(cause, *result))
+		}
+		panic(errors.Join(fmt.Errorf("component call panic: %v", panicked), *result))
+	}
+}
+
+// recoverTrap preserves cleanup errors joined to a canonical trap. Other Go
+// panics retain their normal propagation instead of becoming successful calls.
+func (cb *CallBinding) recoverTrap(err *error) {
+	if recovered := recover(); recovered != nil {
+		cause, ok := recovered.(error)
+		var trap *Trap
+		if ok && errors.As(cause, &trap) {
+			*err = cause
+			return
+		}
+		panic(recovered)
+	}
+}
+
+func (cb *CallBinding) finishPostReturn(ctx context.Context, stack []uint64) error {
+	if cb.postReturn == nil {
+		return nil
+	}
+	prev := cb.callee.Instance.SuspendLeave()
+	defer cb.callee.Instance.RestoreLeave(prev)
+	return cb.postReturn(ctx, stack)
+}
+
+// poisonOnFailure runs before releasing the instance's entry gate. A failed
+// canonical conversion cannot leave a partially mutated instance callable.
+// err is nil for transfer callbacks, which report failures only through traps.
+func poisonOnFailure(instance Instance, err *error) {
+	if recovered := recover(); recovered != nil {
+		cause, ok := recovered.(error)
+		if !ok {
+			cause = fmt.Errorf("canonical call panic: %v", recovered)
+		}
+		instance.Poison(cause)
+		panic(recovered)
+	}
+	if err != nil && *err != nil {
+		instance.Poison(*err)
+	}
 }
 
 // preflightRawResults visits the complete result before a generated or custom

@@ -117,7 +117,7 @@ func TestLiftLimitsIndependentConcurrentCalls(t *testing.T) {
 	}
 }
 
-func TestLiftLimitStillRunsPostReturn(t *testing.T) {
+func TestLiftLimitSkipsPostReturn(t *testing.T) {
 	mem := setupMem(t, 0)
 	mem.WriteUint32Le(0, 64)
 	mem.WriteUint32Le(4, 4)
@@ -129,16 +129,16 @@ func TestLiftLimitStillRunsPostReturn(t *testing.T) {
 	cleanupErr := errors.New("post-return failed")
 	binding.postReturn = func(context.Context, []uint64) error { cleanups++; return cleanupErr }
 	_, err := binding.Call(context.Background(), nil)
-	if !errors.Is(err, ErrLiftLimit) || !errors.Is(err, cleanupErr) || cleanups != 1 {
+	if !errors.Is(err, ErrLiftLimit) || errors.Is(err, cleanupErr) || cleanups != 0 {
 		t.Fatalf("cleanup=%d err=%v", cleanups, err)
 	}
 	binding.postReturn = func(context.Context, []uint64) error { cleanups++; return nil }
 	mem.WriteUint32Le(4, 1)
-	if _, err := binding.Call(context.Background(), nil); err != nil || cleanups != 2 {
+	if _, err := binding.Call(context.Background(), nil); err != nil || cleanups != 1 {
 		t.Fatalf("cleanup=%d err=%v", cleanups, err)
 	}
 	binding.core = DirectFunc(func(context.Context, []uint64) { panic(errors.New("core trap")) })
-	if _, err := binding.Call(context.Background(), nil); err == nil || cleanups != 2 {
+	if _, err := binding.Call(context.Background(), nil); err == nil || cleanups != 1 {
 		t.Fatalf("cleanup after trap=%d err=%v", cleanups, err)
 	}
 }

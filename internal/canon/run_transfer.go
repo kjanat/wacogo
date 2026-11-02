@@ -47,6 +47,7 @@ func runTransferPlan(
 		panic(&Trap{msg: err.Error()})
 	}
 	defer calleeInst.Exit(ctx)
+	defer poisonOnFailure(calleeInst, nil)
 
 	// Borrow-trap & release defer. tc.Task.End() drains per-call release
 	// closures (caller-side unlends from LendTo) and traps if any
@@ -120,6 +121,7 @@ func runTransferPlan(
 		tc.callee.Instance.Poison(cerr)
 		panic(&Trap{msg: cerr.Error()})
 	}
+	mustTransfer(ctx.Err())
 
 	// 6. Swap sides before result steps.
 	//
@@ -184,12 +186,11 @@ func runTransferPlan(
 	// 9. Post-return hook, if provided. Runs in the original callee's
 	// instance (post-swap that's tc.caller) under may_leave=false.
 	if postReturn != nil {
-		prev := tc.caller.Instance.SuspendLeave()
-		err := postReturn(ctx, calleeStack[:plan.nResultRegs])
-		tc.caller.Instance.RestoreLeave(prev)
-		if err != nil {
-			panic(&Trap{msg: err.Error()})
-		}
+		func() {
+			prev := tc.caller.Instance.SuspendLeave()
+			defer tc.caller.Instance.RestoreLeave(prev)
+			mustTransfer(postReturn(ctx, calleeStack[:plan.nResultRegs]))
+		}()
 	}
 
 	// 10. Exit callee — fires via defer above.

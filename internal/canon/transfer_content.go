@@ -13,12 +13,12 @@ func transferStringContent(ctx context.Context, tc *transferContext, srcPtr, src
 	dstEnc := tc.callee.StringEncoding
 
 	byteLen := stringByteLen(srcCoded, srcEnc)
-	if byteLen > maxStringByteLength {
+	if byteLen > uint64(maxStringByteLength) {
 		panic(&Trap{msg: "string byte length exceeds max"})
 	}
 	mustTransfer(checkAlignment(srcPtr, stringAlign(srcEnc)))
 
-	srcBytes, ok := tc.caller.Memory.Read(srcPtr, byteLen)
+	srcBytes, ok := tc.caller.Memory.Read(srcPtr, uint32(byteLen))
 	if !ok {
 		panic(&Trap{msg: fmt.Sprintf("string content out-of-bounds: ptr=%d len=%d", srcPtr, byteLen)})
 	}
@@ -70,8 +70,14 @@ func stringContentSizeStep(tc *transferContext, srcCoded uint32, sink *allocSink
 	srcEnc := tc.caller.StringEncoding
 	dstEnc := tc.callee.StringEncoding
 	byteLen := stringByteLen(srcCoded, srcEnc)
-	upper := byteLen * stringEncoderUpperBoundMultiplier(srcEnc, dstEnc)
-	sink.add(upper, stringAlign(dstEnc))
+	if byteLen > uint64(maxStringByteLength) {
+		panic(&Trap{msg: "string byte length exceeds max"})
+	}
+	upper := byteLen * uint64(stringEncoderUpperBoundMultiplier(srcEnc, dstEnc))
+	if upper > uint64(^uint32(0)) {
+		panic(&Trap{msg: "string transfer allocation size overflows uint32"})
+	}
+	sink.add(uint32(upper), stringAlign(dstEnc))
 }
 
 // transferListBulk is the fast path for lists whose element type's

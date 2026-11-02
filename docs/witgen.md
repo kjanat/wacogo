@@ -266,11 +266,17 @@ rule.
 *wacogo.ComponentInstance) <Iface>` returns the consumer surface for a
 wasm-exported interface. It pre-resolves each export to a
 `*host.ExportedFunc` so per-method calls just drive `CallRaw` with two
-closures: a write closure that lowers args into the callee's wire
+error-returning closures: a write closure that lowers args into the callee's wire
 form, and a read closure that lifts results back into the caller's
 representation. The wrapper is plan-free — `CallRaw` deliberately
 bypasses the canon plan, so every lift/lower op is explicit in those
 closures.
+
+The generated closures return conversion failures directly to `CallRaw`.
+Argument lowering must finish before guest execution, and result lifting must
+finish before post-return. Regenerate bindings when upgrading from void
+callbacks; returning an error through a captured variable cannot stop the
+remaining call phases.
 
 Resource methods on a remote (`*<R>Remote`) follow the same shape: the
 remote dispatcher carries a `*counterFns` value with one

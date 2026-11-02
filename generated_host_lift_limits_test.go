@@ -84,13 +84,14 @@ func TestGeneratedHostArgumentsRespectInlineStorage(t *testing.T) {
 					defer instance.Close(ctx)
 					consume := instance.Core().ExportedFunc(tc.name)
 					if path == "direct" {
-						err = consume.CallRaw(ctx, nil, func(_, callee *host.CallContext, stack []uint64) {
+						err = consume.CallRaw(ctx, nil, func(_, callee *host.CallContext, stack []uint64) error {
 							// Two zeroed list headers or absent 72-byte options.
 							if !callee.Memory().Write(128, make([]byte, 144)) {
 								t.Fatal("initialize arguments")
 							}
 							stack[0], stack[1] = 128, 2
-						}, func(_, _ *host.CallContext, _ []uint64) {})
+							return nil
+						}, func(_, _ *host.CallContext, _ []uint64) error { return nil })
 					} else {
 						component, loadErr := engine.LoadComponent(ctx, bytes.NewReader(binary))
 						if loadErr != nil {

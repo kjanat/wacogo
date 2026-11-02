@@ -2,6 +2,11 @@
 
 Actionlint's maintained fork of [partite-ai/wacogo](https://github.com/partite-ai/wacogo), including the ownership, lifting-budget, table-accounting and generated-decoder fixes in upstream PRs #13 through #16. Import `github.com/kjanat/wacogo` directly. This fork uses `github.com/kjanat/go-modules` for the repaired WIT loader and publishes under its own module path and version tags.
 
+`CallRaw` write/read callbacks return `error`. A failed argument writer stops
+guest execution; a failed result reader skips post-return and poisons the
+instance. Regenerate existing Go bindings with this version's `wacogo-witgen`
+before compiling against that API. The component's WIT contract is unchanged.
+
 A WebAssembly Component Model (MVP) runtime for Go, built on [wazero].
 
 Wacogo loads component-model binaries, validates them, and instantiates
@@ -26,7 +31,7 @@ Not yet supported: `async`, `stream<T>`, `future<T>`, `error-context`,
 go get github.com/kjanat/wacogo
 ```
 
-Requires Go 1.25 or later.
+Requires Go 1.27 or later.
 
 ---
 

@@ -47,6 +47,9 @@ func NewFactory(ctx context.Context, e *wacogo.Engine) (*Factory, error) {
 
 	f_.pollableRef = b_.AddResourceRef("pollable")
 
+	b_.AddType("instant", host.U64)
+	b_.AddType("duration", host.U64)
+
 	b_.AddFunction("now", &host.FuncType{
 		Params:  []host.Param{},
 		Results: []host.ResultDecl{{Name: "", Type: host.U64}},
@@ -200,10 +203,12 @@ type pollPollableForwarder struct {
 func (f *pollPollableForwarder) Block(ctx context.Context) error {
 	{
 		callErr_ := f.fns.fnBlock.CallRaw(ctx, f.caller,
-			func(caller, callee *host.CallContext, stack []uint64) {
+			func(caller, callee *host.CallContext, stack []uint64) error {
 				stack[0] = uint64(f.rh.HandleID())
+				return nil
 			},
-			func(caller, callee *host.CallContext, stack []uint64) {
+			func(caller, callee *host.CallContext, stack []uint64) error {
+				return nil
 			},
 		)
 		if callErr_ != nil {
@@ -217,11 +222,13 @@ func (f *pollPollableForwarder) Ready(ctx context.Context) (bool, error) {
 	var resVal_ bool
 	{
 		callErr_ := f.fns.fnReady.CallRaw(ctx, f.caller,
-			func(caller, callee *host.CallContext, stack []uint64) {
+			func(caller, callee *host.CallContext, stack []uint64) error {
 				stack[0] = uint64(f.rh.HandleID())
+				return nil
 			},
-			func(caller, callee *host.CallContext, stack []uint64) {
+			func(caller, callee *host.CallContext, stack []uint64) error {
 				resVal_ = stack[0] != 0
+				return nil
 			},
 		)
 		if callErr_ != nil {

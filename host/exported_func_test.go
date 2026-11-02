@@ -53,7 +53,7 @@ func TestExportedFunc_CallRaw_TwoCallbacks(t *testing.T) {
 		readGot                          uint32
 	)
 	err = wrapped.CallRaw(ctx, callerInst,
-		func(caller, callee *CallContext, stack []uint64) {
+		func(caller, callee *CallContext, stack []uint64) error {
 			if caller == nil || callee == nil {
 				t.Fatal("write callback got nil context")
 			}
@@ -61,14 +61,16 @@ func TestExportedFunc_CallRaw_TwoCallbacks(t *testing.T) {
 			writeCalleeInst = callee.Instance()
 			stack[0] = 7
 			stack[1] = 35
+			return nil
 		},
-		func(caller, callee *CallContext, stack []uint64) {
+		func(caller, callee *CallContext, stack []uint64) error {
 			if caller == nil || callee == nil {
 				t.Fatal("read callback got nil context")
 			}
 			readCallerInst = caller.Instance()
 			readCalleeInst = callee.Instance()
 			readGot = uint32(stack[0])
+			return nil
 		},
 	)
 	if err != nil {

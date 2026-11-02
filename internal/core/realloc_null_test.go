@@ -22,7 +22,7 @@ func reallocComponentWAT(zeroSizeResult string) string {
   )
   (core instance $i (instantiate $m))
   (func (export "f") (param "s" string)
-    (canon lift (core func $i "f") (memory $i "memory") (realloc (func $i "realloc")) string-encoding=utf8))
+    (canon lift (core func $i "f") (memory (core memory $i "memory")) (realloc (core func $i "realloc")) string-encoding=utf8))
 )`
 }
 
@@ -58,10 +58,9 @@ func TestReallocNullAcceptedForZeroSize(t *testing.T) {
 	}
 }
 
-func TestReallocNullTrapsForNonZeroSize(t *testing.T) {
+func TestReallocAddressZeroAcceptedForNonZeroSize(t *testing.T) {
 	wat := strings.Replace(reallocComponentWAT("(i32.const 0)"), "(else (i32.const 1024))", "(else (i32.const 0))", 1)
-	err := callStringExport(t, wat, "x")
-	if err == nil || !strings.Contains(err.Error(), "realloc returned null") {
-		t.Fatalf("lowering a non-empty string: err=%v", err)
+	if err := callStringExport(t, wat, "x"); err != nil {
+		t.Fatalf("lowering a non-empty string at in-bounds address zero: %v", err)
 	}
 }

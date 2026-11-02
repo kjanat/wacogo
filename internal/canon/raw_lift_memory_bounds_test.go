@@ -28,15 +28,16 @@ func TestCallRawReportsResultMemoryBounds(t *testing.T) {
 				posted++
 				return nil
 			}
-			err := binding.CallRaw(t.Context(), func([]uint64) {}, func([]uint64) {
+			err := binding.CallRaw(t.Context(), func([]uint64) error { return nil }, func([]uint64) error {
 				t.Error("decoded an invalid result")
+				return nil
 			})
 			for _, part := range []string{"guest memory", "string " + field, fmt.Sprintf("%#x", mem.Size())} {
 				if err == nil || !strings.Contains(err.Error(), part) {
 					t.Fatalf("missing %q in memory-bounds diagnostic: %v", part, err)
 				}
 			}
-			if posted != 1 || inst.entered {
+			if posted != 0 || inst.entered {
 				t.Fatalf("cleanup: post-return=%d entered=%t", posted, inst.entered)
 			}
 		})

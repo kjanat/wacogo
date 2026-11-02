@@ -44,6 +44,7 @@ func runGocallPlan(
 			panic(panicked)
 		}
 	}()
+	defer poisonOnFailure(gcc.callee.Instance, &err)
 	gcc.lift = liftBudget{limits: gcc.limits}
 
 	// Borrow-trap & release defer. gcc.Task.End() drains per-call release
@@ -100,16 +101,8 @@ func runGocallPlan(
 		gcc.callee.Instance.Poison(cerr)
 		return nil, cerr
 	}
-	// A successful core call owns its return allocation even if lifting fails.
-	if postReturn != nil {
-		defer func() {
-			prev := gcc.callee.Instance.SuspendLeave()
-			defer gcc.callee.Instance.RestoreLeave(prev)
-			if cleanupErr := postReturn(ctx, stack[:plan.nResultRegs]); cleanupErr != nil {
-				err = errors.Join(err, cleanupErr)
-				results = nil
-			}
-		}()
+	if err := ctx.Err(); err != nil {
+		return nil, err
 	}
 
 	// 5. Lift results. Flat-mode steps read gcc.registers (= stack);
@@ -138,6 +131,17 @@ func runGocallPlan(
 		results[i] = v
 	}
 
-	// Post-return and callee exit fire via the defers above.
+	// Canonical post-return is reached only after the complete result lifts.
+	// A trap during lifting poisons the instance and skips this guest callback.
+	if postReturn != nil {
+		if err := func() error {
+			prev := gcc.callee.Instance.SuspendLeave()
+			defer gcc.callee.Instance.RestoreLeave(prev)
+			return postReturn(ctx, stack[:plan.nResultRegs])
+		}(); err != nil {
+			return nil, err
+		}
+	}
+
 	return results, nil
 }

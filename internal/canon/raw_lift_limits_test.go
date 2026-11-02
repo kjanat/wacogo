@@ -8,13 +8,16 @@ import (
 )
 
 func TestCallRawPreflightsResultAllocations(t *testing.T) {
-	for _, scenario := range []string{"bytes", "values", "span", "success"} {
+	for _, scenario := range []string{"bytes", "post-return", "values", "span", "success"} {
 		t.Run(scenario, func(t *testing.T) {
 			mem := setupMem(t, 0)
 			mem.WriteUint32Le(0, 128)
 			mem.WriteUint32Le(4, 2)
 			limits := LiftLimits{MaxBytes: 32, MaxValues: 3}
 			if scenario == "bytes" {
+				limits.MaxBytes = 1
+			}
+			if scenario == "post-return" {
 				limits.MaxBytes = 31
 			}
 			if scenario == "values" {
@@ -35,29 +38,32 @@ func TestCallRawPreflightsResultAllocations(t *testing.T) {
 				if !inst.entered {
 					t.Error("post-return ran after Exit")
 				}
-				if scenario == "bytes" {
+				if scenario == "post-return" {
 					return postErr
 				}
 				return nil
 			}
-			for attempt := 1; attempt <= 2; attempt++ {
-				err := binding.CallRaw(context.Background(), func([]uint64) {}, func([]uint64) { decoded++ })
-				if scenario == "success" {
-					if err != nil || decoded != attempt {
-						t.Fatalf("valid decode: count=%d err=%v", decoded, err)
-					}
-				} else if err == nil || decoded != 0 {
-					t.Fatalf("unsafe decode: count=%d err=%v", decoded, err)
+			err := binding.CallRaw(context.Background(), func([]uint64) error { return nil }, func([]uint64) error { decoded++; return nil })
+			if scenario == "success" {
+				if err != nil || decoded != 1 {
+					t.Fatalf("valid decode: count=%d err=%v", decoded, err)
 				}
-				if (scenario == "bytes" || scenario == "values") && !errors.Is(err, ErrLiftLimit) {
-					t.Errorf("missing limit error: %v", err)
+			} else if scenario == "post-return" {
+				if !errors.Is(err, postErr) || decoded != 1 {
+					t.Fatalf("post-return failure: count=%d err=%v", decoded, err)
 				}
-				if scenario == "bytes" && !errors.Is(err, postErr) {
-					t.Errorf("missing post-return error: %v", err)
-				}
-				if posted != attempt || inst.entered {
-					t.Fatalf("cleanup: post=%d entered=%t", posted, inst.entered)
-				}
+			} else if err == nil || decoded != 0 {
+				t.Fatalf("unsafe decode: count=%d err=%v", decoded, err)
+			}
+			if (scenario == "bytes" || scenario == "values") && !errors.Is(err, ErrLiftLimit) {
+				t.Errorf("missing limit error: %v", err)
+			}
+			wantPosted := 1
+			if scenario == "bytes" || scenario == "values" || scenario == "span" {
+				wantPosted = 0
+			}
+			if posted != wantPosted || inst.entered {
+				t.Fatalf("cleanup: post=%d entered=%t", posted, inst.entered)
 			}
 		})
 	}
@@ -114,7 +120,7 @@ func TestCallRawBudgetsInactiveInlinePayloads(t *testing.T) {
 					Direct:     func(_ context.Context, stack []uint64) { stack[0] = 0 },
 				})
 				decoded := false
-				err := binding.CallRaw(context.Background(), func([]uint64) {}, func([]uint64) { decoded = true })
+				err := binding.CallRaw(context.Background(), func([]uint64) error { return nil }, func([]uint64) error { decoded = true; return nil })
 				if budget < 2*tc.actual {
 					if !errors.Is(err, ErrLiftLimit) || decoded {
 						t.Fatalf("undercharged: decoded=%t err=%v", decoded, err)
@@ -143,7 +149,7 @@ func TestCallRawRejectedResultKeepsOwnInCallee(t *testing.T) {
 		Instance: inst, Memory: mem, LiftLimits: LiftLimits{MaxValues: 16},
 		Direct: func(_ context.Context, stack []uint64) { stack[0] = 0 },
 	})
-	err := binding.CallRaw(t.Context(), func([]uint64) {}, func([]uint64) { t.Fatal("decoded rejected result") })
+	err := binding.CallRaw(t.Context(), func([]uint64) error { return nil }, func([]uint64) error { t.Fatal("decoded rejected result"); return nil })
 	if !errors.Is(err, ErrLiftLimit) {
 		t.Fatalf("result budget: %v", err)
 	}

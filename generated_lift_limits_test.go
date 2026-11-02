@@ -22,7 +22,7 @@ func TestGeneratedResultsRespectLiftLimits(t *testing.T) {
 		{"reported bypass", wacogo.LiftLimits{MaxBytes: 32, MaxValues: 16}, 64, 64, true, false},
 		{"byte limit", wacogo.LiftLimits{MaxBytes: 32}, 64, 64, true, false},
 		{"value limit", wacogo.LiftLimits{MaxValues: 16}, 64, 64, true, false},
-		{"boundary", wacogo.LiftLimits{MaxBytes: 1024, MaxValues: 65}, 64, 64, false, false},
+		{"boundary", wacogo.LiftLimits{MaxBytes: 64, MaxValues: 65}, 64, 64, false, false},
 		{"unlimited", wacogo.LiftLimits{}, 64, 64, false, false},
 		{"span", wacogo.LiftLimits{}, 65535, 64, false, true},
 		{"hostile length", wacogo.LiftLimits{MaxValues: 16}, 64, 1 << 30, false, true},
@@ -31,6 +31,11 @@ func TestGeneratedResultsRespectLiftLimits(t *testing.T) {
 			ctx := t.Context()
 			engine := wacogo.NewEngine(ctx, wacogo.WithLiftLimits(tc.limits))
 			defer engine.Close(ctx)
+			postReturnBody := "global.get $posts i32.const 1 i32.add global.set $posts"
+			if tc.limitError || tc.spanError {
+				// A failed lift must never invoke the guest post-return hook.
+				postReturnBody = "unreachable"
+			}
 			wat := fmt.Sprintf(`(component
   (core module $m
     (memory (export "memory") 1)
@@ -41,13 +46,13 @@ func TestGeneratedResultsRespectLiftLimits(t *testing.T) {
       i32.const 4 i32.const %d i32.store
       i32.const 0)
     (func (export "post") (param i32)
-      global.get $posts i32.const 1 i32.add global.set $posts)
+      %s)
     (func (export "posts") (result i32) global.get $posts))
   (core instance $i (instantiate $m))
   (func (export "rev-u8") (param "xs" (list u8)) (result (list u8))
     (canon lift (core func $i "run") (memory (core memory $i "memory"))
       (realloc (core func $i "realloc")) (post-return (core func $i "post"))))
-  (func (export "posts") (result u32) (canon lift (core func $i "posts"))))`, tc.ptr, tc.length)
+  (func (export "posts") (result u32) (canon lift (core func $i "posts"))))`, tc.ptr, tc.length, postReturnBody)
 			cmd := exec.Command("wasm-tools", "parse", "-")
 			cmd.Stdin = strings.NewReader(wat)
 			var stderr bytes.Buffer
@@ -88,6 +93,15 @@ func TestGeneratedResultsRespectLiftLimits(t *testing.T) {
 					}
 				} else if err != nil || len(got) != int(tc.length) {
 					t.Fatalf("valid decode: length=%d err=%v", len(got), err)
+				}
+				if tc.limitError || tc.spanError {
+					if strings.Contains(err.Error(), "unreachable") || instance.Poisoned() == nil {
+						t.Fatalf("failed lift ran post-return or left instance usable: %v", err)
+					}
+					if _, nextErr := instance.ExportedFunc("posts").Call(ctx); !errors.Is(nextErr, instance.Poisoned()) {
+						t.Fatalf("poisoned instance did not retain the original failure: %v", nextErr)
+					}
+					continue
 				}
 				posts, err := instance.ExportedFunc("posts").Call(ctx)
 				if err != nil || len(posts) != 1 || posts[0] != wacogo.ValU32(attempt) {

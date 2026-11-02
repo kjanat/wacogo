@@ -41,12 +41,14 @@ const (
 //
 // Not safe for concurrent use; callers must ensure single-threaded access.
 type ResourceTable struct {
-	owner    *ComponentInstance
-	entries  []resourceEntry
-	freeList int32
+	owner      *ComponentInstance
+	entries    []resourceEntry
+	freeList   int32
+	generation uint64
 }
 
 type resourceEntry struct {
+	generation  uint64
 	rep         uint32
 	tr          *TypeResource
 	kind        resourceKind
@@ -64,29 +66,42 @@ func NewResourceTable(owner *ComponentInstance) *ResourceTable {
 
 // IssueOwn allocates a fresh own-kind handle.
 func (t *ResourceTable) IssueOwn(tr *TypeResource, rep uint32) ResourceHandle {
+	return t.issueOwn(tr, rep)
+}
+
+func (t *ResourceTable) issueOwn(tr *TypeResource, rep uint32) *liveResourceHandle {
 	idx := t.alloc(tr, rep, kindOwn)
-	return &liveResourceHandle{table: t, slotIdx: idx, valid: true}
+	return t.liveHandle(idx)
 }
 
 // issueBorrow allocates a fresh borrow-kind handle scoped to scope.
 // Unexported: only LendTo reaches this.
-func (t *ResourceTable) issueBorrow(tr *TypeResource, rep uint32, scope *canon.Task) ResourceHandle {
+func (t *ResourceTable) issueBorrow(tr *TypeResource, rep uint32, scope *canon.Task) *liveResourceHandle {
 	idx := t.alloc(tr, rep, kindBorrow)
 	t.entries[idx].borrowScope = scope
 	scope.BorrowIssued()
-	return &liveResourceHandle{table: t, slotIdx: idx, valid: true}
+	return t.liveHandle(idx)
 }
 
 func (t *ResourceTable) alloc(tr *TypeResource, rep uint32, kind resourceKind) uint32 {
+	if t.generation == ^uint64(0) {
+		panic("wacogo/core: resource generation exhausted")
+	}
+	t.generation++
+	entry := resourceEntry{generation: t.generation, rep: rep, tr: tr, kind: kind, occupied: true}
 	if t.freeList != freeListNone {
 		idx := uint32(t.freeList)
 		t.freeList = int32(t.entries[idx].rep)
-		t.entries[idx] = resourceEntry{rep: rep, tr: tr, kind: kind, occupied: true}
+		t.entries[idx] = entry
 		return idx
 	}
 	idx := uint32(len(t.entries))
-	t.entries = append(t.entries, resourceEntry{rep: rep, tr: tr, kind: kind, occupied: true})
+	t.entries = append(t.entries, entry)
 	return idx
+}
+
+func (t *ResourceTable) liveHandle(idx uint32) *liveResourceHandle {
+	return &liveResourceHandle{table: t, slotIdx: idx, generation: t.entries[idx].generation, valid: true}
 }
 
 // LookupOwn finds an own-kind entry. Errors on wrong kind, wrong type, or unknown handle.
@@ -98,7 +113,7 @@ func (t *ResourceTable) LookupOwn(tr *TypeResource, h uint32) (ResourceHandle, e
 	if e.kind != kindOwn {
 		return nil, fmt.Errorf("handle %d is borrow, not own", h)
 	}
-	return &liveResourceHandle{table: t, slotIdx: idx, valid: true}, nil
+	return t.liveHandle(idx), nil
 }
 
 // LookupBorrowable finds an entry of either kind.
@@ -107,7 +122,7 @@ func (t *ResourceTable) LookupBorrowable(tr *TypeResource, h uint32) (ResourceHa
 	if err != nil {
 		return nil, err
 	}
-	return &liveResourceHandle{table: t, slotIdx: idx, valid: true}, nil
+	return t.liveHandle(idx), nil
 }
 
 func (t *ResourceTable) lookup(tr *TypeResource, handle uint32) (uint32, *resourceEntry, error) {

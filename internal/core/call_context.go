@@ -26,10 +26,11 @@ type Task = canon.Task
 // Constructed via NewCallContext from inside the host package; never
 // constructed by user code.
 type CallContext struct {
-	inst    *ComponentInstance
-	task    *canon.Task
-	memory  api.Memory
-	realloc ReallocFunc
+	inst           *ComponentInstance
+	task           *canon.Task
+	memory         api.Memory
+	realloc        ReallocFunc
+	transferTarget TransferTarget
 }
 
 // NewCallContext returns a CallContext for the given instance, task,
@@ -66,7 +67,7 @@ func (cc *CallContext) Task() *canon.Task { return cc.task }
 // table and returns the live ResourceHandle. Use HandleID() on the result
 // to obtain the uint32 wire value.
 func (cc *CallContext) IssueOwnHandle(tr *TypeResource, rep uint32) ResourceHandle {
-	return cc.inst.resources.IssueOwn(tr, rep)
+	return cc.TransferTarget().IssueOwn(tr, rep)
 }
 
 // LookupOwn returns the ResourceHandle for an own entry in this
@@ -86,5 +87,8 @@ func (cc *CallContext) LookupBorrowable(tr *TypeResource, handle uint32) (Resour
 // the destination side; external callers cannot otherwise manipulate
 // the underlying table.
 func (cc *CallContext) TransferTarget() TransferTarget {
+	if cc.transferTarget != nil {
+		return cc.transferTarget
+	}
 	return cc.inst.resources
 }

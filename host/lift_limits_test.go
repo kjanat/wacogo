@@ -42,8 +42,8 @@ func TestHostArgumentsBudgetBeforeCallback(t *testing.T) {
 				inst.hostCallCC.Memory().Write(0, []byte(strings.Repeat("x", int(size))))
 				if transport == "direct" {
 					err = inst.Core().ExportedFunc("log").CallRaw(ctx, nil,
-						func(_, _ *core.CallContext, stack []uint64) { stack[0] = 0; stack[1] = size },
-						func(_, _ *core.CallContext, _ []uint64) {})
+						func(_, _ *core.CallContext, stack []uint64) error { stack[0] = 0; stack[1] = size; return nil },
+						func(_, _ *core.CallContext, _ []uint64) error { return nil })
 				} else {
 					mod, buildErr := buildPerInstanceHostMod(ctx, core.WazeroRuntime(e), comp, inst)
 					if buildErr != nil {

@@ -19,18 +19,18 @@ func generatedInlineStorage(t Type) uint64 {
 
 type generatedStorageVisitor struct{ size uint64 }
 
-func (v *generatedStorageVisitor) VisitBool()                 { v.size = 8 }
-func (v *generatedStorageVisitor) VisitU8()                   { v.size = 8 }
-func (v *generatedStorageVisitor) VisitU16()                  { v.size = 8 }
-func (v *generatedStorageVisitor) VisitU32()                  { v.size = 8 }
+func (v *generatedStorageVisitor) VisitBool()                 { v.size = 1 }
+func (v *generatedStorageVisitor) VisitU8()                   { v.size = 1 }
+func (v *generatedStorageVisitor) VisitU16()                  { v.size = 2 }
+func (v *generatedStorageVisitor) VisitU32()                  { v.size = 4 }
 func (v *generatedStorageVisitor) VisitU64()                  { v.size = 8 }
-func (v *generatedStorageVisitor) VisitS8()                   { v.size = 8 }
-func (v *generatedStorageVisitor) VisitS16()                  { v.size = 8 }
-func (v *generatedStorageVisitor) VisitS32()                  { v.size = 8 }
+func (v *generatedStorageVisitor) VisitS8()                   { v.size = 1 }
+func (v *generatedStorageVisitor) VisitS16()                  { v.size = 2 }
+func (v *generatedStorageVisitor) VisitS32()                  { v.size = 4 }
 func (v *generatedStorageVisitor) VisitS64()                  { v.size = 8 }
-func (v *generatedStorageVisitor) VisitF32()                  { v.size = 8 }
+func (v *generatedStorageVisitor) VisitF32()                  { v.size = 4 }
 func (v *generatedStorageVisitor) VisitF64()                  { v.size = 8 }
-func (v *generatedStorageVisitor) VisitChar()                 { v.size = 8 }
+func (v *generatedStorageVisitor) VisitChar()                 { v.size = 4 }
 func (v *generatedStorageVisitor) VisitEnum(uint32)           { v.size = 8 }
 func (v *generatedStorageVisitor) VisitFlags([]string)        { v.size = 8 }
 func (v *generatedStorageVisitor) VisitOwn(ResourceType)      { v.size = uint64(unsafe.Sizeof(uintptr(0))) }

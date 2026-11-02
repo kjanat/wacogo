@@ -100,19 +100,20 @@ func latin1UTF16Decode(codedLen uint32) (effLen uint32, isUTF16 bool) {
 
 // stringByteLen returns the in-memory byte length for a (codedLen, enc) pair.
 // For Latin-1+UTF-16, the high tag bit selects between the two sub-encodings.
-func stringByteLen(codedLen uint32, enc StringEncoding) uint32 {
+func stringByteLen(codedLen uint32, enc StringEncoding) uint64 {
 	switch enc {
 	case EncUTF8:
-		return codedLen
+		return uint64(codedLen)
 	case EncUTF16:
-		return codedLen * 2
+		return uint64(codedLen) * 2
 	case EncLatin1UTF16:
 		eff, isUTF16 := latin1UTF16Decode(codedLen)
 		if isUTF16 {
-			return eff * 2
+			return uint64(eff) * 2
 		}
-		return eff
+		return uint64(eff)
 	}
+	trapf("unknown string encoding")
 	return 0
 }
 
@@ -122,36 +123,14 @@ func decodeString(mem fakeOrRealMemory, ptr, codedLen uint32, enc StringEncoding
 
 // stringBytes validates the entire guest span without copying it.
 func stringBytes(mem fakeOrRealMemory, ptr, codedLen uint32, enc StringEncoding) []byte {
-	// Compute byteLen with explicit overflow check for the multiplication.
-	var byteLen uint32
-	switch enc {
-	case EncUTF8:
-		byteLen = codedLen
-	case EncUTF16:
-		byteLen = codedLen * 2
-		if codedLen != 0 && byteLen/2 != codedLen {
-			trapf("string byte length overflows uint32")
-		}
-	case EncLatin1UTF16:
-		eff, isUTF16 := latin1UTF16Decode(codedLen)
-		if isUTF16 {
-			byteLen = eff * 2
-			if eff != 0 && byteLen/2 != eff {
-				trapf("string byte length overflows uint32")
-			}
-		} else {
-			byteLen = eff
-		}
-	default:
-		trapf("unknown string encoding")
-	}
-	if byteLen > maxStringByteLength {
+	byteLen := stringByteLen(codedLen, enc)
+	if byteLen > uint64(maxStringByteLength) {
 		trapf("string byte length %d exceeds max %d", byteLen, maxStringByteLength)
 	}
 	if ptr%stringAlign(enc) != 0 {
 		trapf("unaligned pointer %d for string encoding (align %d)", ptr, stringAlign(enc))
 	}
-	bytes, ok := mem.Read(ptr, byteLen)
+	bytes, ok := mem.Read(ptr, uint32(byteLen))
 	if !ok {
 		trapf("string pointer/length out of bounds of memory: ptr=%d len=%d", ptr, byteLen)
 	}

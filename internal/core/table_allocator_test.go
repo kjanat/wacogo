@@ -412,7 +412,7 @@ func TestCoreTableAdmissionCancellationNotifierShutdown(t *testing.T) {
 					}
 				}
 			} else if call == "CallRaw" {
-				err = fn.CallRaw(canceled, nil, func(*CallContext, *CallContext, []uint64) {}, func(*CallContext, *CallContext, []uint64) {})
+				err = fn.CallRaw(canceled, nil, func(*CallContext, *CallContext, []uint64) error { return nil }, func(*CallContext, *CallContext, []uint64) error { return nil })
 			} else {
 				_, err = fn.Call(canceled)
 			}
@@ -517,8 +517,8 @@ func TestCoreTableAdmissionRefundPanics(t *testing.T) {
 					panic(callPanic)
 				case "CallRawPanic":
 					failure = instance.ExportedFunc("run").CallRaw(ctx, nil,
-						func(*CallContext, *CallContext, []uint64) {},
-						func(*CallContext, *CallContext, []uint64) {
+						func(*CallContext, *CallContext, []uint64) error { return nil },
+						func(*CallContext, *CallContext, []uint64) error {
 							notifierErr = engine.Close(ctx)
 							panic(callPanic)
 						})
@@ -529,7 +529,7 @@ func TestCoreTableAdmissionRefundPanics(t *testing.T) {
 					if operation == "Call" {
 						_, failure = fn.Call(canceled)
 					} else {
-						failure = fn.CallRaw(canceled, nil, func(*CallContext, *CallContext, []uint64) {}, func(*CallContext, *CallContext, []uint64) {})
+						failure = fn.CallRaw(canceled, nil, func(*CallContext, *CallContext, []uint64) error { return nil }, func(*CallContext, *CallContext, []uint64) error { return nil })
 					}
 				}
 			}()

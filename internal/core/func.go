@@ -55,11 +55,19 @@ func (f *Func) Call(ctx context.Context, args ...Val) ([]Val, error) {
 // slice carries the args in and the results out, per wazero's
 // CallWithStack semantics. Returns an error if any borrows handed to
 // the callee remain outstanding when the call returns.
+// Callback errors abort the remaining call phases and poison the callee;
+// post-return runs only after the read callback succeeds.
+// Owns transferred to callee while writing or to caller while reading are
+// consumed immediately. If write fails, its transferred arguments are destroyed;
+// if any later phase fails, newly lifted results are destroyed. Caller wrappers
+// are not restored. Transfers outside the supplied contexts are caller-managed.
+// Cleanup never invokes a poisoned defining instance's destructor; that error
+// is joined with the call error, and host extern orphans remain for Close.
 func (f *Func) CallRaw(
 	ctx context.Context,
 	caller *ComponentInstance,
-	write func(caller, callee *CallContext, stack []uint64),
-	read func(caller, callee *CallContext, stack []uint64),
+	write func(caller, callee *CallContext, stack []uint64) error,
+	read func(caller, callee *CallContext, stack []uint64) error,
 ) (err error) {
 	if f.funcType == nil {
 		return fmt.Errorf("wacogo: CallRaw: function has no type information")
@@ -70,7 +78,11 @@ func (f *Func) CallRaw(
 
 	callee := f.binding.Callee()
 	task := &canon.Task{}
+	resources := &rawCallResources{task: task, caller: caller}
 	callerCC := NewCallContext(caller, task, nil, nil)
+	if caller != nil {
+		callerCC.transferTarget = &rawTransferTarget{table: caller.resources, call: resources, caller: true}
+	}
 	realloc := ReallocFunc(callee.GoRealloc)
 	if realloc == nil {
 		realloc = wrapAPIRealloc(callee.Realloc)
@@ -81,16 +93,25 @@ func (f *Func) CallRaw(
 		callee.Memory,
 		realloc,
 	)
+	if calleeCC.inst != nil {
+		calleeCC.transferTarget = &rawTransferTarget{table: calleeCC.inst.resources, call: resources}
+	}
 
-	defer func() {
-		if endErr := task.End(); endErr != nil && err == nil {
-			err = endErr
-		}
-	}()
+	defer resources.finishOwns(ctx, &err)
 
-	return f.binding.CallRaw(ctx,
-		func(stack []uint64) { write(callerCC, calleeCC, stack) },
-		func(stack []uint64) { read(callerCC, calleeCC, stack) },
+	return f.binding.CallRawWithFinalizer(ctx,
+		func(stack []uint64) error {
+			if err := write(callerCC, calleeCC, stack); err != nil {
+				return err
+			}
+			resources.phase = rawExecuting
+			return nil
+		},
+		func(stack []uint64) error {
+			resources.phase = rawReading
+			return read(callerCC, calleeCC, stack)
+		},
+		resources.finishTask,
 	)
 }
 

@@ -14,10 +14,8 @@ const (
 	stubInitialPages uint32 = 1
 
 	// stubBumpInitial is the starting value of the bump allocator.
-	// Must be non-zero because the canonical ABI treats pointer 0 as
-	// null and traps on realloc-returns-null. Must be a multiple of
-	// the maximum alignment we'll see (8 for u64/f64). The first
-	// stubBumpInitial bytes of stub memory are reserved.
+	// Must be a multiple of the maximum alignment we'll see (8 for
+	// u64/f64). The first stubBumpInitial bytes of stub memory are reserved.
 	stubBumpInitial int32 = 16
 )
 
@@ -135,8 +133,8 @@ func instantiateStubModule(
 // Semantics: bump allocator, per-call reset. Returns an aligned
 // pointer of new_size bytes; grows the linear memory as needed via
 // memory.grow when the new bump would otherwise overflow current size.
-// On grow failure returns 0 (null) so the canonical ABI traps. If
-// old_size > 0, copies min(old_size, new_size) bytes from old_ptr.
+// Traps on address-space overflow or grow failure. If old_size > 0, it
+// copies min(old_size, new_size) bytes from old_ptr.
 //
 // Locals: two i32s — the aligned result pointer and the new bump.
 func emitReallocBody(bumpGlobalIdx uint32) ([]byte, []wasm.LocalEntry) {
@@ -147,8 +145,6 @@ func emitReallocBody(bumpGlobalIdx uint32) ([]byte, []wasm.LocalEntry) {
 	const (
 		localResult  = 4
 		localNewBump = 5
-		pageShift    = 16 // 1 << 16 = 65536 bytes/page
-		pageMask     = (1 << 16) - 1
 	)
 
 	// result = (bump + align - 1) & ~(align - 1)
@@ -169,29 +165,33 @@ func emitReallocBody(bumpGlobalIdx uint32) ([]byte, []wasm.LocalEntry) {
 	cb.I32Add()
 	cb.LocalSet(localNewBump)
 
-	// Grow memory if new_bump > memory.size * 64KiB.
+	// Trap if alignment or size addition wrapped past 2^32.
+	cb.LocalGet(localResult)
+	cb.GlobalGet(bumpGlobalIdx)
+	cb.I32LtU()
 	cb.LocalGet(localNewBump)
+	cb.LocalGet(localResult)
+	cb.I32LtU()
+	cb.I32Or()
+	cb.If(wasm.BlockTypeEmpty)
+	cb.Unreachable()
+	cb.End()
+
+	// Grow when ceil(new_bump / 64KiB) exceeds memory.size. Keep this
+	// in pages: memory.size << 16 wraps to zero at the valid 4 GiB limit.
+	emitRequiredPages(&cb, localNewBump)
 	cb.MemorySize(0)
-	cb.I32Const(pageShift)
-	cb.I32Shl() // current_bytes = pages << 16
 	cb.I32GtU()
 	cb.If(wasm.BlockTypeEmpty)
-	// pages_to_grow = ((new_bump - current_bytes) + pageMask) >> pageShift
-	cb.LocalGet(localNewBump)
+	// pages_to_grow = required_pages - current_pages.
+	emitRequiredPages(&cb, localNewBump)
 	cb.MemorySize(0)
-	cb.I32Const(pageShift)
-	cb.I32Shl() // current_bytes
-	cb.I32Sub() // deficit bytes
-	cb.I32Const(pageMask)
-	cb.I32Add()
-	cb.I32Const(pageShift)
-	cb.I32ShrU() // pages, rounded up
+	cb.I32Sub()
 	cb.MemoryGrow(0)
 	cb.I32Const(-1)
 	cb.I32Eq()
 	cb.If(wasm.BlockTypeEmpty)
-	cb.I32Const(0) // signal failure to canon ABI (traps on null)
-	cb.Return()
+	cb.Unreachable() // address zero is valid; cannot signal failure with it
 	cb.End()
 	cb.End()
 
@@ -222,6 +222,20 @@ func emitReallocBody(bumpGlobalIdx uint32) ([]byte, []wasm.LocalEntry) {
 
 	locals := []wasm.LocalEntry{wasm.NewLocalEntry(2, wasm.ValI32)}
 	return cb.Bytes(), locals
+}
+
+// emitRequiredPages leaves ceil(localBytes / 65536) on the stack without
+// adding 65535 to localBytes, which could overflow near the wasm32 limit.
+func emitRequiredPages(cb *wasm.CodeBuilder, localBytes uint32) {
+	cb.LocalGet(localBytes)
+	cb.I32Const(16)
+	cb.I32ShrU()
+	cb.LocalGet(localBytes)
+	cb.I32Const((1 << 16) - 1)
+	cb.I32And()
+	cb.I32Eqz()
+	cb.I32Eqz()
+	cb.I32Add()
 }
 
 // emitForwardBody emits a wrapper body that forwards params to the
@@ -273,16 +287,18 @@ func newStubAllocator(stubMod api.Module) (*stubAllocator, error) {
 func (a *stubAllocator) reset() { a.bump.Set(uint64(uint32(stubBumpInitial))) }
 
 // realloc is emitReallocBody in Go: the same bump allocation, growth, and
-// copy of the old block, and a null return when memory cannot grow.
+// copy of the old block, returning an error on overflow or failed growth.
 func (a *stubAllocator) realloc(_ context.Context, oldPtr, oldSize, align, newSize uint32) (uint32, error) {
-	const pageShift = 16
 	bump := uint32(a.bump.Get())
 	result := (bump + align - 1) & -align
 	newBump := result + newSize
-	if cur := a.mem.Size(); newBump > cur {
-		pages := (newBump - cur + (1<<pageShift - 1)) >> pageShift
+	if result < bump || newBump < result {
+		return 0, fmt.Errorf("wacogo/host: realloc: %d bytes overflow the address space", newSize)
+	}
+	currentPages, _ := a.mem.Grow(0)
+	if pages := stubPagesToGrow(currentPages, newBump); pages > 0 {
 		if _, ok := a.mem.Grow(pages); !ok {
-			return 0, nil
+			return 0, fmt.Errorf("wacogo/host: realloc: out of memory")
 		}
 	}
 	a.bump.Set(uint64(newBump))
@@ -296,4 +312,16 @@ func (a *stubAllocator) realloc(_ context.Context, oldPtr, oldSize, align, newSi
 		copy(dst, old)
 	}
 	return result, nil
+}
+
+func stubRequiredPages(bytes uint32) uint32 {
+	return uint32((uint64(bytes) + (1<<16 - 1)) >> 16)
+}
+
+func stubPagesToGrow(currentPages, newBump uint32) uint32 {
+	requiredPages := stubRequiredPages(newBump)
+	if requiredPages <= currentPages {
+		return 0
+	}
+	return requiredPages - currentPages
 }

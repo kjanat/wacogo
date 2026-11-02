@@ -2,6 +2,7 @@ package canon
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/kjanat/wazero/api"
@@ -58,18 +59,35 @@ func (t *Task) AddRelease(fn func()) {
 	t.releases = append(t.releases, fn)
 }
 
-// End drains all registered releases (in registration order) and returns
-// an error if NumBorrows is non-zero. Always called from a defer at end
-// of call.
+// End drains all registered releases in order, even if a release panics.
+// Release failures and outstanding borrows are returned together. Detach the
+// release list before callbacks so cleanup cannot run the same release twice.
 func (t *Task) End() error {
-	for _, fn := range t.releases {
-		fn()
-	}
+	releases := t.releases
 	t.releases = nil
-	if t.NumBorrows > 0 {
-		return fmt.Errorf("call returned with %d outstanding borrows", t.NumBorrows)
+	var errs []error
+	for _, fn := range releases {
+		err := func() (err error) {
+			defer func() {
+				if p := recover(); p != nil {
+					if cause, ok := p.(error); ok {
+						err = fmt.Errorf("task release: %w", cause)
+					} else {
+						err = fmt.Errorf("task release: %v", p)
+					}
+				}
+			}()
+			fn()
+			return nil
+		}()
+		if err != nil {
+			errs = append(errs, err)
+		}
 	}
-	return nil
+	if t.NumBorrows > 0 {
+		errs = append(errs, fmt.Errorf("call returned with %d outstanding borrows", t.NumBorrows))
+	}
+	return errors.Join(errs...)
 }
 
 // MaxListByteLength is the maximum total byte size for a list (per canonical
@@ -95,10 +113,9 @@ func trapf(format string, args ...any) {
 	panic(&Trap{msg: fmtSprintf(format, args...)})
 }
 
-// callRealloc invokes a ReallocFunc with runtime safety checks: nil func,
-// null return for a non-zero size, misalignment, and out-of-bounds pointer
-// all trap. A null pointer satisfies a zero-size request, as the canonical
-// ABI only checks alignment and bounds and TinyGo returns nil for size 0.
+// callRealloc invokes a ReallocFunc with runtime safety checks: a nil func,
+// misalignment, and an out-of-bounds pointer all trap. Address zero is valid
+// when the returned span is in bounds.
 func callRealloc(ctx context.Context, r ReallocFunc, mem api.Memory, origPtr, origSize, align, newSize uint32) (uint32, error) {
 	if r == nil {
 		trapf("realloc required but not provided")
@@ -106,9 +123,6 @@ func callRealloc(ctx context.Context, r ReallocFunc, mem api.Memory, origPtr, or
 	ptr, err := r(ctx, origPtr, origSize, align, newSize)
 	if err != nil {
 		return 0, err
-	}
-	if ptr == 0 && newSize != 0 {
-		trapf("realloc returned null")
 	}
 	if align != 0 && ptr%align != 0 {
 		trapf("realloc returned unaligned pointer %d (align %d)", ptr, align)

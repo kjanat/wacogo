@@ -31,13 +31,20 @@ type ResourceHandle interface {
 // liveResourceHandle is the table-backed implementation. valid flips to
 // false on Drop or TransferOwn — subsequent calls panic.
 type liveResourceHandle struct {
-	table   *ResourceTable
-	slotIdx uint32
-	valid   bool
+	table      *ResourceTable
+	slotIdx    uint32
+	generation uint64
+	valid      bool
+}
+
+// An independently looked-up alias can free and recycle the slot without
+// changing this Go handle's valid flag. Match the allocation, not just its ID.
+func (h *liveResourceHandle) isValid() bool {
+	return h.valid && h.table.entries[h.slotIdx].occupied && h.table.entries[h.slotIdx].generation == h.generation
 }
 
 func (h *liveResourceHandle) checkValid(op string) {
-	if !h.valid {
+	if !h.isValid() {
 		panic(fmt.Sprintf("wacogo/core: %s on invalid resource handle", op))
 	}
 }
@@ -71,8 +78,8 @@ func (h *liveResourceHandle) LendTo(target TransferTarget, task *canon.Task) (Re
 	if target == nil {
 		return nil, fmt.Errorf("LendTo: nil target")
 	}
-	tt, ok := target.(*ResourceTable)
-	if !ok {
+	tt, tracker := rawTargetTable(target)
+	if tt == nil {
 		return nil, fmt.Errorf("LendTo: invalid target type %T", target)
 	}
 
@@ -81,7 +88,7 @@ func (h *liveResourceHandle) LendTo(target TransferTarget, task *canon.Task) (Re
 	e.numLends++
 	src := h
 	task.AddRelease(func() {
-		if !src.valid {
+		if !src.isValid() {
 			return
 		}
 		if src.table.entries[src.slotIdx].numLends > 0 {
@@ -97,13 +104,20 @@ func (h *liveResourceHandle) LendTo(target TransferTarget, task *canon.Task) (Re
 	}
 
 	// General cross-component path: allocate borrow on target.
-	return tt.issueBorrow(tr, rep, task), nil
+	borrow := tt.issueBorrow(tr, rep, task)
+	if tracker != nil {
+		tracker.borrows = append(tracker.borrows, borrow)
+	}
+	return borrow, nil
 }
 
 func (h *liveResourceHandle) TransferOwn(target TransferTarget) (ResourceHandle, error) {
 	h.checkValid("TransferOwn")
 	if target == nil {
 		return nil, fmt.Errorf("TransferOwn: nil target")
+	}
+	if t, ok := target.(*rawTransferTarget); ok && t.call.phase == rawFinished {
+		return nil, fmt.Errorf("TransferOwn: target belongs to a completed call")
 	}
 	e := &h.table.entries[h.slotIdx]
 	if e.kind != kindOwn {
@@ -184,8 +198,9 @@ const maxDtorDepth = 32
 
 // runDtor invokes tr's destructor with the spec-required gating:
 //   - nil tr or nil dtor: no-op.
-//   - caller == defining: same-component shortcut; defining instance
-//     is already entered, so invoke directly (Enter would deadlock).
+//   - a poisoned defining instance: refuse to execute its destructor.
+//   - caller == defining and already entered: same-component shortcut;
+//     invoke directly (Enter would be a reentrance trap).
 //   - defining == nil: test stub fallback; invoke directly.
 //   - else: Enter the defining instance, run dtor, defer Exit.
 //
@@ -206,7 +221,10 @@ func runDtor(ctx context.Context, tr *TypeResource, rep uint32, caller *Componen
 	}
 	ctx = context.WithValue(ctx, dtorDepthKey{}, depth+1)
 	defining := tr.instance
-	if caller == defining {
+	if defining != nil && defining.poisoned != nil {
+		return fmt.Errorf("component instance unusable: %w", defining.poisoned)
+	}
+	if caller == defining && defining != nil && defining.entered {
 		return dtor(ctx, rep)
 	}
 	if defining == nil {

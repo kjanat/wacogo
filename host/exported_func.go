@@ -36,14 +36,16 @@ func (f *ExportedFunc) ResultType(i int) core.Type {
 // consume flat results. Each callback receives two CallContext values
 // — caller for the host instance issuing the call and callee for the
 // instance providing the export.
+// Returning an error from write stops guest execution. Returning an error from
+// read skips post-return. Failed canonical conversions poison the callee.
 //
 // CallRaw returns an error if any borrows handed to the callee were
 // not dropped before the call returned.
 func (f *ExportedFunc) CallRaw(
 	ctx context.Context,
 	caller *ComponentInstance,
-	write func(caller, callee *CallContext, stack []uint64),
-	read func(caller, callee *CallContext, stack []uint64),
+	write func(caller, callee *CallContext, stack []uint64) error,
+	read func(caller, callee *CallContext, stack []uint64) error,
 ) error {
 	return f.fn.CallRaw(ctx, caller.Core(), write, read)
 }

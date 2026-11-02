@@ -104,7 +104,9 @@ func (gcc *gocallContext) listStorage(ptr, count, elemSize uint32, generatedSize
 	}
 	storage := valStorage
 	if gcc.generatedStorage {
-		storage = max(storage, generatedSize)
+		// Validation materializes neither Val elements nor their backing slice.
+		// Charge the generated Go element, which can be smaller (e.g. []u8).
+		storage = generatedSize
 	}
 	if count != 0 && storage > math.MaxUint64/uint64(count) {
 		return fmt.Errorf("%w: list storage overflows uint64", ErrLiftLimit)
