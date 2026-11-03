@@ -322,10 +322,8 @@ type Interface struct {
 	Variants  []*TypeVariant
 	Resources []*TypeResource
 
-	// PrimitiveAliases lists named aliases of primitive types owned by
-	// this interface (`type duration = u64`). Uses lower them inline; the
-	// factory still exports each name so an importing component can
-	// resolve the type it names.
+	// PrimitiveAliases preserves exported names while references to these
+	// types use their underlying primitive representation.
 	PrimitiveAliases []PrimitiveAlias
 
 	// Imports lists cross-interface imports referenced by this interface's
@@ -338,14 +336,11 @@ type Interface struct {
 	Docs string
 }
 
-// PrimitiveAlias is a named WIT alias of a primitive type. Type is a
-// Prim or TypeString.
+// PrimitiveAlias is an interface export of a primitive type, including
+// aliases reached through other aliases or a WIT use declaration.
 type PrimitiveAlias struct {
 	Name string
-	Type interface {
-		Type
-		HostTypeExpr() string
-	}
+	Type Type
 }
 
 // Func is one WIT function on an interface.

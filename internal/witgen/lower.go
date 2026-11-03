@@ -860,6 +860,20 @@ func lowerInterface(wif *wit.Interface, globalTypeDefIR map[*wit.TypeDef]Type) (
 			return true
 		}
 		tdName := *td.Name
+		// Primitive aliases need an export even though their uses lower to
+		// inline primitives. Follow aliases here without changing the nominal
+		// type registration below: imported records and resources have identity.
+		switch td.Root().Kind.(type) {
+		case wit.Bool, wit.U8, wit.U16, wit.U32, wit.U64,
+			wit.S8, wit.S16, wit.S32, wit.S64, wit.F32, wit.F64, wit.Char, wit.String:
+			alias, err := lowerType(td, typeDefIR)
+			if err != nil {
+				typeDefErr = fmt.Errorf("type alias %q: %w", tdName, err)
+				return false
+			}
+			iface.PrimitiveAliases = append(iface.PrimitiveAliases, PrimitiveAlias{Name: tdName, Type: alias})
+			return true
+		}
 		switch k := td.Kind.(type) {
 		case *wit.Enum:
 			// Skip typedefs imported via `use` — they belong to a different
@@ -964,25 +978,6 @@ func lowerInterface(wif *wit.Interface, globalTypeDefIR map[*wit.TypeDef]Type) (
 			vt.OwnerInterface = iface
 			vt.Docs = td.Docs.Contents
 			iface.Variants = append(iface.Variants, vt)
-		case wit.Bool, wit.U8, wit.U16, wit.U32, wit.U64, wit.S8, wit.S16, wit.S32, wit.S64,
-			wit.F32, wit.F64, wit.Char, wit.String:
-			if td.Owner != wif {
-				return true
-			}
-			lowered, err := lowerTypeDefKind(k, typeDefIR)
-			if err != nil {
-				typeDefErr = fmt.Errorf("type alias %q: %w", tdName, err)
-				return false
-			}
-			alias, ok := lowered.(interface {
-				Type
-				HostTypeExpr() string
-			})
-			if !ok {
-				typeDefErr = fmt.Errorf("type alias %q lowered to %T, expected a primitive", tdName, lowered)
-				return false
-			}
-			iface.PrimitiveAliases = append(iface.PrimitiveAliases, PrimitiveAlias{Name: tdName, Type: alias})
 		case *wit.Resource:
 			// *wit.Resource is a marker — its methods, ctor and statics
 			// live on the interface's Functions list and are classified

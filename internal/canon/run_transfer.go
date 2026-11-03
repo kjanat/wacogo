@@ -121,7 +121,9 @@ func runTransferPlan(
 		tc.callee.Instance.Poison(cerr)
 		panic(&Trap{msg: cerr.Error()})
 	}
-	mustTransfer(ctx.Err())
+	if err := ctx.Err(); err != nil {
+		panic(&Trap{msg: err.Error(), cause: err})
+	}
 
 	// 6. Swap sides before result steps.
 	//
