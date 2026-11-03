@@ -16,7 +16,8 @@ var hostCounter atomic.Uint64
 // buildPerInstanceHostMod constructs a fresh wazero host module whose
 // Go functions close directly over the supplied *ComponentInstance
 // wrapper. One host module per Instantiate call; closing the
-// *ComponentInstance also closes this module.
+// *ComponentInstance also closes this module. The caller owns the
+// returned compiled module and closes it after the module.
 //
 // h.core and h.hostCallCC must be filled before any of these closures
 // fire — the host module is built before core.NewInstance returns, but
@@ -27,7 +28,7 @@ func buildPerInstanceHostMod(
 	rt wazero.Runtime,
 	comp *Component,
 	h *ComponentInstance,
-) (api.Module, error) {
+) (api.Module, wazero.CompiledModule, error) {
 	modName := fmt.Sprintf("%s_host_%d", comp.name, hostCounter.Add(1))
 	hmb := rt.NewHostModuleBuilder(modName)
 
@@ -77,16 +78,18 @@ func buildPerInstanceHostMod(
 	// experimental.WithImportResolver path in wazero's store.resolveImports
 	// does a hard type-assert to *wasm.ModuleInstance; the wrapped
 	// hostModuleInstance value returned by the convenience Instantiate
-	// method would panic on that assertion.
+	// method would panic on that assertion. The convenience method also
+	// closes compiled code with its module; here the caller must do so.
 	compiled, err := hmb.Compile(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("wacogo/host: compile per-instance hostMod: %w", err)
+		return nil, nil, fmt.Errorf("wacogo/host: compile per-instance hostMod: %w", err)
 	}
 	mod, err := rt.InstantiateModule(ctx, compiled, wazero.NewModuleConfig().WithName(modName))
 	if err != nil {
-		return nil, fmt.Errorf("wacogo/host: instantiate per-instance hostMod: %w", err)
+		_ = compiled.Close(ctx)
+		return nil, nil, fmt.Errorf("wacogo/host: instantiate per-instance hostMod: %w", err)
 	}
-	return mod, nil
+	return mod, compiled, nil
 }
 
 // instrumentCall runs fn under any CallListener attached to h. With or

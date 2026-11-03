@@ -8,6 +8,7 @@ import (
 
 	"github.com/kjanat/wacogo/internal/canon"
 	"github.com/kjanat/wacogo/internal/core"
+	"github.com/kjanat/wazero"
 )
 
 // DestroyOrphan, when implemented by a value stored in the extern table,
@@ -45,6 +46,7 @@ type ComponentInstance struct {
 	callListener CallListener
 	hostCallCC   *core.CallContext
 	validateArgs map[*funcRuntime]*canon.LiftValidator
+	hostCode     wazero.CompiledModule
 }
 
 // Core returns the underlying *wacogo.ComponentInstance, suitable for
@@ -77,6 +79,11 @@ func (h *ComponentInstance) Close(ctx context.Context) error {
 	var errs []error
 	if h.core != nil {
 		if err := h.core.Close(ctx); err != nil {
+			errs = append(errs, err)
+		}
+	}
+	if h.hostCode != nil {
+		if err := h.hostCode.Close(ctx); err != nil {
 			errs = append(errs, err)
 		}
 	}

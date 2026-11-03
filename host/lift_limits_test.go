@@ -45,10 +45,11 @@ func TestHostArgumentsBudgetBeforeCallback(t *testing.T) {
 						func(_, _ *core.CallContext, stack []uint64) error { stack[0] = 0; stack[1] = size; return nil },
 						func(_, _ *core.CallContext, _ []uint64) error { return nil })
 				} else {
-					mod, buildErr := buildPerInstanceHostMod(ctx, core.WazeroRuntime(e), comp, inst)
+					mod, hostCode, buildErr := buildPerInstanceHostMod(ctx, core.WazeroRuntime(e), comp, inst)
 					if buildErr != nil {
 						t.Fatal(buildErr)
 					}
+					defer hostCode.Close(ctx)
 					defer mod.Close(ctx)
 					_, err = mod.ExportedFunction(comp.allFuncs[0].hostModExport).Call(ctx, 0, size)
 				}
