@@ -3,6 +3,7 @@ package wacogo_test
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"os/exec"
 	"strings"
@@ -105,7 +106,7 @@ func TestGeneratedHostArgumentsRespectInlineStorage(t *testing.T) {
 						_, err = guest.ExportedFunc("run").Call(ctx)
 					}
 					if budget != 0 && budget < tc.storage {
-						if err == nil || !strings.Contains(err.Error(), wacogo.ErrLiftLimit.Error()) || observer.calls != 0 {
+						if !errors.Is(err, wacogo.ErrLiftLimit) || observer.calls != 0 {
 							t.Fatalf("generated host allocation exceeded budget: budget=%d backing=%d calls=%d err=%v", budget, tc.storage, observer.calls, err)
 						}
 					} else {

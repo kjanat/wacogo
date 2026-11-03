@@ -62,7 +62,7 @@ func runTransferPlan(
 	// transcoding strings or allocating transfer scratch and destination data.
 	if validator := tc.callee.Arguments; validator != nil {
 		if err := validator.ValidateTransfer(ctx, tc.caller.Memory, tc.caller.StringEncoding, tc.registers); err != nil {
-			panic(&Trap{msg: err.Error()})
+			panic(&Trap{msg: err.Error(), cause: err})
 		}
 	}
 

@@ -57,7 +57,7 @@ func TestHostArgumentsBudgetBeforeCallback(t *testing.T) {
 					if err != nil || called != 1 {
 						t.Fatalf("boundary: called=%d err=%v", called, err)
 					}
-				} else if called != 0 || err == nil || !strings.Contains(err.Error(), core.ErrLiftLimit.Error()) {
+				} else if called != 0 || !errors.Is(err, core.ErrLiftLimit) {
 					t.Fatalf("oversize reached callback: called=%d err=%v", called, err)
 				}
 			})

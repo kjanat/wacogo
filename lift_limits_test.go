@@ -59,7 +59,7 @@ func TestEngineLiftLimitsProtectImportedHostArguments(t *testing.T) {
 			if err != nil || calls != 1 {
 				t.Fatalf("boundary: callback=%d err=%v", calls, err)
 			}
-		} else if err == nil || calls != 1 || !strings.Contains(err.Error(), wacogo.ErrLiftLimit.Error()) {
+		} else if !errors.Is(err, wacogo.ErrLiftLimit) || calls != 1 {
 			t.Fatalf("oversize reached callback: callback=%d err=%v", calls, err)
 		}
 	}

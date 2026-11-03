@@ -199,7 +199,7 @@ func TestHostAdapterSourcePreflightBeforeAllocation(t *testing.T) {
 	}
 	defer adapter.Close(ctx)
 	_, err = adapter.Module.ExportedFunction(adapter.Name).Call(ctx, 0, 4)
-	if err == nil || !strings.Contains(err.Error(), ErrLiftLimit.Error()) || reallocs != 0 || calls != 0 {
+	if !errors.Is(err, ErrLiftLimit) || reallocs != 0 || calls != 0 {
 		t.Fatalf("adapter dropped source preflight: calls=%d reallocs=%d err=%v", calls, reallocs, err)
 	}
 }

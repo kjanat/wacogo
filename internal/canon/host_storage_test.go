@@ -2,7 +2,7 @@ package canon
 
 import (
 	"context"
-	"strings"
+	"errors"
 	"testing"
 
 	"github.com/kjanat/wazero"
@@ -40,7 +40,7 @@ func TestHostGeneratedStorageRejectsBeforeTransfer(t *testing.T) {
 			}
 			defer adapter.Close(ctx)
 			_, err = adapter.Module.ExportedFunction(adapter.Name).Call(ctx, 128, 2)
-			if err == nil || !strings.Contains(err.Error(), ErrLiftLimit.Error()) || reallocs != 0 || calls != 0 {
+			if !errors.Is(err, ErrLiftLimit) || reallocs != 0 || calls != 0 {
 				t.Fatalf("transfer started before budget rejection: reallocs=%d calls=%d err=%v", reallocs, calls, err)
 			}
 		})
