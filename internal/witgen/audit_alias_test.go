@@ -20,7 +20,7 @@ func TestAuditPrimitiveAliases(t *testing.T) {
 	}
 	var content string
 	for path, data := range out {
-		if strings.HasSuffix(path, ".bind.go") {
+		if strings.HasSuffix(path, "/ids/ids.bind.go") {
 			content = string(data)
 		}
 	}

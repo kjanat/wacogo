@@ -39,14 +39,14 @@ func TestGeneratedHostArgumentsRespectInlineStorage(t *testing.T) {
 		storage   uint64
 	}{
 		{"nested", "(list (list u8))", 2 * uint64(unsafe.Sizeof([]uint8{}))},
-		{"absent", "(list (option $wide))", 2 * uint64(unsafe.Sizeof(allocation.OptionWide{}))},
+		{"absent", "(list (option $wide-export))", 2 * uint64(unsafe.Sizeof(allocation.OptionWide{}))},
 	} {
 		wat := fmt.Sprintf(`(component
   (import "h" (instance $h
   (type $wide (record
     (field "a" u64) (field "b" u64) (field "c" u64) (field "d" u64)
     (field "e" u64) (field "f" u64) (field "g" u64) (field "h" u64)))
-  (export "wide" (type (eq $wide)))
+  (export "wide" (type $wide-export (eq $wide)))
   (export "%s" (func (param "xs" %s)))))
   (alias export $h "%s" (func $consume))
   (core module $mem (memory (export "memory") 1))

@@ -4,6 +4,8 @@ github.com/kjanat/go-modules v0.9.1 h1:k2noAcB+89Q6Q9w+QEMShm8POXEV+vDpsxYei+6ks
 github.com/kjanat/go-modules v0.9.1/go.mod h1:wJHj82G2EsuccFxcVLGjTEYmGj5TQpIM5QaXCXm5N2k=
 github.com/kjanat/wazero v1.11.1 h1:nZitQ/QBpM1bquGvsSJf4S9aUtbUMbs0XHwNIPRQCY4=
 github.com/kjanat/wazero v1.11.1/go.mod h1:rUvkQkPCMYXQqVtV+0SjjYlKnI+4TuXkm9AVkhamDvw=
+github.com/kjanat/wazero v1.12.2 h1:KBXGrCQGza+opf6VsEPwczp7B7BcNe4WgLjWcBZjAWY=
+github.com/kjanat/wazero v1.12.2/go.mod h1:6j4cEbiug+UYd7xW6B/b66TwMRsJoXjja7tMHeTNXGA=
 github.com/sergi/go-diff v1.3.1 h1:xkr+Oxo4BOQKmkn/B9eMK0g5Kg/983T9DqqPHwYqD+8=
 github.com/sergi/go-diff v1.3.1/go.mod h1:aMJSSKb2lpPvRNec0+w3fl7LP9IOFzdc9Pa4NFbPK1I=
 golang.org/x/sys v0.45.0 h1:dO4czNzziLiiXplLQgBCEpCvXQ3dnkn0SdaZSYdQ+FY=
