@@ -523,7 +523,7 @@ func TestInstanceTypeAlias_SharedTypesStayShared(t *testing.T) {
 		t.Fatalf("Instantiate: %v", err)
 	}
 	got := inst.ExportedType("out")
-	for i := 0; i < depth; i++ {
+	for i := range depth {
 		tup, ok := got.(core.TypeTuple)
 		if !ok || len(tup.Types) != 2 {
 			t.Fatalf("depth %d: %#v", i, got)

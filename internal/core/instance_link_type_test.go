@@ -56,7 +56,7 @@ const lifted = `(core module $m (func (export "f") (param i32)))
 // depth levels of sub-instances, each of which adds a hop to its identity.
 func nestedSubInstances(depth int) string {
 	c := `(component (type $r (resource (rep i32))) (export "r" (type $r)))`
-	for i := 0; i < depth; i++ {
+	for range depth {
 		c = fmt.Sprintf(`(component
   %s
   (instance $i (instantiate 0))

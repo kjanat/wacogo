@@ -131,8 +131,8 @@ func TestParseLimits_Resolved(t *testing.T) {
 
 	var set ParseLimits
 	rv := reflect.ValueOf(&set).Elem()
-	for i := range rv.NumField() {
-		rv.Field(i).SetUint(override)
+	for _, field := range rv.Fields() {
+		field.SetUint(override)
 	}
 	resolved := reflect.ValueOf(set.resolved())
 	defaults := reflect.ValueOf(ParseLimits{}.resolved())
