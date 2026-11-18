@@ -41,7 +41,7 @@ func TestUTF16TransferLengthDoesNotWrap(t *testing.T) {
 func TestUTF16SizeWalkRejectsOverflowedLength(t *testing.T) {
 	tc := &transferContext{caller: &transferSide{StringEncoding: EncUTF16}, callee: &transferSide{StringEncoding: EncUTF16}}
 	requireArithmeticTrap(t, func() {
-		stringContentSizeStep(tc, 1<<31, &allocSink{})
+		stringContentSizeStep(tc, 0, 1<<31, &allocSink{})
 	})
 }
 
@@ -78,22 +78,27 @@ func TestTaggedLatin1UTF16LengthAndCrossEncodingSize(t *testing.T) {
 
 	mem := setupMem(t, 0)
 	helper := &batchReallocHelper{scratch: mem}
+	const srcPtr = 64
 	for _, tc := range []struct {
 		name     string
+		data     []byte
 		srcCoded uint32
 		srcEnc   StringEncoding
 		dstEnc   StringEncoding
 		want     uint32
 	}{
-		{name: "latin1 to utf16", srcCoded: 3, srcEnc: EncLatin1UTF16, dstEnc: EncUTF16, want: 6},
-		{name: "tagged utf16 to utf8", srcCoded: tagged, srcEnc: EncLatin1UTF16, dstEnc: EncUTF8, want: 12},
+		{name: "latin1 to utf16", data: []byte{'a', 0xe9, 'z'}, srcCoded: 3, srcEnc: EncLatin1UTF16, dstEnc: EncUTF16, want: 6},
+		{name: "tagged utf16 to utf8", data: []byte{'a', 0, 0xe9, 0, 0x2d, 0x4e}, srcCoded: tagged, srcEnc: EncLatin1UTF16, dstEnc: EncUTF8, want: 6},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
+			if !mem.Write(srcPtr, tc.data) {
+				t.Fatal("write source string")
+			}
 			sink := &allocSink{helper: helper}
 			stringContentSizeStep(&transferContext{
-				caller: &transferSide{StringEncoding: tc.srcEnc},
+				caller: &transferSide{Memory: mem, StringEncoding: tc.srcEnc},
 				callee: &transferSide{StringEncoding: tc.dstEnc},
-			}, tc.srcCoded, sink)
+			}, srcPtr, tc.srcCoded, sink)
 			got, ok := mem.ReadUint32Le(0)
 			if !ok || got != tc.want {
 				t.Fatalf("discovered allocation = %d, want %d (ok=%t)", got, tc.want, ok)

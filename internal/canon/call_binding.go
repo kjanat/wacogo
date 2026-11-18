@@ -98,7 +98,7 @@ func (cb *CallBinding) CallRawWithFinalizer(
 		return err
 	}
 	defer exitWithError(ctx, cb.callee.Instance, &err)
-	defer poisonOnFailure(cb.callee.Instance, &err)
+	defer poisonOnFailure(cb.callee.Instance, &err, nil)
 	if finish != nil {
 		defer finalizeRawCall(&err, finish)
 	}
@@ -180,17 +180,21 @@ func (cb *CallBinding) finishPostReturn(ctx context.Context, stack []uint64) err
 
 // poisonOnFailure runs before releasing the instance's entry gate. A failed
 // canonical conversion cannot leave a partially mutated instance callable.
-// err is nil for transfer callbacks, which report failures only through traps.
-func poisonOnFailure(instance Instance, err *error) {
+// A non-nil touched tracks callee effects during transfer; these callbacks
+// report failures only through traps, so err is nil for them.
+func poisonOnFailure(instance Instance, err *error, touched *bool) {
+	shouldPoison := touched == nil || *touched
 	if recovered := recover(); recovered != nil {
-		cause, ok := recovered.(error)
-		if !ok {
-			cause = fmt.Errorf("canonical call panic: %v", recovered)
+		if shouldPoison {
+			cause, ok := recovered.(error)
+			if !ok {
+				cause = fmt.Errorf("canonical call panic: %v", recovered)
+			}
+			instance.Poison(cause)
 		}
-		instance.Poison(cause)
 		panic(recovered)
 	}
-	if err != nil && *err != nil {
+	if shouldPoison && err != nil && *err != nil {
 		instance.Poison(*err)
 	}
 }

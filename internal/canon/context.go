@@ -33,6 +33,10 @@ type transferContext struct {
 	registers []uint64 // the wazero host-callback stack
 	Task      Task
 
+	// A failed transfer only poisons the callee if its state or code
+	// was touched. Reads and validation of source values don't count.
+	calleeTouched bool
+
 	// allocSrc and allocSink are per-call scratch reused across runTransferPlan
 	// invocations. They escape to heap because the visitor closures take
 	// them by pointer through indirect calls; living on the adapter-owned

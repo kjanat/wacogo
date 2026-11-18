@@ -47,14 +47,12 @@ func transferStringContent(ctx context.Context, tc *transferContext, srcPtr, src
 			outBytes, outCoded = srcBytes, srcCoded
 		}
 	} else {
-		s := decodeString(memShim{tc.caller.Memory}, srcPtr, srcCoded, srcEnc)
+		s := decodeStringBytes(srcBytes, srcCoded, srcEnc)
 		outBytes, outCoded = encodeString(s, dstEnc)
 	}
 
-	// The discovery walk requested a buffer sized to the worst-case under
-	// stringEncoderUpperBound. The actual output length (len(outBytes)) is
-	// always ≤ that bound. The destination pointer reserves at least that
-	// many bytes; we only write the actual outBytes.
+	// Cross-encoding conversion uses an owned buffer: the guest memories
+	// may alias, so writing into the destination must not corrupt the source.
 	dstPtr := src.next(ctx, tc, uint32(len(outBytes)), stringAlign(dstEnc))
 	if !tc.callee.Memory.Write(dstPtr, outBytes) {
 		panic(&Trap{msg: "string oob write"})
@@ -63,21 +61,20 @@ func transferStringContent(ctx context.Context, tc *transferContext, srcPtr, src
 }
 
 // stringContentSizeStep is the discovery walk for a string transfer.
-// Given the source coded length, it computes the upper-bound byte count
-// under the applicable encoding conversion and reports a single allocation.
-// Source bytes themselves are not needed for sizing.
-func stringContentSizeStep(tc *transferContext, srcCoded uint32, sink *allocSink) {
+// A same-encoding copy preserves the representation and size. Otherwise,
+// validate the source and count the exact destination size without allocating.
+func stringContentSizeStep(tc *transferContext, srcPtr, srcCoded uint32, sink *allocSink) {
 	srcEnc := tc.caller.StringEncoding
 	dstEnc := tc.callee.StringEncoding
 	byteLen := stringByteLen(srcCoded, srcEnc)
 	if byteLen > uint64(maxStringByteLength) {
 		panic(&Trap{msg: "string byte length exceeds max"})
 	}
-	upper := byteLen * uint64(stringEncoderUpperBoundMultiplier(srcEnc, dstEnc))
-	if upper > uint64(^uint32(0)) {
-		panic(&Trap{msg: "string transfer allocation size overflows uint32"})
+	if srcEnc != dstEnc {
+		b := stringBytes(tc.caller.Memory, srcPtr, srcCoded, srcEnc)
+		byteLen = uint64(transcodedByteLen(b, srcCoded, srcEnc, dstEnc))
 	}
-	sink.add(uint32(upper), stringAlign(dstEnc))
+	sink.add(uint32(byteLen), stringAlign(dstEnc))
 }
 
 // transferListBulk is the fast path for lists whose element type's

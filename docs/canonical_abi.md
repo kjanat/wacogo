@@ -293,6 +293,12 @@ Two functions own the full per-call pipeline.
    original callee.
 10. **Exit callee.**
 
+A transfer trap poisons the callee only after lowering has allocated in its
+memory, transferred a resource into its table, or invoked its function. Invalid
+source values detected before those effects still trap the caller but leave the
+destination available. Lowered imports check `may_leave` before transferring any
+arguments, so they cannot run from `realloc` or `post-return`.
+
 ### `runGocallPlan` (`run_gocall.go`)
 
 1. **Validate** `len(args) == len(plan.paramSteps)`.

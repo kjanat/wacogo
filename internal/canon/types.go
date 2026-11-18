@@ -124,13 +124,18 @@ func callRealloc(ctx context.Context, r ReallocFunc, mem api.Memory, origPtr, or
 	if err != nil {
 		return 0, err
 	}
+	checkReallocResult(mem, ptr, align, newSize)
+	return ptr, nil
+}
+
+// Check allocator results the same way for individual and batched calls.
+func checkReallocResult(mem api.Memory, ptr, align, size uint32) {
 	if align != 0 && ptr%align != 0 {
 		trapf("realloc returned unaligned pointer %d (align %d)", ptr, align)
 	}
-	if uint64(ptr)+uint64(newSize) > uint64(mem.Size()) {
-		trapf("realloc return: beyond end of memory: pointer %d+%d (mem size %d)", ptr, newSize, mem.Size())
+	if uint64(ptr)+uint64(size) > uint64(mem.Size()) {
+		trapf("realloc return: beyond end of memory: pointer %d+%d (mem size %d)", ptr, size, mem.Size())
 	}
-	return ptr, nil
 }
 
 // memShim adapts api.Memory to the fakeOrRealMemory interface used by

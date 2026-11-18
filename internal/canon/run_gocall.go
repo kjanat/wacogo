@@ -44,7 +44,7 @@ func runGocallPlan(
 			panic(panicked)
 		}
 	}()
-	defer poisonOnFailure(gcc.callee.Instance, &err)
+	defer poisonOnFailure(gcc.callee.Instance, &err, nil)
 	gcc.lift = liftBudget{limits: gcc.limits}
 
 	// Borrow-trap & release defer. gcc.Task.End() drains per-call release

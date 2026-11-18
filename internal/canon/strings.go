@@ -75,19 +75,6 @@ func stringAlign(enc StringEncoding) uint32 {
 	return 1
 }
 
-// stringEncoderUpperBoundMultiplier returns the worst-case byte-size multiplier when
-// transferring a string from srcEnc to dstEnc. Same encoding is exact (1×);
-// any cross-encoding transfer fits in 2× the source byte size (UTF-8→UTF-16
-// is 2×, UTF-16→UTF-8 is 1.5×, Latin-1+UTF-16↔others are at most 2×). The
-// upper bound over-allocates in some cases; canon ABI permits this since
-// the actual written length is reported back via the coded-len return.
-func stringEncoderUpperBoundMultiplier(srcEnc, dstEnc StringEncoding) uint32 {
-	if srcEnc == dstEnc {
-		return 1
-	}
-	return 2
-}
-
 // latin1UTF16Decode interprets a codedLen field for Latin-1+UTF-16 encoding.
 // effLen is the count without the tag bit. isUTF16 selects between the two
 // sub-encodings.
@@ -280,4 +267,110 @@ func validateUTF16Bytes(bytes []byte) {
 			trapf("unpaired low surrogate at %d", i)
 		}
 	}
+}
+
+// transcodedByteLen returns the exact byte length src will occupy once
+// transcoded from srcEnc to dstEnc, matching what encodeString produces.
+// src must be the bytes returned by stringBytes for (srcCoded,
+// srcEnc). Validates src as it counts, in one pass, and traps if it is
+// malformed in srcEnc. Does not allocate.
+func transcodedByteLen(src []byte, srcCoded uint32, srcEnc, dstEnc StringEncoding) uint32 {
+	srcUTF16 := srcEnc == EncUTF16
+	if srcEnc == EncLatin1UTF16 {
+		_, srcUTF16 = latin1UTF16Decode(srcCoded)
+	}
+	if srcUTF16 && len(src)%2 != 0 {
+		trapf("UTF-16 byte length must be even")
+	}
+	// One pass counts every destination's length; the switch below
+	// picks the one dstEnc needs. Each source encoding gets its own loop
+	// so the common cases stay tight.
+	var utf8Len, utf16Len, codePoints uint32
+	latin1 := true
+	switch {
+	case srcEnc == EncUTF8:
+		for i := 0; i < len(src); {
+			if src[i] < utf8.RuneSelf {
+				utf8Len++
+				utf16Len += 2
+				codePoints++
+				i++
+				continue
+			}
+			r, size := utf8.DecodeRune(src[i:])
+			if r == utf8.RuneError && size == 1 {
+				trapf("%s", classifyUTF8(src[i:]))
+			}
+			i += size
+			codePoints++
+			utf8Len += uint32(size)
+			if r >= 0x10000 {
+				utf16Len += 4
+			} else {
+				utf16Len += 2
+			}
+			if r > 0xFF {
+				latin1 = false
+			}
+		}
+	case srcUTF16:
+		for i := 0; i < len(src); i += 2 {
+			u := uint16(src[i]) | uint16(src[i+1])<<8
+			codePoints++
+			switch {
+			case u < 0x80:
+				utf8Len++
+				utf16Len += 2
+			case u < 0x800:
+				utf8Len += 2
+				utf16Len += 2
+				if u > 0xFF {
+					latin1 = false
+				}
+			case u < 0xD800 || u > 0xDFFF:
+				utf8Len += 3
+				utf16Len += 2
+				latin1 = false
+			case u <= 0xDBFF:
+				if i+4 > len(src) {
+					trapf("unpaired high surrogate at %d", i/2)
+				}
+				if low := uint16(src[i+2]) | uint16(src[i+3])<<8; low < 0xDC00 || low > 0xDFFF {
+					trapf("high surrogate not followed by low surrogate")
+				}
+				utf8Len += 4
+				utf16Len += 4
+				latin1 = false
+				i += 2
+			default:
+				trapf("unpaired low surrogate at %d", i/2)
+			}
+		}
+	case srcEnc == EncLatin1UTF16: // Latin-1: every byte is a code point.
+		for _, b := range src {
+			if b < 0x80 {
+				utf8Len++
+			} else {
+				utf8Len += 2
+			}
+		}
+		codePoints = uint32(len(src))
+		utf16Len = 2 * codePoints
+	default:
+		trapf("unknown string encoding")
+	}
+	switch dstEnc {
+	case EncUTF8:
+		return utf8Len
+	case EncUTF16:
+		return utf16Len
+	case EncLatin1UTF16:
+		if latin1 {
+			// One byte per code point.
+			return codePoints
+		}
+		return utf16Len
+	}
+	trapf("unknown string encoding")
+	return 0
 }

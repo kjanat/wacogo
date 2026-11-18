@@ -130,6 +130,11 @@ func (h *batchReallocHelper) writeSizeAlign(i, size, align uint32) {
 	h.scratch.WriteUint32Le(i*8+4, align)
 }
 
+func (h *batchReallocHelper) readSize(i uint32) uint32 {
+	size, _ := h.scratch.ReadUint32Le(i * 8)
+	return size
+}
+
 // ensureRoomFor grows scratch as needed so it can hold n input+output slots
 // (12 bytes/slot: 8 input, 4 output). The helper module declares scratch
 // with no maximum, so Grow is bounded only by wazero's default cap; any

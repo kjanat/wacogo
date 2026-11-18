@@ -47,7 +47,8 @@ func runTransferPlan(
 		panic(&Trap{msg: err.Error()})
 	}
 	defer calleeInst.Exit(ctx)
-	defer poisonOnFailure(calleeInst, nil)
+	tc.calleeTouched = false
+	defer poisonOnFailure(calleeInst, nil, &tc.calleeTouched)
 
 	// Borrow-trap & release defer. tc.Task.End() drains per-call release
 	// closures (caller-side unlends from LendTo) and traps if any
@@ -93,6 +94,7 @@ func runTransferPlan(
 			// mem-mode param region's max alignment. Spec tests check this
 			// trap message via the substring "unaligned pointer".
 			mustTransfer(checkAlignment(callerParamPtr, plan.paramMaxAlign))
+			tc.calleeTouched = true
 			calleePtr, err := callRealloc(ctx, tc.callee.Realloc, tc.callee.Memory, 0, 0, plan.paramMaxAlign, plan.paramMemSize)
 			if err != nil {
 				panic(&Trap{msg: err.Error()})
@@ -117,6 +119,7 @@ func runTransferPlan(
 	// wazero. If wasm traps here, the callee instance's state is
 	// unreliable: poison it before re-raising so subsequent calls see
 	// the trap reason.
+	tc.calleeTouched = true
 	if cerr := calleeFn.CallWithStack(ctx, calleeStack); cerr != nil {
 		tc.callee.Instance.Poison(cerr)
 		panic(&Trap{msg: cerr.Error()})
@@ -207,13 +210,10 @@ func runTransferPlan(
 //  2. Batch: one helper.invoke call performs N internal wasm→wasm
 //     cabi_realloc calls, populating scratch's output region with N
 //     pointers.
-//  3. Transfer: walk every step's transferStep, supplying a
-//     batchedAllocSource that hands the pre-allocated pointers back in
-//     declaration order.
+//  3. Transfer: walk every step's transferStep, supplying an allocSource
+//     that checks the reserved size and the pointer before using it.
 //
-// In the serial fallback: the transfer walk runs once with a
-// serialAllocSource that issues cabi_realloc per request, matching the
-// original behaviour.
+// Without a helper, the same allocSource issues cabi_realloc on each request.
 func runPhasedTransfer(ctx context.Context, tc *transferContext, steps []transferPlanStep, srcBase, dstBase uint32) {
 	helper := tc.callee.BatchHelper
 	// allocSrc and allocSink live on the (heap-allocated, per-adapter)
@@ -232,6 +232,7 @@ func runPhasedTransfer(ctx context.Context, tc *transferContext, steps []transfe
 			}
 		}
 		if tc.allocSink.n > 0 {
+			tc.calleeTouched = true
 			if err := helper.invoke(ctx, tc.allocSink.n); err != nil {
 				panic(&Trap{msg: err.Error()})
 			}
