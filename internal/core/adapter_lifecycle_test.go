@@ -5,6 +5,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
+	"os"
+	"os/exec"
+	"runtime"
 	"slices"
 	"strings"
 	"testing"
@@ -185,10 +189,38 @@ func TestHostFuncs_Rollback(t *testing.T) {
 }
 
 func TestAdapterModules_ListenerClosesEngineDuringCompile(t *testing.T) {
-	ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
-	defer cancel()
+	// Re-entering Close while a compile lock is held would deadlock this
+	// goroutine. Let the child test timeout print its stacks in that case;
+	// never tear down a cache underneath a still-running compilation.
+	const child = "WACOGO_TEST_LISTENER_CLOSE_CHILD"
+	var component []byte
+	if os.Getenv(child) == "1" {
+		var err error
+		if component, err = io.ReadAll(os.Stdin); err != nil {
+			t.Fatal(err)
+		}
+	} else {
+		component = parseLinkWat(t, fmt.Sprintf(adapterLifecycleWat, 0, 0, 0, 0))
+		// Wasm hosts have no subprocesses. Run the same assertion inline.
+		if runtime.GOARCH != "wasm" {
+			exe, err := os.Executable()
+			if err != nil {
+				t.Fatal(err)
+			}
+			deadline, cancel := context.WithTimeout(t.Context(), time.Minute)
+			defer cancel()
+			cmd := exec.CommandContext(deadline, exe, "-test.run=^TestAdapterModules_ListenerClosesEngineDuringCompile$", "-test.timeout=45s")
+			cmd.Env = append(os.Environ(), child+"=1")
+			cmd.Stdin = bytes.NewReader(component)
+			if out, err := cmd.CombinedOutput(); err != nil {
+				t.Fatalf("listener close subprocess: %v\n%s", err, out)
+			}
+			return
+		}
+	}
+	ctx := t.Context()
 	engine, rt, _ := trackAdapterCode(t)
-	comp, err := engine.LoadComponent(ctx, bytes.NewReader(parseLinkWat(t, fmt.Sprintf(adapterLifecycleWat, 0, 0, 0, 0))))
+	comp, err := engine.LoadComponent(ctx, bytes.NewReader(component))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -203,21 +235,12 @@ func TestAdapterModules_ListenerClosesEngineDuringCompile(t *testing.T) {
 		}
 		return nil
 	})
-	done := make(chan error, 1)
-	go func() {
-		inst, err := comp.Instantiate(experimental.WithFunctionListenerFactory(ctx, listener))
-		if inst != nil {
-			_ = inst.Close(ctx)
-		}
-		done <- err
-	}()
-	select {
-	case err := <-done:
-		if !closed || closeErr != nil || err == nil || !strings.Contains(err.Error(), "canonical host is closed") {
-			t.Fatalf("listener close = %v (%v); instantiate = %v", closed, closeErr, err)
-		}
-	case <-ctx.Done():
-		t.Fatal("engine close blocked in the function listener")
+	inst, err := comp.Instantiate(experimental.WithFunctionListenerFactory(ctx, listener))
+	if inst != nil {
+		_ = inst.Close(ctx)
+	}
+	if !closed || closeErr != nil || err == nil || !strings.Contains(err.Error(), "canonical host is closed") {
+		t.Fatalf("listener close = %v (%v); instantiate = %v", closed, closeErr, err)
 	}
 	if rt.LiveHost.Load() != 0 || rt.LiveWasm.Load() != before {
 		t.Fatalf("listener shutdown leaked compiled code: Wasm=%d (want %d), host=%d", rt.LiveWasm.Load(), before, rt.LiveHost.Load())

@@ -119,7 +119,8 @@ func (i *ComponentInstance) ExportedFunc(name string) *ExportedFunc {
 // ExportedInstance returns the exported component instance with the given name, or nil if not found.
 // If the returned instance is closed, calls that reach it through this instance fail.
 // A restricted export shares its underlying instance's lifetime. Closing either
-// view closes both. It does not close imported providers.
+// view closes both. Closing the consumer leaves its imports open; closing a
+// restricted export of an imported instance closes that imported instance.
 func (i *ComponentInstance) ExportedInstance(name string) *ComponentInstance {
 	e, ok := i.lookupExport(name)
 	if !ok || e.kind != SortInstance {

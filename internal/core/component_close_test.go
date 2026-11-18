@@ -6,6 +6,7 @@ import (
 	"errors"
 	"runtime"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -202,19 +203,24 @@ func TestComponentClose_OverlappingInstantiation(t *testing.T) {
 				t.Fatal(err)
 			}
 			defer existing.Close(ctx)
-			instantiate := func() (*ComponentInstance, error) { return first.Instantiate(ctx) }
+			instantiate := func(ctx context.Context) (*ComponentInstance, error) { return first.Instantiate(ctx) }
 			if viaExport {
 				consumer := load(`(component
  (import "m" (core module $m (export "f" (func (result i32)))))
  (core instance $i (instantiate $m))
  (func (export "f") (result u32) (canon lift (core func $i "f"))))`)
-				instantiate = func() (*ComponentInstance, error) {
+				instantiate = func(ctx context.Context) (*ComponentInstance, error) {
 					return consumer.Instantiate(ctx, WithModuleImport("m", existing.ExportedModule("m")))
 				}
 			}
 			started := make(chan struct{})
 			resume := make(chan struct{})
+			type inFlightKey struct{}
+			inFlight := context.WithValue(ctx, inFlightKey{}, true)
 			rt.BeforeInstantiate = func(ctx context.Context, _ *testutil.Code) error {
+				if ctx.Value(inFlightKey{}) != true {
+					return nil
+				}
 				close(started)
 				select {
 				case <-resume:
@@ -228,9 +234,15 @@ func TestComponentClose_OverlappingInstantiation(t *testing.T) {
 				err  error
 			}
 			result := make(chan outcome, 1)
-			go func() {
-				inst, err := instantiate()
+			release := sync.OnceFunc(func() { close(resume) })
+			var worker sync.WaitGroup
+			worker.Go(func() {
+				inst, err := instantiate(inFlight)
 				result <- outcome{inst, err}
+			})
+			defer func() {
+				release()
+				worker.Wait()
 			}()
 			select {
 			case <-started:
@@ -240,10 +252,10 @@ func TestComponentClose_OverlappingInstantiation(t *testing.T) {
 			if err := first.Close(ctx); err != nil {
 				t.Fatal(err)
 			}
-			if _, err := instantiate(); !errors.Is(err, ErrComponentClosed) {
+			if _, err := instantiate(ctx); !errors.Is(err, ErrComponentClosed) {
 				t.Fatalf("new instantiation after close returned %v", err)
 			}
-			close(resume)
+			release()
 			var got outcome
 			select {
 			case got = <-result:

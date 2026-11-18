@@ -36,6 +36,8 @@ func TestAdapterResourceEffectsBeforeInvalidArgument(t *testing.T) {
 			if tc.own {
 				resourceParam = TypeOwn{ResourceType: resource}
 			}
+			// A stale caller ID must not resolve to the first handle in the callee.
+			caller.resources.IssueOwn(&TypeResource{}, 0)
 			source := caller.resources.IssueOwn(resource, 77)
 			id := source.HandleID()
 			binding, err := engine.canonHost.BuildAdapter(ctx, canon.CallSide{Instance: canonInstanceView{caller}}, canon.Callee{
@@ -56,23 +58,27 @@ func TestAdapterResourceEffectsBeforeInvalidArgument(t *testing.T) {
 				defer func() { trapped = recover() }()
 				binding.Func.Call(ctx, nil, stack)
 			}()
-			if trap, ok := trapped.(*canon.Trap); !ok || !strings.Contains(trap.Error(), "char") {
+			trap, ok := trapped.(*canon.Trap)
+			if !ok || !strings.Contains(trap.Error(), "char") {
 				t.Fatalf("invalid second argument trapped with %v", trapped)
 			}
-			err = callee.Enter(ctx)
-			if err == nil {
-				callee.Exit(ctx)
+			var wantCause error
+			if tc.wantPoison {
+				wantCause = trap
 			}
-			if (err != nil) != tc.wantPoison {
-				t.Fatalf("callee availability after failed transfer: %v", err)
+			if cause := callee.Poisoned(); cause != wantCause {
+				t.Fatalf("callee poison = %v, want recovered cause %v", cause, wantCause)
+			}
+			if callee.entered {
+				t.Fatal("trap did not release the callee entry gate")
 			}
 			if len(dropped) != 0 {
 				t.Fatalf("failed argument validation ran destructors: %v", dropped)
 			}
 			switch {
 			case tc.own:
-				if _, err := caller.resources.LookupOwn(resource, id); err == nil {
-					t.Fatal("own transfer left a second owner in the caller")
+				if _, err := caller.resources.LookupBorrowable(resource, id); err == nil {
+					t.Fatal("own transfer left the source handle accessible in the caller")
 				}
 				dest, err := callee.resources.LookupOwn(resource, uint32(stack[0]))
 				if err != nil || dest.Rep() != 77 {

@@ -3,6 +3,7 @@ package canon
 import (
 	"context"
 	"errors"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -314,12 +315,15 @@ func TestBatchReallocHelper_ConcurrentCache(t *testing.T) {
 			defer rt.Close(context.Background())
 			arrived := make(chan *testutil.Code, 2)
 			resume := make(chan struct{})
-			rt.AfterCompile = func(ctx context.Context, c *testutil.Code) {
+			release := sync.OnceFunc(func() { close(resume) })
+			var workers sync.WaitGroup
+			defer func() {
+				release()
+				workers.Wait()
+			}()
+			rt.AfterCompile = func(_ context.Context, c *testutil.Code) {
 				arrived <- c
-				select {
-				case <-resume:
-				case <-ctx.Done():
-				}
+				<-resume
 			}
 			host := NewHost(rt)
 			type result struct {
@@ -328,10 +332,10 @@ func TestBatchReallocHelper_ConcurrentCache(t *testing.T) {
 			}
 			results := make(chan result, 2)
 			for range 2 {
-				go func() {
+				workers.Go(func() {
 					code, err := host.compiledBatchHelper(ctx)
 					results <- result{code, err}
-				}()
+				})
 			}
 			var candidates []*testutil.Code
 			for range 2 {
@@ -344,7 +348,7 @@ func TestBatchReallocHelper_ConcurrentCache(t *testing.T) {
 			}
 			if closeDuringCompile {
 				done := make(chan error, 1)
-				go func() { done <- host.Close(ctx) }()
+				workers.Go(func() { done <- host.Close(ctx) })
 				select {
 				case err := <-done:
 					if err != nil {
@@ -354,7 +358,7 @@ func TestBatchReallocHelper_ConcurrentCache(t *testing.T) {
 					t.Fatal("Close waited for compilation")
 				}
 			}
-			close(resume)
+			release()
 			var installed wazero.CompiledModule
 			for range 2 {
 				select {

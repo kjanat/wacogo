@@ -19,7 +19,9 @@ An instantiation already in progress may finish or fail when it needs code
 released by `Close`.
 
 An ascribed instance export and its underlying instance share a lifetime.
-Closing either closes both views. Imported providers keep their own lifetime.
+Closing either closes both views. Closing a consumer leaves its imported
+providers open. Closing an ascribed re-export of an imported provider closes
+that provider itself.
 
 A WebAssembly Component Model (MVP) runtime for Go, built on [wazero].
 

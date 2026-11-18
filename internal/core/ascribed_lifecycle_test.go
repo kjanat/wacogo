@@ -121,16 +121,20 @@ func TestAscribedInstanceExportClose(t *testing.T) {
 			if err := table.IssueOwn(resource, 1).Drop(ctx); err != nil {
 				t.Fatal(err)
 			}
+			if !slices.Equal(destroyed, []uint32{1}) {
+				t.Fatalf("destructors on return from Drop = %v, want [1]", destroyed)
+			}
 			handle := table.IssueOwn(resource, 2)
 			retained := []*ExportedFunc{full.ExportedFunc("f"), narrow.ExportedFunc("f")}
 			views := []*ComponentInstance{full, narrow}
 			if first == "narrow" {
 				slices.Reverse(views)
 			}
-			for _, view := range append(views, inst) {
-				if err := view.Close(ctx); err != nil {
-					t.Fatal(err)
-				}
+			if err := views[0].Close(ctx); err != nil {
+				t.Fatal(err)
+			}
+			if closed != 1 {
+				t.Fatalf("first close ran teardown %d times, want once", closed)
 			}
 			for _, f := range retained {
 				if _, err := f.Call(ctx); err == nil || !strings.Contains(err.Error(), "closed") {
@@ -140,11 +144,60 @@ func TestAscribedInstanceExportClose(t *testing.T) {
 			if err := handle.Drop(ctx); err == nil || !strings.Contains(err.Error(), "closed") {
 				t.Fatalf("dropping an outstanding handle after close: %v", err)
 			}
+			for _, remaining := range []*ComponentInstance{views[1], inst} {
+				if err := remaining.Close(ctx); err != nil {
+					t.Fatal(err)
+				}
+			}
 			if closed != 1 || !slices.Equal(destroyed, []uint32{1}) {
 				t.Fatalf("teardowns=%d, destructors=%v; want one teardown and only the explicit drop", closed, destroyed)
 			}
 			callAnswer(t, ctx, provider)
 		})
+	}
+}
+
+func TestCloseAscribedImport(t *testing.T) {
+	ctx := t.Context()
+	engine := NewEngine(ctx)
+	defer engine.Close(ctx)
+	load := func(wat string) *Component {
+		t.Helper()
+		c, err := engine.LoadComponent(ctx, bytes.NewReader(parseLinkWat(t, wat)))
+		if err != nil {
+			t.Fatal(err)
+		}
+		return c
+	}
+	source := load(closeTestAnswer)
+	defer source.Close(ctx)
+	consumer := load(`(component
+		(import "provider" (instance $p (export "f" (func (result u32)))))
+		(export "view" (instance $p) (instance)))`)
+	defer consumer.Close(ctx)
+	provider, err := source.Instantiate(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer provider.Close(ctx)
+	client, err := consumer.Instantiate(ctx, WithInstanceImport("provider", provider))
+	if err != nil {
+		t.Fatal(err)
+	}
+	view := client.ExportedInstance("view")
+	if view == nil || view.ExportedFunc("f") != nil {
+		t.Fatal("expected a restricted view of the imported provider")
+	}
+	f := provider.ExportedFunc("f")
+	if err := client.Close(ctx); err != nil {
+		t.Fatal(err)
+	}
+	callAnswer(t, ctx, provider)
+	if err := view.Close(ctx); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := f.Call(ctx); err == nil || !strings.Contains(err.Error(), "closed") {
+		t.Fatalf("provider call after closing its re-export: %v", err)
 	}
 }
 

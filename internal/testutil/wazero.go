@@ -79,6 +79,52 @@ type hostBuilder struct {
 	runtime *Runtime
 }
 
+// Each fluent call must return the wrapper: handing the embedded builder
+// back to the caller would silently bypass tracking on the final Compile.
+func (b *hostBuilder) NewFunctionBuilder() wazero.HostFunctionBuilder {
+	return &hostFunctionBuilder{function: b.HostModuleBuilder.NewFunctionBuilder(), module: b}
+}
+
+type hostFunctionBuilder struct {
+	function wazero.HostFunctionBuilder
+	module   *hostBuilder
+}
+
+func (f *hostFunctionBuilder) WithFunc(fn any) wazero.HostFunctionBuilder {
+	f.function = f.function.WithFunc(fn)
+	return f
+}
+
+func (f *hostFunctionBuilder) WithGoFunction(fn api.GoFunction, params, results []api.ValueType) wazero.HostFunctionBuilder {
+	f.function = f.function.WithGoFunction(fn, params, results)
+	return f
+}
+
+func (f *hostFunctionBuilder) WithGoModuleFunction(fn api.GoModuleFunction, params, results []api.ValueType) wazero.HostFunctionBuilder {
+	f.function = f.function.WithGoModuleFunction(fn, params, results)
+	return f
+}
+
+func (f *hostFunctionBuilder) WithName(name string) wazero.HostFunctionBuilder {
+	f.function = f.function.WithName(name)
+	return f
+}
+
+func (f *hostFunctionBuilder) WithParameterNames(names ...string) wazero.HostFunctionBuilder {
+	f.function = f.function.WithParameterNames(names...)
+	return f
+}
+
+func (f *hostFunctionBuilder) WithResultNames(names ...string) wazero.HostFunctionBuilder {
+	f.function = f.function.WithResultNames(names...)
+	return f
+}
+
+func (f *hostFunctionBuilder) Export(name string) wazero.HostModuleBuilder {
+	f.function.Export(name)
+	return f.module
+}
+
 func (b *hostBuilder) Compile(ctx context.Context) (wazero.CompiledModule, error) {
 	if b.runtime.BeforeHostCompile != nil {
 		if err := b.runtime.BeforeHostCompile(); err != nil {
