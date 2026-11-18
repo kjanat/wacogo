@@ -11,11 +11,9 @@ import (
 //
 // BatchHelper, when non-nil, points to a per-adapter wasm helper that
 // batches N cabi_realloc calls behind a single Go→wasm crossing. It is
-// instantiated at adapter build time only when the transfer plan contains
-// a step that benefits from batching (e.g. list<string> param transfer)
-// and the side's StringEncoding matches the source's. Runtime code that
-// can take a batched path checks for nil and falls back to per-element
-// realloc when it is missing.
+// instantiated when both sides use the same string encoding and the adapter
+// can bind a Wasm realloc by module and export name. Otherwise, the transfer
+// calls realloc directly.
 type transferSide struct {
 	Instance       Instance
 	Memory         api.Memory
@@ -32,6 +30,10 @@ type transferContext struct {
 	callee    *transferSide
 	registers []uint64 // the wazero host-callback stack
 	Task      Task
+
+	// A failed transfer only poisons the callee if its state or code
+	// was touched. Reads and validation of source values don't count.
+	calleeTouched bool
 
 	// allocSrc and allocSink are per-call scratch reused across runTransferPlan
 	// invocations. They escape to heap because the visitor closures take

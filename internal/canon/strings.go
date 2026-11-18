@@ -75,19 +75,6 @@ func stringAlign(enc StringEncoding) uint32 {
 	return 1
 }
 
-// stringEncoderUpperBoundMultiplier returns the worst-case byte-size multiplier when
-// transferring a string from srcEnc to dstEnc. Same encoding is exact (1×);
-// any cross-encoding transfer fits in 2× the source byte size (UTF-8→UTF-16
-// is 2×, UTF-16→UTF-8 is 1.5×, Latin-1+UTF-16↔others are at most 2×). The
-// upper bound over-allocates in some cases; canon ABI permits this since
-// the actual written length is reported back via the coded-len return.
-func stringEncoderUpperBoundMultiplier(srcEnc, dstEnc StringEncoding) uint32 {
-	if srcEnc == dstEnc {
-		return 1
-	}
-	return 2
-}
-
 // latin1UTF16Decode interprets a codedLen field for Latin-1+UTF-16 encoding.
 // effLen is the count without the tag bit. isUTF16 selects between the two
 // sub-encodings.

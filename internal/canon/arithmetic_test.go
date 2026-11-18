@@ -64,7 +64,7 @@ func TestCallReallocRejectsOutOfBoundsAddressZero(t *testing.T) {
 	})
 }
 
-func TestTaggedLatin1UTF16LengthAndCrossEncodingSize(t *testing.T) {
+func TestTaggedLatin1UTF16Length(t *testing.T) {
 	if got := stringByteLen(3, EncLatin1UTF16); got != 3 {
 		t.Fatalf("Latin-1 byte length = %d, want 3", got)
 	}
@@ -76,28 +76,4 @@ func TestTaggedLatin1UTF16LengthAndCrossEncodingSize(t *testing.T) {
 		t.Fatalf("maximum tagged UTF-16 byte length = %#x, want 0xfffffffe", got)
 	}
 
-	mem := setupMem(t, 0)
-	helper := &batchReallocHelper{scratch: mem}
-	for _, tc := range []struct {
-		name     string
-		srcCoded uint32
-		srcEnc   StringEncoding
-		dstEnc   StringEncoding
-		want     uint32
-	}{
-		{name: "latin1 to utf16", srcCoded: 3, srcEnc: EncLatin1UTF16, dstEnc: EncUTF16, want: 6},
-		{name: "tagged utf16 to utf8", srcCoded: tagged, srcEnc: EncLatin1UTF16, dstEnc: EncUTF8, want: 12},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			sink := &allocSink{helper: helper}
-			stringContentSizeStep(&transferContext{
-				caller: &transferSide{StringEncoding: tc.srcEnc},
-				callee: &transferSide{StringEncoding: tc.dstEnc},
-			}, tc.srcCoded, sink)
-			got, ok := mem.ReadUint32Le(0)
-			if !ok || got != tc.want {
-				t.Fatalf("discovered allocation = %d, want %d (ok=%t)", got, tc.want, ok)
-			}
-		})
-	}
 }

@@ -25,6 +25,7 @@ type allocSource struct {
 func (s *allocSource) next(ctx context.Context, tc *transferContext, size, align uint32) uint32 {
 	if s.helper == nil {
 		// Serial fallback: directly invoke target's cabi_realloc.
+		tc.calleeTouched = true
 		p, err := callRealloc(ctx, tc.callee.Realloc, tc.callee.Memory, 0, 0, align, size)
 		if err != nil {
 			panic(&Trap{msg: err.Error()})
@@ -34,7 +35,11 @@ func (s *allocSource) next(ctx context.Context, tc *transferContext, size, align
 	if s.idx >= s.n {
 		panic(fmt.Sprintf("allocSource: cursor %d >= count %d (size discovery missed an alloc)", s.idx, s.n))
 	}
+	if want := s.helper.readSize(s.idx); want != size {
+		trapf("allocation %d requested %d bytes, discovery reserved %d", s.idx, size, want)
+	}
 	p := s.helper.readPtr(s.n, s.idx)
+	checkReallocResult(tc.callee.Memory, p, align, size)
 	s.idx++
 	return p
 }

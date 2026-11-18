@@ -257,3 +257,17 @@ func (v ValidatedComponentAlias) IsInstanceRuntimeEmpty() bool {
 	}
 	return isInstanceTypeRuntimeEmpty(v.arena, v.et.InstID)
 }
+
+// ValidatedCanonicalFunction is a canonical function paired with the signature of
+// the core function it creates.
+type ValidatedCanonicalFunction struct {
+	Function        CanonicalFunction
+	created         bool
+	params, results []CoreValType
+}
+
+// CoreFunc returns the signature of the core function this creates. A canon lift
+// creates a component function, so it has none.
+func (f ValidatedCanonicalFunction) CoreFunc() (params, results []CoreValType, ok bool) {
+	return f.params, f.results, f.created
+}

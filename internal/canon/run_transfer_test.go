@@ -49,6 +49,46 @@ func TestRunTransferPlan_TrapInStepReleasesTask(t *testing.T) {
 	runTransferPlan(context.Background(), plan, tc, calleeFn, nil, 0, nil)
 }
 
+func TestRunTransferPlan_PoisonAfterCalleeAllocation(t *testing.T) {
+	for _, tc := range []struct {
+		name       string
+		registers  []uint64
+		wantAllocs int
+	}{
+		{name: "invalid first", registers: []uint64{32, 1, 16, 1}},
+		{name: "invalid second", registers: []uint64{16, 1, 32, 1}, wantAllocs: 1},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			source, dest := setupMem(t, 0), setupMem(t, 0)
+			source.WriteByte(16, 'a')
+			source.WriteByte(32, 0xff)
+			callee := &auditPoisonInstance{}
+			allocs := 0
+			call := &transferContext{
+				caller: &transferSide{Memory: source, StringEncoding: EncUTF8},
+				callee: &transferSide{Instance: callee, Memory: dest, StringEncoding: EncUTF8,
+					Realloc: func(context.Context, uint32, uint32, uint32, uint32) (uint32, error) {
+						allocs++
+						return 64, nil
+					}},
+				registers: tc.registers,
+			}
+			plan := compileTransferPlan([]Type{testTypeString{}, testTypeString{}}, nil, callee)
+			defer func() {
+				trap, ok := recover().(*Trap)
+				if !ok || !strings.Contains(trap.Error(), "invalid utf-8") {
+					t.Fatalf("got %v, want invalid utf-8 trap", trap)
+				}
+				if allocs != tc.wantAllocs || (callee.poisoned != nil) != (tc.wantAllocs > 0) {
+					t.Fatalf("allocations = %d, poison = %v; want %d allocations", allocs, callee.poisoned, tc.wantAllocs)
+				}
+			}()
+			runTransferPlan(context.Background(), plan, call,
+				DirectFunc(func(context.Context, []uint64) { t.Error("callee must not run") }), nil, 4, nil)
+		})
+	}
+}
+
 func TestRunTransferPlan_TrapsOnUndroppedBorrow(t *testing.T) {
 	// Verify that a call that issues a borrow (incrementing NumBorrows on
 	// the callee) but does not drop it causes a trap at call resolution.

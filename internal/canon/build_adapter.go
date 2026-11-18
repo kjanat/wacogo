@@ -3,23 +3,18 @@ package canon
 import (
 	"context"
 	"fmt"
-	"sync/atomic"
 
-	"github.com/kjanat/wazero"
 	"github.com/kjanat/wazero/api"
 )
 
-var adapterCounter atomic.Uint64
-
 // BuildAdapter constructs a cross-component adapter for a single lowered
-// function: a host module containing the Go transfer function plus a tiny
-// wasm stub module that imports and re-exports it as "adapt".
+// function: the Go transfer function and its core signature, for the caller to
+// put in a host module.
 //
-// The returned *CallAdapter owns both modules; call Close when the adapter
-// is no longer needed (e.g. when the component instance is closed).
+// Call Close on the returned *CallAdapter when the adapter is no longer needed
+// (e.g. when the component instance is closed).
 func (h *Host) BuildAdapter(
 	ctx context.Context,
-	baseName string,
 	caller CallSide,
 	callee Callee,
 	params, results []Type,
@@ -79,11 +74,6 @@ func (h *Host) BuildAdapter(
 	// once here; it never varies across calls. Also precompute the wrapped
 	// post-return.
 	//
-	// The caller side is precomputed when caller.Memory is known at
-	// construction. When it is nil, the caller's memory is resolved per
-	// call from the calling wasm module (mod.Memory()); in that case we
-	// cache the non-memory parts on callerSideTpl and rebuild the side
-	// per call.
 	calleeSide := &transferSide{
 		Instance:       callee.Instance,
 		Memory:         callee.Memory,
@@ -111,27 +101,28 @@ func (h *Host) BuildAdapter(
 	// crossing; the loop calling cabi_realloc happens entirely in wasm.
 	// Construction is deferred to a helper because errors here must be
 	// surfaced as adapter-build failures, not transfer-time panics.
-	var auxModules []api.Module
+	var reallocHelpers []*batchReallocHelper
+	sameEncoding := caller.StringEncoding == callee.StringEncoding
 	// A Go allocator needs no batching: each allocation is a Go call.
-	if callee.ReallocModName != "" && callee.GoRealloc == nil {
+	if sameEncoding && callee.ReallocModName != "" && callee.GoRealloc == nil {
 		helper, err := h.buildBatchReallocHelper(ctx, callee.ReallocModName, callee.ReallocFnExport)
 		if err != nil {
 			return nil, fmt.Errorf("wacogo: build callee batch-realloc helper: %w", err)
 		}
 		calleeSide.BatchHelper = helper
-		auxModules = append(auxModules, helper.mod)
+		reallocHelpers = append(reallocHelpers, helper)
 	}
-	if caller.ReallocModName != "" && caller.GoRealloc == nil {
+	if sameEncoding && caller.ReallocModName != "" && caller.GoRealloc == nil {
 		helper, err := h.buildBatchReallocHelper(ctx, caller.ReallocModName, caller.ReallocFnExport)
 		if err != nil {
 			// Best-effort teardown of the callee helper before bubbling up.
-			for _, m := range auxModules {
-				_ = m.Close(ctx)
+			for _, built := range reallocHelpers {
+				_ = built.Close(context.WithoutCancel(ctx))
 			}
 			return nil, fmt.Errorf("wacogo: build caller batch-realloc helper: %w", err)
 		}
 		callerSide.BatchHelper = helper
-		auxModules = append(auxModules, helper.mod)
+		reallocHelpers = append(reallocHelpers, helper)
 	}
 	af := &adapterFunc{
 		caller:            caller,
@@ -145,36 +136,13 @@ func (h *Host) BuildAdapter(
 	}
 	af.tc.callee = calleeSide
 
-	// 6. Register the adapterFunc as a host module and use its export
-	// directly as the adapter's core function. Compile and instantiate in
-	// two steps (rather than the builder's Instantiate) so we get a raw
-	// module instance — the wrapper from Instantiate fails the
-	// *ModuleInstance type assertion in wazero's import resolver.
-	n := adapterCounter.Add(1)
-	hostModName := fmt.Sprintf("%s_host_%d", baseName, n)
-	hostCompiled, err := h.runtime.NewHostModuleBuilder(hostModName).
-		NewFunctionBuilder().
-		WithGoModuleFunction(af, adapterParamTypes, adapterResultTypes).
-		Export("adapt").
-		Compile(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("wacogo: build adapter: compile host module: %w", err)
-	}
-	hostMod, err := h.runtime.InstantiateModule(ctx, hostCompiled,
-		wazero.NewModuleConfig().WithName(""))
-	if err != nil {
-		_ = hostCompiled.Close(ctx)
-		return nil, fmt.Errorf("wacogo: build adapter: instantiate host module: %w", err)
-	}
-
-	// 7. Return the CallAdapter. Auxiliary modules (any batch-realloc
-	// helpers) and the host CompiledModule are closed when the adapter is
-	// closed.
+	// 6. Return the CallAdapter. Any batch-realloc helpers are closed when the
+	// adapter is closed.
 	return &CallAdapter{
-		Module:   hostMod,
-		Name:     "adapt",
-		aux:      auxModules,
-		compiled: []wazero.CompiledModule{hostCompiled},
+		Func:           af,
+		Params:         adapterParamTypes,
+		Results:        adapterResultTypes,
+		reallocHelpers: reallocHelpers,
 	}, nil
 }
 
@@ -204,6 +172,9 @@ type adapterFunc struct {
 }
 
 func (a *adapterFunc) Call(ctx context.Context, mod api.Module, stack []uint64) {
+	if !a.caller.Instance.CanLeave() {
+		trapf("cannot leave component instance")
+	}
 	a.tc.caller = a.callerSide
 	a.tc.callee = a.calleeSide
 	a.tc.registers = stack

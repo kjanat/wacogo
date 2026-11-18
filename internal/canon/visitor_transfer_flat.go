@@ -224,6 +224,7 @@ func (v *flatTransferVisitor) VisitOwn(rt ResourceType) {
 		if err != nil {
 			panic(&Trap{msg: err.Error()})
 		}
+		tc.calleeTouched = true
 		tc.registers[slot] = uint64(dstH.HandleID())
 	})
 }
@@ -236,10 +237,14 @@ func (v *flatTransferVisitor) VisitBorrow(rt ResourceType) {
 		if err != nil {
 			panic(&Trap{msg: err.Error()})
 		}
+		borrows := tc.Task.NumBorrows
 		dstH, err := srcH.LendTo(tc.callee.ResourceTable, &tc.Task)
 		if err != nil {
 			panic(&Trap{msg: err.Error()})
 		}
+		// A borrow passed back to its defining instance is only a rep.
+		// The source lend is undone by Task.End without touching the callee.
+		tc.calleeTouched = tc.calleeTouched || tc.Task.NumBorrows != borrows
 		tc.registers[slot] = uint64(dstH.HandleID())
 	})
 }

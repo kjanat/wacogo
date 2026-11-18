@@ -62,6 +62,10 @@ type instantiationState struct {
 	// Funcs not destined for export have an empty entry.
 	funcExportNames []string
 
+	// hostFuncs holds the core functions implemented in Go, built before the plan
+	// runs and bound by its steps.
+	hostFuncs *hostFuncs
+
 	// parentState provides access to the parent component's instantiation state,
 	// used to resolve outer aliases at runtime. Nil for top-level instantiations.
 	parentState *instantiationState
@@ -267,6 +271,10 @@ func (e *Engine) instantiateWithParentCfg(ctx context.Context, component *Compon
 		subComponents:   subComponents,
 		parentState:     parentState,
 		funcExportNames: buildFuncExportNames(component.exports),
+	}
+	state.hostFuncs, err = newHostFuncs(ctx, e.runtime, inst, component.hostFuncs)
+	if err != nil {
+		return nil, err
 	}
 
 	// Run the plan-step loop with the instance locked against reentrant
@@ -1097,7 +1105,7 @@ func (s *instantiationState) execInstantiateFromExportsWithWasm(ctx context.Cont
 	// Import module names only need to be unique within the bridge (the
 	// resolver below maps them to this instantiation's instances), so they
 	// are positional: the bridge's bytes then depend only on the component,
-	// and it is compiled once per engine rather than per instantiation.
+	// and wazero shares them between instances that are alive at the same time.
 	for pos, exp := range step.exports {
 		switch exp.sort {
 		case SortCoreFunc:
@@ -1171,10 +1179,13 @@ func (s *instantiationState) execInstantiateFromExportsWithWasm(ctx context.Cont
 
 	bridgeWasm := b.Encode()
 
-	compiled, err := s.inst.engine.compiledBridge(ctx, bridgeWasm)
+	// A bridge has no code of its own, so this only decodes it and costs little.
+	compiled, err := s.inst.engine.runtime.CompileModule(ctx, bridgeWasm)
 	if err != nil {
 		return fmt.Errorf("wacogo: instantiate-from-exports: compile bridge: %w", err)
 	}
+	// Owned before the instance, as owned modules close in reverse order.
+	s.inst.owned = append(s.inst.owned, compiled)
 
 	importMap := make(map[string]api.Module)
 	bridgeIdx := 0
