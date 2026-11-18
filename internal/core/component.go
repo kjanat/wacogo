@@ -176,6 +176,8 @@ var ErrComponentClosed = errors.New("component is closed")
 // as long as its Engine. After Close, Instantiate returns ErrComponentClosed, and
 // a module exported by one of its instances can no longer be instantiated.
 // Instances that already exist remain usable until each is itself closed.
+// Instantiation already in progress may complete or fail when it needs code
+// released by Close. Close does not wait for those operations to finish.
 //
 // Close is idempotent. A component nested inside another holds nothing of its own,
 // so closing one does nothing.

@@ -6,8 +6,11 @@ import (
 	"errors"
 	"runtime"
 	"strings"
+	"sync"
 	"testing"
+	"time"
 
+	"github.com/kjanat/wacogo/internal/testutil"
 	"github.com/kjanat/wazero"
 )
 
@@ -169,6 +172,114 @@ const closeTestAnswer = `(component
   (core module $m (func (export "f") (result i32) i32.const 7))
   (core instance $i (instantiate $m))
   (func (export "f") (result u32) (canon lift (core func $i "f"))))`
+
+func TestComponentClose_OverlappingInstantiation(t *testing.T) {
+	for _, viaExport := range []bool{false, true} {
+		name := "component"
+		if viaExport {
+			name = "exported module"
+		}
+		t.Run(name, func(t *testing.T) {
+			ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
+			defer cancel()
+			engine, rt, _ := trackAdapterCode(t)
+			load := func(source string) *Component {
+				t.Helper()
+				c, err := engine.LoadComponent(ctx, bytes.NewReader(parseLinkWat(t, source)))
+				if err != nil {
+					t.Fatal(err)
+				}
+				t.Cleanup(func() { _ = c.Close(context.Background()) })
+				return c
+			}
+			const exported = `(component
+  (core module $m (func (export "f") (result i32) i32.const 7))
+  (core instance $i (instantiate $m))
+  (func (export "f") (result u32) (canon lift (core func $i "f")))
+  (export "m" (core module $m)))`
+			first, second := load(exported), load(exported)
+			existing, err := first.Instantiate(ctx)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer existing.Close(ctx)
+			instantiate := func(ctx context.Context) (*ComponentInstance, error) { return first.Instantiate(ctx) }
+			if viaExport {
+				consumer := load(`(component
+ (import "m" (core module $m (export "f" (func (result i32)))))
+ (core instance $i (instantiate $m))
+ (func (export "f") (result u32) (canon lift (core func $i "f"))))`)
+				instantiate = func(ctx context.Context) (*ComponentInstance, error) {
+					return consumer.Instantiate(ctx, WithModuleImport("m", existing.ExportedModule("m")))
+				}
+			}
+			started := make(chan struct{})
+			resume := make(chan struct{})
+			type inFlightKey struct{}
+			inFlight := context.WithValue(ctx, inFlightKey{}, true)
+			rt.BeforeInstantiate = func(ctx context.Context, _ *testutil.Code) error {
+				if ctx.Value(inFlightKey{}) != true {
+					return nil
+				}
+				close(started)
+				select {
+				case <-resume:
+					return nil
+				case <-ctx.Done():
+					return ctx.Err()
+				}
+			}
+			type outcome struct {
+				inst *ComponentInstance
+				err  error
+			}
+			result := make(chan outcome, 1)
+			release := sync.OnceFunc(func() { close(resume) })
+			var worker sync.WaitGroup
+			worker.Go(func() {
+				inst, err := instantiate(inFlight)
+				result <- outcome{inst, err}
+			})
+			defer func() {
+				release()
+				worker.Wait()
+			}()
+			select {
+			case <-started:
+			case <-ctx.Done():
+				t.Fatal("instantiation did not reach its core module")
+			}
+			if err := first.Close(ctx); err != nil {
+				t.Fatal(err)
+			}
+			if _, err := instantiate(ctx); !errors.Is(err, ErrComponentClosed) {
+				t.Fatalf("new instantiation after close returned %v", err)
+			}
+			release()
+			var got outcome
+			select {
+			case got = <-result:
+			case <-ctx.Done():
+				t.Fatal("in-flight instantiation stopped making progress")
+			}
+			rt.BeforeInstantiate = nil
+			// The operation passed the owner check before close. The second
+			// component still holds the same compiled bytes, so it can finish.
+			if got.err != nil {
+				t.Fatalf("in-flight instantiation with shared code: %v", got.err)
+			}
+			defer got.inst.Close(ctx)
+			callAnswer(t, ctx, got.inst)
+			callAnswer(t, ctx, existing)
+			sibling, err := second.Instantiate(ctx)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer sibling.Close(ctx)
+			callAnswer(t, ctx, sibling)
+		})
+	}
+}
 
 func callAnswer(t *testing.T, ctx context.Context, inst *ComponentInstance) {
 	t.Helper()

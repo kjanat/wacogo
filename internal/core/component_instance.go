@@ -118,6 +118,9 @@ func (i *ComponentInstance) ExportedFunc(name string) *ExportedFunc {
 
 // ExportedInstance returns the exported component instance with the given name, or nil if not found.
 // If the returned instance is closed, calls that reach it through this instance fail.
+// A restricted export shares its underlying instance's lifetime. Closing either
+// view closes both. Closing the consumer leaves its imports open; closing a
+// restricted export of an imported instance closes that imported instance.
 func (i *ComponentInstance) ExportedInstance(name string) *ComponentInstance {
 	e, ok := i.lookupExport(name)
 	if !ok || e.kind != SortInstance {
@@ -284,6 +287,7 @@ func (i *ComponentInstance) RunInComponent(ctx context.Context, fn func() error)
 // Close releases the modules, adapters and nested components this instance
 // created. Outstanding resource handles do not run destructors. Further Enter
 // calls fail; repeated Close calls do nothing. Errors are joined after teardown.
+// Closing a restricted export closes the underlying instance and its other views.
 func (i *ComponentInstance) Close(ctx context.Context) (err error) {
 	i = i.runtimeOwner()
 	if i == nil || i.closed {

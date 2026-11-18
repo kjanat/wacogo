@@ -15,6 +15,13 @@ parsing and the number of instances a component would create. The fork retains
 Call `Component.Close(ctx)` when its compiled code is no longer needed. Existing
 instances stay usable, but new instantiation, including of exported core modules,
 requires an open component. Closing the engine still releases all remaining code.
+An instantiation already in progress may finish or fail when it needs code
+released by `Close`.
+
+An ascribed instance export and its underlying instance share a lifetime.
+Closing either closes both views. Closing a consumer leaves its imported
+providers open. Closing an ascribed re-export of an imported provider closes
+that provider itself.
 
 A WebAssembly Component Model (MVP) runtime for Go, built on [wazero].
 
