@@ -9,7 +9,6 @@ import (
 	"github.com/kjanat/wacogo/internal/canon"
 	"github.com/kjanat/wacogo/internal/wasm"
 	"github.com/kjanat/wacogo/wasmparser"
-	"github.com/kjanat/wazero"
 )
 
 // loadInstanceInfo tracks a component instance in the component instance index space.
@@ -65,7 +64,7 @@ func (s *loadScope) walkUp(count uint32) *loadScope {
 // componentLoader accumulates mutable state during component loading.
 type componentLoader struct {
 	engine   *Engine
-	compiled *[]wazero.CompiledModule
+	compiled *ownedModules
 	scope    *loadScope
 	parser   *wasmparser.ValidatingParser
 	plan     []planStep
@@ -116,16 +115,16 @@ func (e *Engine) LoadComponent(ctx context.Context, r io.Reader) (_ *Component, 
 	if e.closed.Load() {
 		return nil, ErrEngineClosed
 	}
-	var compiled []wazero.CompiledModule
+	compiled := &ownedModules{}
 	defer func() {
 		if err != nil {
-			for _, m := range compiled {
+			for _, m := range compiled.modules {
 				_ = m.Close(ctx)
 			}
 		}
 	}()
 	vp := wasmparser.NewValidatingParser(r, e.features, wasmparser.WithParseLimits(e.parseLimits))
-	comp, err := e.loadComponentFromParser(ctx, vp, nil, &compiled)
+	comp, err := e.loadComponentFromParser(ctx, vp, nil, compiled)
 	if err != nil {
 		return nil, err
 	}
@@ -141,7 +140,7 @@ func (e *Engine) LoadComponent(ctx context.Context, r io.Reader) (_ *Component, 
 			return nil, fmt.Errorf("wacogo: exporting a component from the root component is not supported")
 		}
 	}
-	comp.owned = &ownedModules{modules: compiled}
+	comp.owned = compiled
 	return comp, nil
 }
 
@@ -150,7 +149,7 @@ func (e *Engine) LoadComponent(ctx context.Context, r io.Reader) (_ *Component, 
 // this tracks component boundaries so sub-components get their own Component.
 //
 // compiled collects every module compiled, for the whole of the top-level load.
-func (e *Engine) loadComponentFromParser(ctx context.Context, parser *wasmparser.ValidatingParser, parentScope *loadScope, compiled *[]wazero.CompiledModule) (*Component, error) {
+func (e *Engine) loadComponentFromParser(ctx context.Context, parser *wasmparser.ValidatingParser, parentScope *loadScope, compiled *ownedModules) (*Component, error) {
 	l := &componentLoader{
 		engine:   e,
 		compiled: compiled,
@@ -239,11 +238,12 @@ func (l *componentLoader) processModuleSection(ctx context.Context, sec *wasmpar
 	if err != nil {
 		return fmt.Errorf("wacogo: compile module: %w", err)
 	}
-	*l.compiled = append(*l.compiled, compiled)
+	l.compiled.modules = append(l.compiled.modules, compiled)
 	l.scope.compiledModules = append(l.scope.compiledModules, CompiledModule{
 		module:        compiled,
 		syntheticName: syntheticName,
 		tables:        tables,
+		owner:         l.compiled,
 		wpModuleType:  sec.ModuleType(),
 	})
 	return nil

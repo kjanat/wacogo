@@ -396,7 +396,7 @@ func (v *Validator) addResourceType(cs *ComponentState, rt *ResourceType) error 
 }
 
 func (v *Validator) addComponentTypeDecl(cs *ComponentState, ctd *ComponentTypeDecl) error {
-	if uint32(len(v.components)) >= v.limits.NestingDepth {
+	if uint32(len(v.components)) > v.limits.NestingDepth {
 		return fmt.Errorf("component nesting depth %d exceeds maximum %d", len(v.components), v.limits.NestingDepth)
 	}
 	// Create a sub-state for the component type declarations
@@ -420,10 +420,10 @@ func (v *Validator) addComponentTypeDecl(cs *ComponentState, ctd *ComponentTypeD
 
 	// Build the component type from subCS
 	compType := ComponentTypeDesc{
-		Imports:          subCS.imports,
-		ImportOrder:      subCS.importOrder,
-		Exports:          subCS.exports,
-		ExportOrder:      subCS.exportOrder,
+		Imports:           subCS.imports,
+		ImportOrder:       subCS.importOrder,
+		Exports:           subCS.exports,
+		ExportOrder:       subCS.exportOrder,
 		ImportedResources: importedResources(subCS),
 		DefinedResources:  v.exposedDefinedResources(subCS),
 	}
@@ -457,7 +457,7 @@ func (v *Validator) processComponentTypeDecl(subCS *ComponentState, decl Compone
 }
 
 func (v *Validator) addInstanceTypeDecl(cs *ComponentState, itd *InstanceTypeDecl) error {
-	if uint32(len(v.components)) >= v.limits.NestingDepth {
+	if uint32(len(v.components)) > v.limits.NestingDepth {
 		return fmt.Errorf("instance nesting depth %d exceeds maximum %d", len(v.components), v.limits.NestingDepth)
 	}
 	// Create a sub-state for the instance type declarations
@@ -928,4 +928,3 @@ func (v *Validator) validateBracketName(cs *ComponentState, name string, et Comp
 
 	return nil
 }
-

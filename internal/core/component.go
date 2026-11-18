@@ -27,6 +27,7 @@ type CompiledModule struct {
 	module        wazero.CompiledModule
 	syntheticName string
 	tables        []CoreTable
+	owner         *ownedModules
 
 	// wpModuleType is the opaque wasmparser handle for this module's
 	// core-module type. Non-nil for modules defined inline in a loaded
@@ -165,7 +166,7 @@ type ownedModules struct {
 	closed  atomic.Bool
 }
 
-// ErrComponentClosed is returned by Instantiate after Close.
+// ErrComponentClosed indicates that instantiation needs code from a closed component.
 var ErrComponentClosed = errors.New("component is closed")
 
 // Close releases the compiled code held by this Component, which otherwise lasts
@@ -185,5 +186,6 @@ func (c *Component) Close(ctx context.Context) error {
 			errs = append(errs, err)
 		}
 	}
+	c.owned.modules = nil
 	return errors.Join(errs...)
 }

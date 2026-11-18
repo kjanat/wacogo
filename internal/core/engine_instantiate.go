@@ -158,7 +158,11 @@ func (e *Engine) instantiate(ctx context.Context, component *Component, opts ...
 		}
 	}
 
-	return e.instantiateWithParentCfg(ctx, component, nil, component.wpType.NewInstance(suppliedTypes(args)), cfg)
+	wpInst, err := component.wpType.NewInstance(suppliedTypes(args))
+	if err != nil {
+		return nil, fmt.Errorf("wacogo: instantiate: %w", err)
+	}
+	return e.instantiateWithParentCfg(ctx, component, nil, wpInst, cfg)
 }
 
 // suppliedTypes answers what an instantiation was given from the handles its
@@ -427,6 +431,9 @@ func (step *planInstantiateModule) execute(ctx context.Context, s *instantiation
 	}
 	cm := s.compiledModules[step.moduleIndex]
 
+	if cm.owner != nil && cm.owner.closed.Load() {
+		return ErrComponentClosed
+	}
 	if cm.module == nil {
 		return fmt.Errorf("wacogo: instantiate: module %d has nil compiled module", step.moduleIndex)
 	}

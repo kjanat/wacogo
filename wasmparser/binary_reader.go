@@ -2,6 +2,7 @@ package wasmparser
 
 import (
 	"bufio"
+	"bytes"
 	"encoding/binary"
 	"io"
 	"math"
@@ -31,6 +32,12 @@ func NewBinaryReader(r io.Reader) *BinaryReader {
 // at a known position in the original stream.
 func newBinaryReaderAt(r io.Reader, offset uint64, limits *ParseLimits) *BinaryReader {
 	return &BinaryReader{r: bufio.NewReader(r), offset: offset, limits: limits}
+}
+
+func (r *BinaryReader) sectionReader(data []byte, offset uint64) *BinaryReader {
+	child := newBinaryReaderAt(bytes.NewReader(data), offset, r.limits)
+	child.nesting = r.nesting
+	return child
 }
 
 // Offset returns the current stream position (base offset + bytes consumed).

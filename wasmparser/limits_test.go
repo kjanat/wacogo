@@ -41,6 +41,46 @@ func validateAll(bin []byte, opts ...ParseOption) error {
 	return nil
 }
 
+func TestParseAll_NestingDepthAcrossSections(t *testing.T) {
+	opts := WithParseLimits(ParseLimits{NestingDepth: 1})
+	for _, wat := range []string{
+		`(component (type (instance)))`,
+		`(component (component))`,
+	} {
+		if err := validateAll(wat2wasm(t, wat), opts); err != nil {
+			t.Errorf("%s: %v", wat, err)
+		}
+	}
+	bin := wat2wasm(t, `(component (component (type (instance))))`)
+	if err := validateAll(bin, opts); err == nil || !strings.Contains(err.Error(), "depth") {
+		t.Fatalf("nested instance type: got %v, want a depth error", err)
+	}
+}
+
+func TestParseAll_CoreModuleLimitsCountImports(t *testing.T) {
+	for _, tc := range []struct {
+		name, imported, defined string
+		limits                  ParseLimits
+	}{
+		{"func", `(func (import "m" "i"))`, `(func)`, ParseLimits{Functions: 1}},
+		{"table", `(table (import "m" "i") 1 funcref)`, `(table 1 funcref)`, ParseLimits{Tables: 1}},
+		{"memory", `(memory (import "m" "i") 1)`, `(memory 1)`, ParseLimits{Memories: 1}},
+		{"global", `(global (import "m" "i") i32)`, `(global i32 (i32.const 0))`, ParseLimits{Globals: 1}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			opt := WithParseLimits(tc.limits)
+			within := wat2wasm(t, "(component (core module "+tc.imported+"))")
+			if err := validateAll(within, opt); err != nil {
+				t.Fatalf("one imported %s: %v", tc.name, err)
+			}
+			over := wat2wasm(t, "(component (core module "+tc.imported+tc.defined+"))")
+			if err := validateAll(over, opt); err == nil || !strings.Contains(err.Error(), tc.name+" count") {
+				t.Fatalf("combined %s count: got %v", tc.name, err)
+			}
+		})
+	}
+}
+
 // TestParseAll_Limits checks limits given to ParseAll reach nested parsers and
 // section contents, in both directions.
 func TestParseAll_Limits(t *testing.T) {

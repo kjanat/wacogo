@@ -251,9 +251,14 @@ func TestComponentClose_ExportedModule(t *testing.T) {
 	engine := NewEngine(ctx)
 	defer engine.Close(ctx)
 
-	provider, err := engine.LoadComponent(ctx, bytes.NewReader(parseLinkWat(t, `(component
+	bin := parseLinkWat(t, `(component
   (core module $m)
-  (export "m" (core module $m)))`)))
+  (export "m" (core module $m)))`)
+	provider, err := engine.LoadComponent(ctx, bytes.NewReader(bin))
+	if err != nil {
+		t.Fatal(err)
+	}
+	other, err := engine.LoadComponent(ctx, bytes.NewReader(bin))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -278,7 +283,14 @@ func TestComponentClose_ExportedModule(t *testing.T) {
 	if err := provider.Close(ctx); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := consumer.Instantiate(ctx, WithModuleImport("m", mod)); err == nil {
-		t.Fatal("instantiated a module whose Component is closed")
+	if _, err := consumer.Instantiate(ctx, WithModuleImport("m", mod)); !errors.Is(err, ErrComponentClosed) {
+		t.Fatalf("instantiating the closed provider's module: %v", err)
+	}
+	otherInst, err := other.Instantiate(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := consumer.Instantiate(ctx, WithModuleImport("m", otherInst.ExportedModule("m"))); err != nil {
+		t.Fatalf("instantiating the other provider's module: %v", err)
 	}
 }

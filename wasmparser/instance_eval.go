@@ -11,6 +11,8 @@ import (
 // to its imports.
 type componentBody struct {
 	steps []bodyStep
+	// outerDepth is the number of enclosing frames this body needs.
+	outerDepth uint32
 	// coreInstances and inlineInstances are the core instances and inline
 	// component instances the component creates itself.
 	coreInstances, inlineInstances uint64
@@ -61,7 +63,8 @@ type bodyRef struct {
 
 type stepInstantiate struct {
 	component uint32
-	args      []bodyRef
+	argCount  int
+	args      map[string]bodyRef
 	// resources holds the resource types among args, which are IDs rather than
 	// index-space entries once resolved.
 	resources map[string]ResourceID
@@ -89,8 +92,11 @@ func (stepInlineInstance) isBodyStep()  {}
 func (cs *ComponentState) record(step bodyStep) {
 	if cs.kind == ComponentKindComponent {
 		cs.body.steps = append(cs.body.steps, step)
-		if _, ok := step.(stepInlineInstance); ok {
+		switch s := step.(type) {
+		case stepInlineInstance:
 			cs.body.inlineInstances++
+		case stepOuterComponent:
+			cs.body.outerDepth = max(cs.body.outerDepth, s.count)
 		}
 	}
 }
@@ -142,10 +148,8 @@ type nestedBindings struct {
 }
 
 func (n nestedBindings) arg(name string, kind ComponentExternalKind) (uint32, bool) {
-	for _, a := range n.step.args {
-		if a.name == name && a.kind == kind {
-			return a.index, true
-		}
+	if a, ok := n.step.args[name]; ok && a.kind == kind {
+		return a.index, true
 	}
 	return 0, false
 }
@@ -222,7 +226,9 @@ func checkInstanceLimits(arena *TypeArena, id ComponentTypeID, limits *ParseLimi
 	if *budget == unlimitedBudget {
 		return nil
 	}
-	evalInstance(arena, id, nil, noBindings{}, budget)
+	if _, err := evalInstance(arena, id, nil, noBindings{}, budget); err != nil {
+		return err
+	}
 	return budget.err()
 }
 
@@ -242,8 +248,17 @@ type instanceFrame struct {
 // Evaluation order is what lets resourceRoots be resolved as they are recorded:
 // an instantiation's imports refer to instances evaluated before it, and its
 // parent binds to it only once it, and everything inside it, is complete.
-func evalInstance(arena *TypeArena, id ComponentTypeID, outer *instanceFrame, bindings evalBindings, budget *instanceBudget) *InstanceType {
+func evalInstance(arena *TypeArena, id ComponentTypeID, outer *instanceFrame, bindings evalBindings, budget *instanceBudget) (*InstanceType, error) {
 	ct := arena.ComponentTypes[id]
+	if ct.body != nil {
+		frame := outer
+		for range ct.body.outerDepth {
+			if frame == nil {
+				return nil, fmt.Errorf("cannot instantiate a component without the enclosing frame required by an outer alias")
+			}
+			frame = frame.outer
+		}
+	}
 	budget.charge(ct.body)
 	self := &InstanceType{arena: arena, exports: ct.Exports, funcs: ct.Funcs}
 	self.scope = self
@@ -251,11 +266,13 @@ func evalInstance(arena *TypeArena, id ComponentTypeID, outer *instanceFrame, bi
 	if ct.body != nil {
 		f := &instanceFrame{self: self, outer: outer, bindings: bindings, budget: budget}
 		for _, step := range ct.body.steps {
-			f.run(step)
+			if err := f.run(step); err != nil {
+				return nil, err
+			}
 		}
 		self.instances = f.instances
 	}
-	return self
+	return self, nil
 }
 
 // bindImports records the roots of the resources this instance's imports define.
@@ -327,7 +344,7 @@ func (f *instanceFrame) declared(view ComponentInstanceTypeID) *InstanceType {
 	return &InstanceType{arena: arena, exports: arena.InstanceTypes[view].Exports, scope: f.self.scope}
 }
 
-func (f *instanceFrame) run(step bodyStep) {
+func (f *instanceFrame) run(step bodyStep) error {
 	switch s := step.(type) {
 	case stepImportInstance:
 		inst := f.bindings.instance(s.name)
@@ -360,7 +377,11 @@ func (f *instanceFrame) run(step bodyStep) {
 		f.self.setComponent(s.name, f.components[s.from])
 		f.components = append(f.components, f.components[s.from])
 	case stepInstantiate:
-		f.instances = append(f.instances, f.instantiate(s))
+		inst, err := f.instantiate(s)
+		if err != nil {
+			return err
+		}
+		f.instances = append(f.instances, inst)
 	case stepInlineInstance:
 		inst := f.declared(s.view)
 		for _, exp := range s.exports {
@@ -373,22 +394,26 @@ func (f *instanceFrame) run(step bodyStep) {
 		}
 		f.instances = append(f.instances, inst)
 	}
+	return nil
 }
 
-func (f *instanceFrame) instantiate(s stepInstantiate) *InstanceType {
+func (f *instanceFrame) instantiate(s stepInstantiate) (*InstanceType, error) {
 	comp := f.components[s.component]
 	if comp == nil {
 		// Its source was supplied by Go without a type, or not at all. Linking
 		// reports that; until then all that's known is the declared type.
-		return f.declared(s.view)
+		return f.declared(s.view), nil
 	}
-	f.budget.size += uint64(len(s.args))
+	f.budget.size += uint64(s.argCount)
 	if f.budget.exceeded() {
 		// The verdict is in, so stop descending and let the evaluation unwind.
-		return f.declared(s.view)
+		return f.declared(s.view), nil
 	}
 	self := f.self
-	child := evalInstance(self.arena, comp.id, comp.frame, nestedBindings{f, s}, f.budget)
+	child, err := evalInstance(self.arena, comp.id, comp.frame, nestedBindings{f, s}, f.budget)
+	if err != nil {
+		return nil, err
+	}
 	self.bindSubInstance(self.arena.InstanceTypes[s.view].Exports, child, child.exports)
-	return child
+	return child, nil
 }

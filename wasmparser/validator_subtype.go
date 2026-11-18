@@ -549,6 +549,32 @@ func (sc *SubtypeChecker) isComponentSubtype(a, b ComponentTypeID) error {
 	return nil
 }
 
+func orderedComponentNames(order []string, entries map[string]ComponentEntityType) []string {
+	if len(order) == 0 {
+		return slices.Sorted(maps.Keys(entries))
+	}
+	names := make([]string, 0, len(entries))
+	seen := make(map[string]struct{}, len(order))
+	for _, name := range order {
+		if _, ok := entries[name]; !ok {
+			continue
+		}
+		if _, ok := seen[name]; ok {
+			continue
+		}
+		seen[name] = struct{}{}
+		names = append(names, name)
+	}
+	ordered := len(names)
+	for name := range entries {
+		if _, ok := seen[name]; !ok {
+			names = append(names, name)
+		}
+	}
+	slices.Sort(names[ordered:])
+	return names
+}
+
 // bindOpenResources binds the resources the b-side type introduces to the a-side
 // resources at the same place: a directly named one if it is still in open, which it
 // is then removed from, and those of an instance. Mismatched shapes bind nothing, and

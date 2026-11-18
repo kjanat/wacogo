@@ -1,6 +1,7 @@
 package witgen
 
 import (
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -20,7 +21,7 @@ func TestAuditPrimitiveAliases(t *testing.T) {
 	}
 	var content string
 	for path, data := range out {
-		if strings.HasSuffix(path, "/ids/ids.bind.go") {
+		if strings.HasSuffix(filepath.ToSlash(path), "/ids/ids.bind.go") {
 			content = string(data)
 		}
 	}

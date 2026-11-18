@@ -117,6 +117,10 @@ func (c *Component) Instantiate(ctx context.Context, opts ...InstantiateOption) 
 	if err != nil {
 		return nil, err
 	}
+	wpInst, err := c.wpComponentType.NewInstance(bindings)
+	if err != nil {
+		return nil, err
+	}
 
 	// 1. Allocate the wrapper shell up front. Per-instance host-module
 	//    closures and per-resource dtor closures capture h directly; no
@@ -154,11 +158,7 @@ func (c *Component) Instantiate(ctx context.Context, opts ...InstantiateOption) 
 		return nil, err
 	}
 
-	// 4. Compute this instance's type, in which each ResourceTypeRef is the
-	//    lender's resource, so guests' import type checks see that identity.
-	wpInst := c.wpComponentType.NewInstance(bindings)
-
-	// 5. Build the core instance. Its contents refer back to it, so they
+	// 4. Build the core instance. Its contents refer back to it, so they
 	//    are assembled in the BuildContents callback.
 	coreInst, err := core.NewInstance(c.engine, &core.InstanceSpec{
 		Modules:            []api.Module{stubMod, hostMod},

@@ -8,6 +8,43 @@ import (
 	"testing"
 )
 
+func testInstance(t *testing.T, component *ComponentType) *InstanceType {
+	t.Helper()
+	inst, err := component.NewInstance(nil)
+	if err != nil {
+		t.Error(err)
+	}
+	return inst
+}
+
+func TestExportedComponentRequiresDefiningFrame(t *testing.T) {
+	arena := NewArena(DefaultFeatures())
+	cs := newComponentState(DefaultFeatures(), arena, ComponentKindComponent)
+	cs.body = &componentBody{}
+	cs.record(stepOuterComponent{count: 1})
+	id := arena.pushComponentType(ComponentTypeDesc{body: cs.body})
+	export := ValidatedComponentExport{
+		arena: arena,
+		et:    ComponentEntityType{Kind: EntityComponent, CompID: id},
+	}
+	if inst, err := export.ComponentType().NewInstance(nil); inst != nil || err == nil || !strings.Contains(err.Error(), "enclosing frame") {
+		t.Fatal("instantiated a component without the frame its alias needs")
+	}
+}
+
+func TestNestedInstantiationBindsInstanceArgument(t *testing.T) {
+	component := loadComponent(t, `(component
+  (component $child (import "env" (instance)))
+  (instance $env)
+  (instance (instantiate $child (with "env" (instance $env)))))`)
+	inst := testInstance(t, component)
+	lender := inst.SubInstance(0)
+	child := inst.SubInstance(1)
+	if lender == nil || child == nil || child.SubInstance(0) != lender {
+		t.Fatal("the nested component did not bind the supplied instance")
+	}
+}
+
 func TestNewInstanceReturnsDistinctHandles(t *testing.T) {
 	src := `(component
   (type $r (resource (rep i32)))
@@ -29,8 +66,8 @@ func TestNewInstanceReturnsDistinctHandles(t *testing.T) {
 		t.Fatal("no top-level ComponentType")
 	}
 
-	inst1 := ct.NewInstance(nil)
-	inst2 := ct.NewInstance(nil)
+	inst1 := testInstance(t, ct)
+	inst2 := testInstance(t, ct)
 
 	if inst1 == inst2 {
 		t.Fatal("want distinct *InstanceType handles from separate NewInstance calls")
@@ -48,7 +85,9 @@ func TestNewInstanceIsMemoryNeutral(t *testing.T) {
 	ct := loadComponent(t, src)
 	before := arenaShape(ct.arena)
 	for range 1000 {
-		_ = ct.NewInstance(nil)
+		if _, err := ct.NewInstance(nil); err != nil {
+			t.Error(err)
+		}
 	}
 	after := arenaShape(ct.arena)
 	if before != after {
@@ -72,15 +111,15 @@ func TestCheckInstantiationIsMemoryNeutral(t *testing.T) {
 	beforeProv := arenaShape(prov.arena)
 	beforeCons := arenaShape(cons.arena)
 	for range 100 {
-		shared := prov.NewInstance(nil)
+		shared := testInstance(t, prov)
 		if err := cons.CheckInstantiation(map[string]any{
 			"I1": shared,
 			"I2": shared,
 		}); err != nil {
 			t.Fatalf("unexpected: %v", err)
 		}
-		i1 := prov.NewInstance(nil)
-		i2 := prov.NewInstance(nil)
+		i1 := testInstance(t, prov)
+		i2 := testInstance(t, prov)
 		if err := cons.CheckInstantiation(map[string]any{
 			"I1": i1,
 			"I2": i2,
@@ -149,10 +188,10 @@ func TestCheckInstantiationAcceptsSharedResource(t *testing.T) {
   (type $r (resource (rep i32)))
   (export "r" (type $r))
 )`
-	prov := loadComponent(t,provSrc)
-	cons := loadComponent(t,consSrc)
+	prov := loadComponent(t, provSrc)
+	cons := loadComponent(t, consSrc)
 
-	shared := prov.NewInstance(nil)
+	shared := testInstance(t, prov)
 
 	err := cons.CheckInstantiation(map[string]any{
 		"I1": shared,
@@ -177,19 +216,19 @@ func TestCheckInstantiationConcurrentlySafe(t *testing.T) {
   (type $r (resource (rep i32)))
   (export "r" (type $r))
 )`
-	prov := loadComponent(t,provSrc)
-	cons := loadComponent(t,consSrc)
+	prov := loadComponent(t, provSrc)
+	cons := loadComponent(t, consSrc)
 
 	var wg sync.WaitGroup
 	for range 16 {
 		wg.Go(func() {
 			for range 50 {
-				shared := prov.NewInstance(nil)
+				shared := testInstance(t, prov)
 				_ = cons.CheckInstantiation(map[string]any{
 					"I1": shared, "I2": shared,
 				})
-				i1 := prov.NewInstance(nil)
-				i2 := prov.NewInstance(nil)
+				i1 := testInstance(t, prov)
+				i2 := testInstance(t, prov)
 				_ = cons.CheckInstantiation(map[string]any{
 					"I1": i1, "I2": i2,
 				})
@@ -209,11 +248,11 @@ func TestCheckInstantiationRejectsMismatchedResources(t *testing.T) {
   (type $r (resource (rep i32)))
   (export "r" (type $r))
 )`
-	prov := loadComponent(t,provSrc)
-	cons := loadComponent(t,consSrc)
+	prov := loadComponent(t, provSrc)
+	cons := loadComponent(t, consSrc)
 
-	i1 := prov.NewInstance(nil)
-	i2 := prov.NewInstance(nil)
+	i1 := testInstance(t, prov)
+	i2 := testInstance(t, prov)
 
 	err := cons.CheckInstantiation(map[string]any{
 		"I1": i1,
@@ -241,7 +280,7 @@ func exportHandle(t *testing.T, ct *ComponentType, name string) any {
 	}
 	switch et.Kind {
 	case EntityFunc:
-		return &FuncType{arena: arena, id: et.FuncID, scope: ct.NewInstance(nil)}
+		return &FuncType{arena: arena, id: et.FuncID, scope: testInstance(t, ct)}
 	case EntityModule:
 		return &ModuleType{arena: arena, id: et.ModuleID}
 	case EntityComponent:
@@ -269,8 +308,8 @@ func TestCheckInstantiationAcceptsFuncArg(t *testing.T) {
   (func (export "f") (param "x" u32) (result u32)
     (canon lift (core func $i "f")))
 )`
-	prov := loadComponent(t,provSrc)
-	cons := loadComponent(t,consSrc)
+	prov := loadComponent(t, provSrc)
+	cons := loadComponent(t, consSrc)
 
 	fn := exportHandle(t, prov, "f")
 	if err := cons.CheckInstantiation(map[string]any{"f": fn}); err != nil {
@@ -291,8 +330,8 @@ func TestCheckInstantiationRejectsFuncSignatureMismatch(t *testing.T) {
   (func (export "f") (param "x" u32) (param "y" u32) (result u32)
     (canon lift (core func $i "f")))
 )`
-	prov := loadComponent(t,provSrc)
-	cons := loadComponent(t,consSrc)
+	prov := loadComponent(t, provSrc)
+	cons := loadComponent(t, consSrc)
 	fn := exportHandle(t, prov, "f")
 	err := cons.CheckInstantiation(map[string]any{"f": fn})
 	if err == nil {
@@ -309,9 +348,9 @@ func TestCheckInstantiationRejectsWrongKind(t *testing.T) {
   (type $r (resource (rep i32)))
   (export "r" (type $r))
 )`
-	prov := loadComponent(t,provSrc)
-	cons := loadComponent(t,consSrc)
-	err := cons.CheckInstantiation(map[string]any{"f": prov.NewInstance(nil)})
+	prov := loadComponent(t, provSrc)
+	cons := loadComponent(t, consSrc)
+	err := cons.CheckInstantiation(map[string]any{"f": testInstance(t, prov)})
 	if err == nil {
 		t.Fatal("expected kind-mismatch, got nil")
 	}
@@ -328,8 +367,8 @@ func TestCheckInstantiationAcceptsModuleArg(t *testing.T) {
   )
   (export "m" (core module $m))
 )`
-	prov := loadComponent(t,provSrc)
-	cons := loadComponent(t,consSrc)
+	prov := loadComponent(t, provSrc)
+	cons := loadComponent(t, consSrc)
 	mt := exportHandle(t, prov, "m")
 	if err := cons.CheckInstantiation(map[string]any{"m": mt}); err != nil {
 		t.Fatalf("want nil, got %v", err)
@@ -348,8 +387,8 @@ func TestCheckInstantiationAcceptsComponentArg(t *testing.T) {
   )
   (export "c" (component $c))
 )`
-	prov := loadComponent(t,provSrc)
-	cons := loadComponent(t,consSrc)
+	prov := loadComponent(t, provSrc)
+	cons := loadComponent(t, consSrc)
 	ct := exportHandle(t, prov, "c")
 	if err := cons.CheckInstantiation(map[string]any{"c": ct}); err != nil {
 		t.Fatalf("want nil, got %v", err)
@@ -361,7 +400,7 @@ func TestCheckInstantiationSkipsMissingArg(t *testing.T) {
   (type (func))
   (import "f" (func (type 0)))
 )`
-	cons := loadComponent(t,consSrc)
+	cons := loadComponent(t, consSrc)
 	if err := cons.CheckInstantiation(map[string]any{}); err != nil {
 		t.Fatalf("want nil (missing args are skipped), got %v", err)
 	}
@@ -378,8 +417,8 @@ func TestCheckInstantiationRejectsModuleSignatureMismatch(t *testing.T) {
   (core module $m (func (export "g")))
   (export "m" (core module $m))
 )`
-	prov := loadComponent(t,provSrc)
-	cons := loadComponent(t,consSrc)
+	prov := loadComponent(t, provSrc)
+	cons := loadComponent(t, consSrc)
 	mt := exportHandle(t, prov, "m")
 	err := cons.CheckInstantiation(map[string]any{"m": mt})
 	if err == nil {
@@ -396,10 +435,10 @@ func TestCheckInstantiationRejectsModuleWrongKind(t *testing.T) {
   (type $r (resource (rep i32)))
   (export "r" (type $r))
 )`
-	prov := loadComponent(t,provSrc)
-	cons := loadComponent(t,consSrc)
+	prov := loadComponent(t, provSrc)
+	cons := loadComponent(t, consSrc)
 	// Supply an *InstanceType for a core-module import.
-	err := cons.CheckInstantiation(map[string]any{"m": prov.NewInstance(nil)})
+	err := cons.CheckInstantiation(map[string]any{"m": testInstance(t, prov)})
 	if err == nil {
 		t.Fatal("expected kind-mismatch error, got nil")
 	}
@@ -449,8 +488,8 @@ func TestCheckInstantiation_BindsBeforeComparing(t *testing.T) {
 			}
 		}
 	}
-	lender := load(`(component (type $r (resource (rep i32))) (export "r" (type $r)))`).NewInstance(nil)
-	other := load(`(component (type $r (resource (rep i32))) (export "r" (type $r)))`).NewInstance(nil)
+	lender := testInstance(t, load(`(component (type $r (resource (rep i32))) (export "r" (type $r)))`))
+	other := testInstance(t, load(`(component (type $r (resource (rep i32))) (export "r" (type $r)))`))
 	consumer := load(`(component
   (import "a" (type $a (sub resource)))
   (import "b" (type (eq $a)))

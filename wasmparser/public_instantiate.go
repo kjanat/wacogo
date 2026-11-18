@@ -89,7 +89,9 @@ type InstanceBindings interface {
 // Each call opens a new scope: two separate NewInstance calls produce instances
 // with distinct resources; supplying the same handle twice shares identity.
 // Open resources with nothing bound belong to the new instance's scope.
-func (c *ComponentType) NewInstance(bindings InstanceBindings) *InstanceType {
+// A component exported as a type handle may depend on an enclosing instance.
+// If that instance is unavailable, NewInstance returns an error.
+func (c *ComponentType) NewInstance(bindings InstanceBindings) (*InstanceType, error) {
 	var b evalBindings = noBindings{}
 	if bindings != nil {
 		b = suppliedBindings{bindings}

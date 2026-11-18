@@ -54,6 +54,8 @@ func (a *TypeArena) CoreModuleTypeFromBytes(wasmBytes []byte) (CoreModuleTypeDes
 // PushComponentType appends t to the arena's component-type table and
 // returns its ID.
 func (b *HostTypeBuilder) PushComponentType(t ComponentTypeDesc) ComponentTypeID {
+	t.ImportOrder = orderedComponentNames(t.ImportOrder, t.Imports)
+	t.ExportOrder = orderedComponentNames(t.ExportOrder, t.Exports)
 	return b.arena.pushComponentType(t)
 }
 

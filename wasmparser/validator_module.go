@@ -117,6 +117,9 @@ func (a *TypeArena) parseInnerCoreModule(sub *Parser) (CoreModuleTypeDesc, error
 					et = CoreEntityType{Kind: CoreEntityFunc, Func: fid}
 					importedFuncIDs = append(importedFuncIDs, fid)
 					importedFuncs++
+					if err := checkCombinedCount(sr.Offset(), 0, importedFuncs, sr.limits.Functions, "inner module func"); err != nil {
+						return modType, err
+					}
 				case 0x01: // table
 					tbl, err := readInlineTableType(sr)
 					if err != nil {
@@ -125,6 +128,9 @@ func (a *TypeArena) parseInnerCoreModule(sub *Parser) (CoreModuleTypeDesc, error
 					et = CoreEntityType{Kind: CoreEntityTable, Table: tbl}
 					tables = append(tables, tbl)
 					importedTables++
+					if err := checkCombinedCount(sr.Offset(), 0, importedTables, sr.limits.Tables, "inner module table"); err != nil {
+						return modType, err
+					}
 				case 0x02: // memory
 					mem, err := readInlineMemoryType(sr)
 					if err != nil {
@@ -133,6 +139,9 @@ func (a *TypeArena) parseInnerCoreModule(sub *Parser) (CoreModuleTypeDesc, error
 					et = CoreEntityType{Kind: CoreEntityMemory, Memory: mem}
 					memories = append(memories, mem)
 					importedMems++
+					if err := checkCombinedCount(sr.Offset(), 0, importedMems, sr.limits.Memories, "inner module memory"); err != nil {
+						return modType, err
+					}
 				case 0x03: // global
 					g, err := readInlineGlobalType(sr)
 					if err != nil {
@@ -141,6 +150,9 @@ func (a *TypeArena) parseInnerCoreModule(sub *Parser) (CoreModuleTypeDesc, error
 					et = CoreEntityType{Kind: CoreEntityGlobal, Global: g}
 					globals = append(globals, g)
 					importedGlobals++
+					if err := checkCombinedCount(sr.Offset(), 0, importedGlobals, sr.limits.Globals, "inner module global"); err != nil {
+						return modType, err
+					}
 				default:
 					return modType, fmt.Errorf("unknown import kind: 0x%02x", kind)
 				}
@@ -157,7 +169,7 @@ func (a *TypeArena) parseInnerCoreModule(sub *Parser) (CoreModuleTypeDesc, error
 			if err != nil {
 				return modType, err
 			}
-			if err := checkCount(sr.Offset(), count, sr.limits.Functions, "inner module func"); err != nil {
+			if err := checkCombinedCount(sr.Offset(), count, importedFuncs, sr.limits.Functions, "inner module func"); err != nil {
 				return modType, err
 			}
 			for range count {
@@ -173,7 +185,7 @@ func (a *TypeArena) parseInnerCoreModule(sub *Parser) (CoreModuleTypeDesc, error
 			if err != nil {
 				return modType, err
 			}
-			if err := checkCount(sr.Offset(), count, sr.limits.Tables, "inner module table"); err != nil {
+			if err := checkCombinedCount(sr.Offset(), count, importedTables, sr.limits.Tables, "inner module table"); err != nil {
 				return modType, err
 			}
 			for range count {
@@ -189,7 +201,7 @@ func (a *TypeArena) parseInnerCoreModule(sub *Parser) (CoreModuleTypeDesc, error
 			if err != nil {
 				return modType, err
 			}
-			if err := checkCount(sr.Offset(), count, sr.limits.Memories, "inner module memory"); err != nil {
+			if err := checkCombinedCount(sr.Offset(), count, importedMems, sr.limits.Memories, "inner module memory"); err != nil {
 				return modType, err
 			}
 			for range count {
@@ -205,7 +217,7 @@ func (a *TypeArena) parseInnerCoreModule(sub *Parser) (CoreModuleTypeDesc, error
 			if err != nil {
 				return modType, err
 			}
-			if err := checkCount(sr.Offset(), count, sr.limits.Globals, "inner module global"); err != nil {
+			if err := checkCombinedCount(sr.Offset(), count, importedGlobals, sr.limits.Globals, "inner module global"); err != nil {
 				return modType, err
 			}
 			for range count {
@@ -320,6 +332,14 @@ func (a *TypeArena) parseInnerCoreModule(sub *Parser) (CoreModuleTypeDesc, error
 	sub.state = stateEnd
 
 	return modType, nil
+}
+
+func checkCombinedCount(offset uint64, defined uint32, imported int, max uint32, what string) error {
+	total := uint64(defined) + uint64(imported)
+	if total > uint64(max) {
+		return errfAt(offset, "%s count %d exceeds maximum %d", what, total, max)
+	}
+	return nil
 }
 
 // validateFuncBody performs basic type-checking of a core wasm function body.

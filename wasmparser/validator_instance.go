@@ -58,9 +58,14 @@ func (v *Validator) instantiateComponent(cs *ComponentState, inst Instantiate) e
 		suppliedArgs[arg.Name] = argType
 	}
 
-	step := stepInstantiate{component: inst.ComponentIndex}
+	step := stepInstantiate{component: inst.ComponentIndex, argCount: len(inst.Args)}
 	for _, arg := range inst.Args {
-		step.args = append(step.args, bodyRef{name: arg.Name, kind: arg.Kind, index: arg.Index})
+		if arg.Kind == ExternalKindInstance || arg.Kind == ExternalKindComponent {
+			if step.args == nil {
+				step.args = make(map[string]bodyRef)
+			}
+			step.args[arg.Name] = bodyRef{kind: arg.Kind, index: arg.Index}
+		}
 		if et := suppliedArgs[arg.Name]; et.Kind == EntityType && et.TypeRef.Kind == AnyTypeResource {
 			if step.resources == nil {
 				step.resources = make(map[string]ResourceID)
