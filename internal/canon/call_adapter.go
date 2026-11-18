@@ -2,6 +2,7 @@ package canon
 
 import (
 	"context"
+	"slices"
 
 	"github.com/kjanat/wazero/api"
 )
@@ -28,8 +29,8 @@ func (a *CallAdapter) Close(ctx context.Context) error {
 	}
 	a.closed = true
 	var firstErr error
-	for i := len(a.reallocHelpers) - 1; i >= 0; i-- {
-		if err := a.reallocHelpers[i].Close(ctx); err != nil && firstErr == nil {
+	for _, v := range slices.Backward(a.reallocHelpers) {
+		if err := v.Close(ctx); err != nil && firstErr == nil {
 			firstErr = err
 		}
 	}

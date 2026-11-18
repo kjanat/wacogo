@@ -3,6 +3,7 @@ package testutil
 
 import (
 	"context"
+	"errors"
 	"sync"
 	"sync/atomic"
 
@@ -136,6 +137,10 @@ func (b *hostBuilder) Compile(ctx context.Context) (wazero.CompiledModule, error
 		return nil, err
 	}
 	return b.runtime.track(ctx, code, true), nil
+}
+
+func (b *hostBuilder) Instantiate(context.Context) (api.Module, error) {
+	return nil, errors.New("tracking runtime requires Compile followed by InstantiateModule")
 }
 
 type Code struct {
