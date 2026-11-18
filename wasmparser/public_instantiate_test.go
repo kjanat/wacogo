@@ -8,6 +8,94 @@ import (
 	"testing"
 )
 
+func testInstance(t *testing.T, component *ComponentType) *InstanceType {
+	t.Helper()
+	inst, err := component.NewInstance(nil)
+	if err != nil {
+		t.Error(err)
+	}
+	return inst
+}
+
+func TestExportedComponentRequiresDefiningFrame(t *testing.T) {
+	arena := NewArena(DefaultFeatures())
+	cs := newComponentState(DefaultFeatures(), arena, ComponentKindComponent)
+	cs.body = &componentBody{}
+	cs.record(stepOuterComponent{count: 1})
+	id := arena.pushComponentType(ComponentTypeDesc{body: cs.body})
+	export := ValidatedComponentExport{
+		arena: arena,
+		et:    ComponentEntityType{Kind: EntityComponent, CompID: id},
+	}
+	if inst, err := export.ComponentType().NewInstance(nil); inst != nil || err == nil || !strings.Contains(err.Error(), "enclosing frame") {
+		t.Fatal("instantiated a component without the frame its alias needs")
+	}
+}
+
+type instantiateTestBindings struct{ instances map[string]*InstanceType }
+
+func (b instantiateTestBindings) Instance(name string) *InstanceType { return b.instances[name] }
+func (instantiateTestBindings) Resource(ImportedResource) (ResourceFrom, bool) {
+	return ResourceFrom{}, false
+}
+
+func TestAscribedInstanceExportNarrowsNestedView(t *testing.T) {
+	lender := testInstance(t, loadComponent(t, `(component
+  (component $child
+    (type $r (resource (rep i32)))
+    (export "r" (type $r))
+    (instance $hidden)
+    (export "hidden" (instance $hidden)))
+  (instance $child-instance (instantiate $child))
+  (export "nested" (instance $child-instance)))`))
+	component := loadComponent(t, `(component
+  (import "i" (instance $i (export "nested" (instance
+    (export "r" (type (sub resource)))
+    (export "hidden" (instance))))))
+  (alias export $i "nested" (instance $nested))
+  (alias export $nested "r" (type $r))
+  (export "full" (instance $i))
+  (export "narrow" (instance $i) (instance
+    (export "nested" (instance
+      (alias outer 2 $r (type $resource))
+      (export "r" (type (eq $resource))))))))`)
+	inst, err := component.NewInstance(instantiateTestBindings{instances: map[string]*InstanceType{"i": lender}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	full := inst.ExportedInstance("full")
+	narrow := inst.ExportedInstance("narrow")
+	if full == nil || narrow == nil || narrow != inst.SubInstance(3) {
+		t.Fatal("the export and the new index entry must share the ascribed view")
+	}
+	fullNested := full.ExportedInstance("nested")
+	narrowNested := narrow.ExportedInstance("nested")
+	if fullNested == nil || narrowNested == nil {
+		t.Fatal("both views must retain the nested instance")
+	}
+	if fullNested.ExportedInstance("hidden") == nil || narrowNested.ExportedInstance("hidden") != nil {
+		t.Fatal("only the unascribed view must expose the hidden instance")
+	}
+	fullID, fullOK := fullNested.resourceAt([]string{"r"})
+	narrowID, narrowOK := narrowNested.resourceAt([]string{"r"})
+	if !fullOK || !narrowOK || resolveResource(fullNested.scope, fullNested.arena, fullID, nil) != resolveResource(narrowNested.scope, narrowNested.arena, narrowID, nil) {
+		t.Fatal("the narrowed nested instance must retain the lender's resource identity")
+	}
+}
+
+func TestNestedInstantiationBindsInstanceArgument(t *testing.T) {
+	component := loadComponent(t, `(component
+  (component $child (import "env" (instance)))
+  (instance $env)
+  (instance (instantiate $child (with "env" (instance $env)))))`)
+	inst := testInstance(t, component)
+	lender := inst.SubInstance(0)
+	child := inst.SubInstance(1)
+	if lender == nil || child == nil || child.SubInstance(0) != lender {
+		t.Fatal("the nested component did not bind the supplied instance")
+	}
+}
+
 func TestNewInstanceReturnsDistinctHandles(t *testing.T) {
 	src := `(component
   (type $r (resource (rep i32)))
@@ -29,14 +117,14 @@ func TestNewInstanceReturnsDistinctHandles(t *testing.T) {
 		t.Fatal("no top-level ComponentType")
 	}
 
-	inst1 := ct.NewInstance()
-	inst2 := ct.NewInstance()
+	inst1 := testInstance(t, ct)
+	inst2 := testInstance(t, ct)
 
 	if inst1 == inst2 {
 		t.Fatal("want distinct *InstanceType handles from separate NewInstance calls")
 	}
-	if inst1.source != ct || inst2.source != ct {
-		t.Fatal("each handle should reference the same source ComponentType")
+	if inst1.scope == inst2.scope {
+		t.Fatal("want distinct resource scopes from separate NewInstance calls")
 	}
 }
 
@@ -48,7 +136,9 @@ func TestNewInstanceIsMemoryNeutral(t *testing.T) {
 	ct := loadComponent(t, src)
 	before := arenaShape(ct.arena)
 	for range 1000 {
-		_ = ct.NewInstance()
+		if _, err := ct.NewInstance(nil); err != nil {
+			t.Error(err)
+		}
 	}
 	after := arenaShape(ct.arena)
 	if before != after {
@@ -72,15 +162,15 @@ func TestCheckInstantiationIsMemoryNeutral(t *testing.T) {
 	beforeProv := arenaShape(prov.arena)
 	beforeCons := arenaShape(cons.arena)
 	for range 100 {
-		shared := prov.NewInstance()
+		shared := testInstance(t, prov)
 		if err := cons.CheckInstantiation(map[string]any{
 			"I1": shared,
 			"I2": shared,
 		}); err != nil {
 			t.Fatalf("unexpected: %v", err)
 		}
-		i1 := prov.NewInstance()
-		i2 := prov.NewInstance()
+		i1 := testInstance(t, prov)
+		i2 := testInstance(t, prov)
 		if err := cons.CheckInstantiation(map[string]any{
 			"I1": i1,
 			"I2": i2,
@@ -149,10 +239,10 @@ func TestCheckInstantiationAcceptsSharedResource(t *testing.T) {
   (type $r (resource (rep i32)))
   (export "r" (type $r))
 )`
-	prov := loadComponent(t,provSrc)
-	cons := loadComponent(t,consSrc)
+	prov := loadComponent(t, provSrc)
+	cons := loadComponent(t, consSrc)
 
-	shared := prov.NewInstance()
+	shared := testInstance(t, prov)
 
 	err := cons.CheckInstantiation(map[string]any{
 		"I1": shared,
@@ -177,19 +267,19 @@ func TestCheckInstantiationConcurrentlySafe(t *testing.T) {
   (type $r (resource (rep i32)))
   (export "r" (type $r))
 )`
-	prov := loadComponent(t,provSrc)
-	cons := loadComponent(t,consSrc)
+	prov := loadComponent(t, provSrc)
+	cons := loadComponent(t, consSrc)
 
 	var wg sync.WaitGroup
 	for range 16 {
 		wg.Go(func() {
 			for range 50 {
-				shared := prov.NewInstance()
+				shared := testInstance(t, prov)
 				_ = cons.CheckInstantiation(map[string]any{
 					"I1": shared, "I2": shared,
 				})
-				i1 := prov.NewInstance()
-				i2 := prov.NewInstance()
+				i1 := testInstance(t, prov)
+				i2 := testInstance(t, prov)
 				_ = cons.CheckInstantiation(map[string]any{
 					"I1": i1, "I2": i2,
 				})
@@ -209,11 +299,11 @@ func TestCheckInstantiationRejectsMismatchedResources(t *testing.T) {
   (type $r (resource (rep i32)))
   (export "r" (type $r))
 )`
-	prov := loadComponent(t,provSrc)
-	cons := loadComponent(t,consSrc)
+	prov := loadComponent(t, provSrc)
+	cons := loadComponent(t, consSrc)
 
-	i1 := prov.NewInstance()
-	i2 := prov.NewInstance()
+	i1 := testInstance(t, prov)
+	i2 := testInstance(t, prov)
 
 	err := cons.CheckInstantiation(map[string]any{
 		"I1": i1,
@@ -241,13 +331,15 @@ func exportHandle(t *testing.T, ct *ComponentType, name string) any {
 	}
 	switch et.Kind {
 	case EntityFunc:
-		return &FuncType{arena: arena, id: et.FuncID}
+		return &FuncType{arena: arena, id: et.FuncID, scope: testInstance(t, ct)}
 	case EntityModule:
 		return &ModuleType{arena: arena, id: et.ModuleID}
 	case EntityComponent:
 		return &ComponentType{arena: arena, id: et.CompID}
 	case EntityInstance:
-		return &InstanceType{source: ct}
+		inst := &InstanceType{arena: arena, exports: arena.InstanceTypes[et.InstID].Exports}
+		inst.scope = inst
+		return inst
 	default:
 		t.Fatalf("unsupported export kind %v", et.Kind)
 		return nil
@@ -267,8 +359,8 @@ func TestCheckInstantiationAcceptsFuncArg(t *testing.T) {
   (func (export "f") (param "x" u32) (result u32)
     (canon lift (core func $i "f")))
 )`
-	prov := loadComponent(t,provSrc)
-	cons := loadComponent(t,consSrc)
+	prov := loadComponent(t, provSrc)
+	cons := loadComponent(t, consSrc)
 
 	fn := exportHandle(t, prov, "f")
 	if err := cons.CheckInstantiation(map[string]any{"f": fn}); err != nil {
@@ -289,8 +381,8 @@ func TestCheckInstantiationRejectsFuncSignatureMismatch(t *testing.T) {
   (func (export "f") (param "x" u32) (param "y" u32) (result u32)
     (canon lift (core func $i "f")))
 )`
-	prov := loadComponent(t,provSrc)
-	cons := loadComponent(t,consSrc)
+	prov := loadComponent(t, provSrc)
+	cons := loadComponent(t, consSrc)
 	fn := exportHandle(t, prov, "f")
 	err := cons.CheckInstantiation(map[string]any{"f": fn})
 	if err == nil {
@@ -307,9 +399,9 @@ func TestCheckInstantiationRejectsWrongKind(t *testing.T) {
   (type $r (resource (rep i32)))
   (export "r" (type $r))
 )`
-	prov := loadComponent(t,provSrc)
-	cons := loadComponent(t,consSrc)
-	err := cons.CheckInstantiation(map[string]any{"f": prov.NewInstance()})
+	prov := loadComponent(t, provSrc)
+	cons := loadComponent(t, consSrc)
+	err := cons.CheckInstantiation(map[string]any{"f": testInstance(t, prov)})
 	if err == nil {
 		t.Fatal("expected kind-mismatch, got nil")
 	}
@@ -326,8 +418,8 @@ func TestCheckInstantiationAcceptsModuleArg(t *testing.T) {
   )
   (export "m" (core module $m))
 )`
-	prov := loadComponent(t,provSrc)
-	cons := loadComponent(t,consSrc)
+	prov := loadComponent(t, provSrc)
+	cons := loadComponent(t, consSrc)
 	mt := exportHandle(t, prov, "m")
 	if err := cons.CheckInstantiation(map[string]any{"m": mt}); err != nil {
 		t.Fatalf("want nil, got %v", err)
@@ -346,8 +438,8 @@ func TestCheckInstantiationAcceptsComponentArg(t *testing.T) {
   )
   (export "c" (component $c))
 )`
-	prov := loadComponent(t,provSrc)
-	cons := loadComponent(t,consSrc)
+	prov := loadComponent(t, provSrc)
+	cons := loadComponent(t, consSrc)
 	ct := exportHandle(t, prov, "c")
 	if err := cons.CheckInstantiation(map[string]any{"c": ct}); err != nil {
 		t.Fatalf("want nil, got %v", err)
@@ -359,7 +451,7 @@ func TestCheckInstantiationSkipsMissingArg(t *testing.T) {
   (type (func))
   (import "f" (func (type 0)))
 )`
-	cons := loadComponent(t,consSrc)
+	cons := loadComponent(t, consSrc)
 	if err := cons.CheckInstantiation(map[string]any{}); err != nil {
 		t.Fatalf("want nil (missing args are skipped), got %v", err)
 	}
@@ -376,8 +468,8 @@ func TestCheckInstantiationRejectsModuleSignatureMismatch(t *testing.T) {
   (core module $m (func (export "g")))
   (export "m" (core module $m))
 )`
-	prov := loadComponent(t,provSrc)
-	cons := loadComponent(t,consSrc)
+	prov := loadComponent(t, provSrc)
+	cons := loadComponent(t, consSrc)
 	mt := exportHandle(t, prov, "m")
 	err := cons.CheckInstantiation(map[string]any{"m": mt})
 	if err == nil {
@@ -394,11 +486,75 @@ func TestCheckInstantiationRejectsModuleWrongKind(t *testing.T) {
   (type $r (resource (rep i32)))
   (export "r" (type $r))
 )`
-	prov := loadComponent(t,provSrc)
-	cons := loadComponent(t,consSrc)
+	prov := loadComponent(t, provSrc)
+	cons := loadComponent(t, consSrc)
 	// Supply an *InstanceType for a core-module import.
-	err := cons.CheckInstantiation(map[string]any{"m": prov.NewInstance()})
+	err := cons.CheckInstantiation(map[string]any{"m": testInstance(t, prov)})
 	if err == nil {
 		t.Fatal("expected kind-mismatch error, got nil")
+	}
+}
+
+// A root component's own imports stand for whatever its instantiator supplies, as
+// a nested component's do.
+func TestCheckInstantiation_RootComponentArg(t *testing.T) {
+	load := func(src string) *ComponentType {
+		t.Helper()
+		vp := NewValidatingParser(bytes.NewReader(wat2wasm(t, src)), DefaultFeatures())
+		for {
+			_, err := vp.Next()
+			if err == io.EOF {
+				return vp.TopLevelComponentType()
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+		}
+	}
+	provider := load(`(component
+  (import "r" (type $r (sub resource)))
+  (export "x" (type $r)))`)
+	consumer := load(`(component
+  (import "c" (component
+    (import "r" (type $r (sub resource)))
+    (export "x" (type (eq $r))))))`)
+	if err := consumer.CheckInstantiation(map[string]any{"c": provider}); err != nil {
+		t.Fatalf("want root component accepted, got: %v", err)
+	}
+}
+
+// CheckInstantiation binds what's open before comparing anything, so a func import
+// can name a resource from an instance import in any order.
+func TestCheckInstantiation_BindsBeforeComparing(t *testing.T) {
+	load := func(src string) *ComponentType {
+		t.Helper()
+		vp := NewValidatingParser(bytes.NewReader(wat2wasm(t, src)), DefaultFeatures())
+		for {
+			_, err := vp.Next()
+			if err == io.EOF {
+				return vp.TopLevelComponentType()
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+		}
+	}
+	lender := testInstance(t, load(`(component (type $r (resource (rep i32))) (export "r" (type $r)))`))
+	other := testInstance(t, load(`(component (type $r (resource (rep i32))) (export "r" (type $r)))`))
+	consumer := load(`(component
+  (import "a" (type $a (sub resource)))
+  (import "b" (type (eq $a)))
+  (import "i" (instance (export "r" (type (eq $a))))))`)
+	ok := map[string]any{"a": ResourceFrom{Lender: lender, Export: "r"}, "b": ResourceFrom{Lender: lender, Export: "r"}, "i": lender}
+	if err := consumer.CheckInstantiation(ok); err != nil {
+		t.Fatalf("want accepted, got: %v", err)
+	}
+	for name, args := range map[string]map[string]any{
+		"eq import": {"a": ResourceFrom{Lender: lender, Export: "r"}, "b": ResourceFrom{Lender: other, Export: "r"}},
+		"instance":  {"a": ResourceFrom{Lender: lender, Export: "r"}, "i": other},
+	} {
+		if err := consumer.CheckInstantiation(args); err == nil {
+			t.Errorf("%s: want rejected", name)
+		}
 	}
 }

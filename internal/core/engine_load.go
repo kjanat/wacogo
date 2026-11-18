@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"slices"
 
 	"github.com/kjanat/wacogo/internal/canon"
 	"github.com/kjanat/wacogo/internal/wasm"
@@ -62,12 +63,13 @@ func (s *loadScope) walkUp(count uint32) *loadScope {
 
 // componentLoader accumulates mutable state during component loading.
 type componentLoader struct {
-	engine  *Engine
-	scope   *loadScope
-	parser  *wasmparser.ValidatingParser
-	plan    []planStep
-	exports []ExportDesc
-	imports []ImportDesc
+	engine   *Engine
+	compiled *ownedModules
+	scope    *loadScope
+	parser   *wasmparser.ValidatingParser
+	plan     []planStep
+	exports  []ExportDesc
+	imports  []ImportDesc
 
 	// resourceDtors maps a resource TypeID to the core func index of its
 	// destructor, captured at load time. Consumed by planResourceDrop to
@@ -76,6 +78,14 @@ type componentLoader struct {
 	// api.Function, eliminating this side-map; for now it's the simplest
 	// way to preserve existing planResourceDrop semantics.
 	resourceDtors map[uint32]uint32
+
+	// resourceSources maps each imported resource to where it is defined, which
+	// is where it is read from at instantiation.
+	resourceSources map[wasmparser.ResourceID]typeResolver
+
+	// arenaTypes memoizes resolvers built from validator types, so that types
+	// shared in the arena stay shared in the resolvers.
+	arenaTypes map[wasmparser.ComponentDefinedTypeID]typeResolver
 
 	// typeResolvers accumulates one entry per allocated TypeID in declaration
 	// order (type section entries, SortType aliases, and direct type imports).
@@ -101,32 +111,57 @@ func (l *componentLoader) allocType(r typeResolver) uint32 {
 
 // LoadComponent parses and compiles a component binary into a Component
 // ready for instantiation.
-func (e *Engine) LoadComponent(ctx context.Context, r io.Reader) (*Component, error) {
+func (e *Engine) LoadComponent(ctx context.Context, r io.Reader) (_ *Component, err error) {
 	if e.closed.Load() {
 		return nil, ErrEngineClosed
 	}
-	vp := wasmparser.NewValidatingParser(r, e.features)
-	comp, err := e.loadComponentFromParser(ctx, vp, nil)
+	compiled := &ownedModules{}
+	defer func() {
+		if err != nil {
+			for _, m := range compiled.modules {
+				_ = m.Close(ctx)
+			}
+		}
+	}()
+	vp := wasmparser.NewValidatingParser(r, e.features, wasmparser.WithParseLimits(e.parseLimits))
+	comp, err := e.loadComponentFromParser(ctx, vp, nil, compiled)
 	if err != nil {
 		return nil, err
 	}
 	comp.wpType = vp.TopLevelComponentType()
+	if comp.wpType.ImportsComponent() {
+		return nil, fmt.Errorf("wacogo: root-level component imports are not supported")
+	}
+	// wasmtime also rejects a component exported from an instance at any depth.
+	// That component is left alone here: with no component imports, no other
+	// instantiation can receive it.
+	for _, exp := range comp.exports {
+		if exp.Kind == SortComponent {
+			return nil, fmt.Errorf("wacogo: exporting a component from the root component is not supported")
+		}
+	}
+	comp.owned = compiled
 	return comp, nil
 }
 
 // loadComponentFromParser reads payloads from a single component's parser,
 // recursively loading sub-components. Unlike ParseAll which flattens nesting,
 // this tracks component boundaries so sub-components get their own Component.
-func (e *Engine) loadComponentFromParser(ctx context.Context, parser *wasmparser.ValidatingParser, parentScope *loadScope) (*Component, error) {
+//
+// compiled collects every module compiled, for the whole of the top-level load.
+func (e *Engine) loadComponentFromParser(ctx context.Context, parser *wasmparser.ValidatingParser, parentScope *loadScope, compiled *ownedModules) (*Component, error) {
 	l := &componentLoader{
-		engine: e,
+		engine:   e,
+		compiled: compiled,
 		scope: &loadScope{
 			parent:                 parentScope,
 			outerModuleClosures:    make(map[int]outerRef),
 			outerComponentClosures: make(map[int]outerRef),
 		},
-		parser:        parser,
-		resourceDtors: make(map[uint32]uint32),
+		parser:          parser,
+		resourceDtors:   make(map[uint32]uint32),
+		resourceSources: make(map[wasmparser.ResourceID]typeResolver),
+		arenaTypes:      make(map[wasmparser.ComponentDefinedTypeID]typeResolver),
 	}
 
 	for {
@@ -144,7 +179,7 @@ func (e *Engine) loadComponentFromParser(ctx context.Context, parser *wasmparser
 				return nil, err
 			}
 		case *wasmparser.ComponentSectionPayload:
-			subComp, err := e.loadComponentFromParser(ctx, sec.ValidatingParser, l.scope)
+			subComp, err := e.loadComponentFromParser(ctx, sec.ValidatingParser, l.scope, compiled)
 			if err != nil {
 				return nil, fmt.Errorf("wacogo: load sub-component: %w", err)
 			}
@@ -165,7 +200,7 @@ func (e *Engine) loadComponentFromParser(ctx context.Context, parser *wasmparser
 			if err := l.processCanonicalSection(sec); err != nil {
 				return nil, err
 			}
-		case *wasmparser.ComponentAliasSectionPayload:
+		case *wasmparser.ValidatedComponentAliasSectionPayload:
 			if err := l.processAliasSection(sec); err != nil {
 				return nil, err
 			}
@@ -203,10 +238,12 @@ func (l *componentLoader) processModuleSection(ctx context.Context, sec *wasmpar
 	if err != nil {
 		return fmt.Errorf("wacogo: compile module: %w", err)
 	}
+	l.compiled.modules = append(l.compiled.modules, compiled)
 	l.scope.compiledModules = append(l.scope.compiledModules, CompiledModule{
 		module:        compiled,
 		syntheticName: syntheticName,
 		tables:        tables,
+		owner:         l.compiled,
 		wpModuleType:  sec.ModuleType(),
 	})
 	return nil
@@ -340,14 +377,14 @@ func (l *componentLoader) processCanonicalSection(sec *wasmparser.ComponentCanon
 	return nil
 }
 
-func (l *componentLoader) processAliasSection(sec *wasmparser.ComponentAliasSectionPayload) error {
+func (l *componentLoader) processAliasSection(sec *wasmparser.ValidatedComponentAliasSectionPayload) error {
 	for item, err := range sec.Items() {
 		if err != nil {
 			return fmt.Errorf("wacogo: alias section: %w", err)
 		}
-		switch a := item.(type) {
+		switch a := item.Alias.(type) {
 		case wasmparser.AliasInstanceExport:
-			l.processAliasInstanceExport(a)
+			l.processAliasInstanceExport(a, item)
 		case wasmparser.AliasCoreInstanceExport:
 			l.plan = append(l.plan, &planAlias{
 				source:      aliasCoreExport{instanceIdx: a.Instance, name: a.Name},
@@ -357,22 +394,24 @@ func (l *componentLoader) processAliasSection(sec *wasmparser.ComponentAliasSect
 		case wasmparser.AliasOuter:
 			l.processAliasOuter(a)
 		default:
-			panic(fmt.Sprintf("wacogo: unknown alias item %T", item))
+			panic(fmt.Sprintf("wacogo: unknown alias item %T", item.Alias))
 		}
 	}
 	return nil
 }
 
-func (l *componentLoader) processAliasInstanceExport(a wasmparser.AliasInstanceExport) {
+func (l *componentLoader) processAliasInstanceExport(a wasmparser.AliasInstanceExport, item wasmparser.ValidatedComponentAlias) {
 	sort := componentExternalKindToSort(a.Kind)
 	if sort == SortType {
-		l.allocType(instanceImportResolver{instanceIdx: a.Instance, exportName: a.Name})
+		entity, arena, _ := item.EntityType()
+		l.allocType(l.aliasedTypeResolver(a, entity, arena))
 		return
 	}
 	alias := &planAlias{
-		source:      aliasExport{instanceIdx: a.Instance, name: a.Name},
-		targetSort:  sort,
-		targetIndex: -1,
+		source:       aliasExport{instanceIdx: a.Instance, name: a.Name},
+		targetSort:   sort,
+		targetIndex:  -1,
+		runtimeEmpty: item.IsInstanceRuntimeEmpty(),
 	}
 	switch sort {
 	case SortCoreModule:
@@ -383,8 +422,23 @@ func (l *componentLoader) processAliasInstanceExport(a wasmparser.AliasInstanceE
 		l.scope.subComponents = append(l.scope.subComponents, nil)
 	case SortFunc:
 		l.funcIsImport = append(l.funcIsImport, false)
+	case SortInstance:
+		l.scope.componentInstances = append(l.scope.componentInstances, loadInstanceInfo{})
 	}
 	l.plan = append(l.plan, alias)
+}
+
+// aliasedTypeResolver returns the resolver for a type aliased out of an
+// instance, given the type the validator resolved for the alias.
+//
+// That type is structural apart from any resources it mentions, so only those
+// need a live instance. A type the loader can't build, such as one mentioning a
+// resource it has no source for, is read from the instance's export.
+func (l *componentLoader) aliasedTypeResolver(a wasmparser.AliasInstanceExport, ent wasmparser.ComponentEntityType, arena *wasmparser.TypeArena) typeResolver {
+	if r, ok := l.arenaTypeResolver(arena, ent.TypeRef); ok {
+		return r
+	}
+	return instanceImportResolver{instanceIdx: a.Instance, exportName: a.Name}
 }
 
 func (l *componentLoader) processAliasOuter(a wasmparser.AliasOuter) {
@@ -439,9 +493,6 @@ func (l *componentLoader) processExportSection(sec *wasmparser.ValidatedComponen
 			Kind:  sort,
 			Index: item.Export.Index,
 		}
-		if sort == SortFunc {
-			desc.ParserFunctionType = item.FuncType()
-		}
 		l.exports = append(l.exports, desc)
 		switch sort {
 		case SortType:
@@ -477,11 +528,15 @@ func (l *componentLoader) processExportSection(sec *wasmparser.ValidatedComponen
 			} else {
 				l.scope.componentInstances = append(l.scope.componentInstances, loadInstanceInfo{})
 			}
-			l.plan = append(l.plan, &planExportRebind{
+			rebind := &planExportRebind{
 				sort:        SortInstance,
 				sourceIndex: item.Export.Index,
 				targetIndex: targetIdx,
-			})
+			}
+			if item.Export.AscribedType.Valid {
+				rebind.ascribedInstance = desc.Name
+			}
+			l.plan = append(l.plan, rebind)
 		case SortCoreModule:
 			targetIdx := len(l.scope.compiledModules)
 			if int(item.Export.Index) < len(l.scope.compiledModules) {
@@ -540,6 +595,8 @@ func (l *componentLoader) processImportSection(sec *wasmparser.ValidatedComponen
 				name:         item.Import.Name.Name,
 				runtimeEmpty: item.IsInstanceRuntimeEmpty(),
 			})
+			entity, arena := item.EntityType()
+			l.addImportedResources(arena, entity.InstID, uint32(len(l.scope.componentInstances)), nil)
 			l.scope.componentInstances = append(l.scope.componentInstances, loadInstanceInfo{
 				importName: item.Import.Name.Name,
 			})
@@ -571,10 +628,28 @@ func (l *componentLoader) processImportSection(sec *wasmparser.ValidatedComponen
 			// Direct component-level type imports ((import "T" (type ...)))
 			// resolve at instantiate time by reading the TypeArg from the
 			// instantiation args bag.
-			l.allocType(importResolver{importName: item.Import.Name.Name})
+			resolver := importResolver{importName: item.Import.Name.Name}
+			if entity, _ := item.EntityType(); entity.TypeRef.Kind == wasmparser.AnyTypeResource {
+				l.resourceSources[entity.TypeRef.ResID] = resolver
+			}
+			l.allocType(resolver)
 		}
 	}
 	return nil
+}
+
+// addImportedResources records where each resource defined by an imported
+// instance, including through nested instances, is read at instantiation.
+func (l *componentLoader) addImportedResources(arena *wasmparser.TypeArena, id wasmparser.ComponentInstanceTypeID, instanceIdx uint32, path []string) {
+	it := arena.InstanceTypes[id]
+	for _, res := range it.DefinedResources {
+		l.resourceSources[res.ID] = instanceImportResolver{instanceIdx: instanceIdx, path: path, exportName: res.Export}
+	}
+	for name, ent := range it.Exports {
+		if ent.Kind == wasmparser.EntityInstance {
+			l.addImportedResources(arena, ent.InstID, instanceIdx, append(slices.Clip(path), name))
+		}
+	}
 }
 
 // buildComponent assembles the final Component from the accumulated loader state.
@@ -598,19 +673,6 @@ func (l *componentLoader) buildComponent(parentScope *loadScope) (*Component, er
 		typeResolvers:          l.typeResolvers,
 		outerModuleClosures:    outerModuleClosures,
 		outerComponentClosures: outerComponentClosures,
-	}
-
-	if parentScope == nil {
-		for _, imp := range l.imports {
-			if imp.Kind == SortComponent {
-				return nil, fmt.Errorf("wacogo: root-level component imports are not supported")
-			}
-		}
-		for _, exp := range l.exports {
-			if exp.Kind == SortComponent {
-				return nil, fmt.Errorf("wacogo: exporting a component from the root component is not supported")
-			}
-		}
 	}
 
 	return comp, nil

@@ -53,7 +53,7 @@ func (a *TypeArena) parseInnerCoreModule(sub *Parser) (CoreModuleTypeDesc, error
 			return modType, err
 		}
 		sectionStart := r.Offset()
-		safeLen, err := checkSectionLength(sectionStart, sectionLen, "inner core module section")
+		safeLen, err := checkSectionLength(sectionStart, sectionLen, sub.reader.limits.ModuleSize, "inner core module section")
 		if err != nil {
 			return modType, err
 		}
@@ -63,7 +63,7 @@ func (a *TypeArena) parseInnerCoreModule(sub *Parser) (CoreModuleTypeDesc, error
 		}
 		_ = sectionStart
 
-		sr := newBinaryReaderAt(bytes.NewReader(sectionData), sectionStart)
+		sr := newBinaryReaderAt(bytes.NewReader(sectionData), sectionStart, sub.reader.limits)
 
 		switch sectionID {
 		case coreTypeSection:
@@ -71,7 +71,7 @@ func (a *TypeArena) parseInnerCoreModule(sub *Parser) (CoreModuleTypeDesc, error
 			if err != nil {
 				return modType, err
 			}
-			if err := checkCount(sr.Offset(), count, MaxTypes, "inner module type"); err != nil {
+			if err := checkCount(sr.Offset(), count, sr.limits.Types, "inner module type"); err != nil {
 				return modType, err
 			}
 			for range count {
@@ -87,7 +87,7 @@ func (a *TypeArena) parseInnerCoreModule(sub *Parser) (CoreModuleTypeDesc, error
 			if err != nil {
 				return modType, err
 			}
-			if err := checkCount(sr.Offset(), count, MaxImports, "inner module import"); err != nil {
+			if err := checkCount(sr.Offset(), count, sr.limits.Imports, "inner module import"); err != nil {
 				return modType, err
 			}
 			for range count {
@@ -117,6 +117,9 @@ func (a *TypeArena) parseInnerCoreModule(sub *Parser) (CoreModuleTypeDesc, error
 					et = CoreEntityType{Kind: CoreEntityFunc, Func: fid}
 					importedFuncIDs = append(importedFuncIDs, fid)
 					importedFuncs++
+					if err := checkCombinedCount(sr.Offset(), 0, importedFuncs, sr.limits.Functions, "inner module func"); err != nil {
+						return modType, err
+					}
 				case 0x01: // table
 					tbl, err := readInlineTableType(sr)
 					if err != nil {
@@ -125,6 +128,9 @@ func (a *TypeArena) parseInnerCoreModule(sub *Parser) (CoreModuleTypeDesc, error
 					et = CoreEntityType{Kind: CoreEntityTable, Table: tbl}
 					tables = append(tables, tbl)
 					importedTables++
+					if err := checkCombinedCount(sr.Offset(), 0, importedTables, sr.limits.Tables, "inner module table"); err != nil {
+						return modType, err
+					}
 				case 0x02: // memory
 					mem, err := readInlineMemoryType(sr)
 					if err != nil {
@@ -133,6 +139,9 @@ func (a *TypeArena) parseInnerCoreModule(sub *Parser) (CoreModuleTypeDesc, error
 					et = CoreEntityType{Kind: CoreEntityMemory, Memory: mem}
 					memories = append(memories, mem)
 					importedMems++
+					if err := checkCombinedCount(sr.Offset(), 0, importedMems, sr.limits.Memories, "inner module memory"); err != nil {
+						return modType, err
+					}
 				case 0x03: // global
 					g, err := readInlineGlobalType(sr)
 					if err != nil {
@@ -141,6 +150,9 @@ func (a *TypeArena) parseInnerCoreModule(sub *Parser) (CoreModuleTypeDesc, error
 					et = CoreEntityType{Kind: CoreEntityGlobal, Global: g}
 					globals = append(globals, g)
 					importedGlobals++
+					if err := checkCombinedCount(sr.Offset(), 0, importedGlobals, sr.limits.Globals, "inner module global"); err != nil {
+						return modType, err
+					}
 				default:
 					return modType, fmt.Errorf("unknown import kind: 0x%02x", kind)
 				}
@@ -157,7 +169,7 @@ func (a *TypeArena) parseInnerCoreModule(sub *Parser) (CoreModuleTypeDesc, error
 			if err != nil {
 				return modType, err
 			}
-			if err := checkCount(sr.Offset(), count, MaxFunctions, "inner module func"); err != nil {
+			if err := checkCombinedCount(sr.Offset(), count, importedFuncs, sr.limits.Functions, "inner module func"); err != nil {
 				return modType, err
 			}
 			for range count {
@@ -173,7 +185,7 @@ func (a *TypeArena) parseInnerCoreModule(sub *Parser) (CoreModuleTypeDesc, error
 			if err != nil {
 				return modType, err
 			}
-			if err := checkCount(sr.Offset(), count, MaxTables, "inner module table"); err != nil {
+			if err := checkCombinedCount(sr.Offset(), count, importedTables, sr.limits.Tables, "inner module table"); err != nil {
 				return modType, err
 			}
 			for range count {
@@ -189,7 +201,7 @@ func (a *TypeArena) parseInnerCoreModule(sub *Parser) (CoreModuleTypeDesc, error
 			if err != nil {
 				return modType, err
 			}
-			if err := checkCount(sr.Offset(), count, MaxMemories, "inner module memory"); err != nil {
+			if err := checkCombinedCount(sr.Offset(), count, importedMems, sr.limits.Memories, "inner module memory"); err != nil {
 				return modType, err
 			}
 			for range count {
@@ -205,7 +217,7 @@ func (a *TypeArena) parseInnerCoreModule(sub *Parser) (CoreModuleTypeDesc, error
 			if err != nil {
 				return modType, err
 			}
-			if err := checkCount(sr.Offset(), count, MaxGlobals, "inner module global"); err != nil {
+			if err := checkCombinedCount(sr.Offset(), count, importedGlobals, sr.limits.Globals, "inner module global"); err != nil {
 				return modType, err
 			}
 			for range count {
@@ -224,7 +236,7 @@ func (a *TypeArena) parseInnerCoreModule(sub *Parser) (CoreModuleTypeDesc, error
 			if err != nil {
 				return modType, err
 			}
-			if err := checkCount(sr.Offset(), count, MaxExports, "inner module export"); err != nil {
+			if err := checkCount(sr.Offset(), count, sr.limits.Exports, "inner module export"); err != nil {
 				return modType, err
 			}
 			for range count {
@@ -283,7 +295,7 @@ func (a *TypeArena) parseInnerCoreModule(sub *Parser) (CoreModuleTypeDesc, error
 			if err != nil {
 				return modType, err
 			}
-			if err := checkCount(sr.Offset(), count, MaxFunctions, "inner module code"); err != nil {
+			if err := checkCount(sr.Offset(), count, sr.limits.Functions, "inner module code"); err != nil {
 				return modType, err
 			}
 			for i := range count {
@@ -291,8 +303,8 @@ func (a *TypeArena) parseInnerCoreModule(sub *Parser) (CoreModuleTypeDesc, error
 				if err != nil {
 					return modType, err
 				}
-				if uint64(bodySize) > MaxFunctionBodySize {
-					return modType, errfAt(sr.Offset(), "function body size %d exceeds maximum %d", bodySize, MaxFunctionBodySize)
+				if bodySize > sr.limits.FunctionBodySize {
+					return modType, errfAt(sr.Offset(), "function body size %d exceeds maximum %d", bodySize, sr.limits.FunctionBodySize)
 				}
 				bodyData, err := sr.ReadBytes(int(bodySize))
 				if err != nil {
@@ -306,7 +318,7 @@ func (a *TypeArena) parseInnerCoreModule(sub *Parser) (CoreModuleTypeDesc, error
 					return modType, fmt.Errorf("func type index out of bounds in code section")
 				}
 				ft := funcTypes[typeIdx]
-				if err := validateFuncBody(ft, bodyData, int(sr.Offset())-len(bodyData)); err != nil {
+				if err := validateFuncBody(ft, bodyData, int(sr.Offset())-len(bodyData), sr.limits); err != nil {
 					return modType, err
 				}
 			}
@@ -322,18 +334,26 @@ func (a *TypeArena) parseInnerCoreModule(sub *Parser) (CoreModuleTypeDesc, error
 	return modType, nil
 }
 
+func checkCombinedCount(offset uint64, defined uint32, imported int, max uint32, what string) error {
+	total := uint64(defined) + uint64(imported)
+	if total > uint64(max) {
+		return errfAt(offset, "%s count %d exceeds maximum %d", what, total, max)
+	}
+	return nil
+}
+
 // validateFuncBody performs basic type-checking of a core wasm function body.
 // This is a simplified validator that checks operand stack consistency for
 // common instructions (enough to catch basic type mismatches).
-func validateFuncBody(ft CoreFuncTypeDesc, body []byte, baseOffset int) error {
-	br := newBinaryReaderAt(bytes.NewReader(body), uint64(baseOffset))
+func validateFuncBody(ft CoreFuncTypeDesc, body []byte, baseOffset int, limits *ParseLimits) error {
+	br := newBinaryReaderAt(bytes.NewReader(body), uint64(baseOffset), limits)
 
 	// Parse locals
 	localCount, err := br.ReadU32()
 	if err != nil {
 		return err
 	}
-	if err := checkCount(br.Offset(), localCount, MaxFunctions, "function locals groups"); err != nil {
+	if err := checkCount(br.Offset(), localCount, br.limits.Functions, "function locals groups"); err != nil {
 		return err
 	}
 	var localTypes []CoreValType
@@ -351,8 +371,8 @@ func validateFuncBody(ft CoreFuncTypeDesc, body []byte, baseOffset int) error {
 			return err
 		}
 		totalLocals += uint64(count)
-		if totalLocals > MaxFunctions {
-			return errfAt(br.Offset(), "function local count %d exceeds maximum %d", totalLocals, uint64(MaxFunctions))
+		if totalLocals > uint64(br.limits.Functions) {
+			return errfAt(br.Offset(), "function local count %d exceeds maximum %d", totalLocals, br.limits.Functions)
 		}
 		cvt := CoreValType(vt)
 		for range count {
@@ -487,7 +507,7 @@ func readInlineFuncType(r *BinaryReader) (CoreFuncTypeDesc, error) {
 	if err != nil {
 		return CoreFuncTypeDesc{}, err
 	}
-	if err := checkCount(r.Offset(), paramCount, MaxFunctionParams, "function param"); err != nil {
+	if err := checkCount(r.Offset(), paramCount, r.limits.FunctionParams, "function param"); err != nil {
 		return CoreFuncTypeDesc{}, err
 	}
 	params := make([]CoreValType, paramCount)
@@ -506,7 +526,7 @@ func readInlineFuncType(r *BinaryReader) (CoreFuncTypeDesc, error) {
 	if err != nil {
 		return CoreFuncTypeDesc{}, err
 	}
-	if err := checkCount(r.Offset(), resultCount, MaxFunctionResults, "function result"); err != nil {
+	if err := checkCount(r.Offset(), resultCount, r.limits.FunctionResults, "function result"); err != nil {
 		return CoreFuncTypeDesc{}, err
 	}
 	results := make([]CoreValType, resultCount)

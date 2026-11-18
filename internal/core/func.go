@@ -77,11 +77,12 @@ func (f *Func) CallRaw(
 	}
 
 	callee := f.binding.Callee()
+	callerOwner := caller.runtimeOwner()
 	task := &canon.Task{}
-	resources := &rawCallResources{task: task, caller: caller}
+	resources := &rawCallResources{task: task, caller: callerOwner}
 	callerCC := NewCallContext(caller, task, nil, nil)
-	if caller != nil {
-		callerCC.transferTarget = &rawTransferTarget{table: caller.resources, call: resources, caller: true}
+	if callerOwner != nil {
+		callerCC.transferTarget = &rawTransferTarget{table: callerOwner.resources, call: resources, caller: true}
 	}
 	realloc := ReallocFunc(callee.GoRealloc)
 	if realloc == nil {

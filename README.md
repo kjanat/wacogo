@@ -1,11 +1,20 @@
 # wacogo
 
-Actionlint's maintained fork of [partite-ai/wacogo](https://github.com/partite-ai/wacogo), including the ownership, lifting-budget, table-accounting and generated-decoder fixes in upstream PRs #13 through #16. Import `github.com/kjanat/wacogo` directly. This fork uses `github.com/kjanat/go-modules` for the repaired WIT loader and publishes under its own module path and version tags.
+Actionlint's maintained fork of [partite-ai/wacogo](https://github.com/partite-ai/wacogo), including the ownership, lifting-budget, table-accounting and generated-decoder fixes in upstream PRs #13 through #16, plus the resource identity checks, parse limits and compiled-component cleanup from upstream PR #23. Import `github.com/kjanat/wacogo` directly. This fork uses `github.com/kjanat/go-modules` for the repaired WIT loader and publishes under its own module path and version tags.
 
 `CallRaw` write/read callbacks return `error`. A failed argument writer stops
 guest execution; a failed result reader skips post-return and poisons the
 instance. Regenerate existing Go bindings with this version's `wacogo-witgen`
 before compiling against that API. The component's WIT contract is unchanged.
+
+Use `WithResourceTypeImport(name, lender, export)` for imported resource types;
+the old `WithTypeImport` entry point has been replaced. `WithParseLimits` bounds
+parsing and the number of instances a component would create. The fork retains
+`WithLiftLimits` for its byte and value budgets.
+
+Call `Component.Close(ctx)` when its compiled code is no longer needed. Existing
+instances stay usable, but new instantiation, including of exported core modules,
+requires an open component. Closing the engine still releases all remaining code.
 
 A WebAssembly Component Model (MVP) runtime for Go, built on [wazero].
 
@@ -98,7 +107,7 @@ For exports nested inside an interface, use
 `inst.ExportedInstance("ns:pkg/iface").ExportedFunc("name")`. To wire
 individual imports manually, use `wacogo.WithInstanceImport`,
 `wacogo.WithFuncImport`, `wacogo.WithModuleImport`,
-`wacogo.WithComponentImport`, or `wacogo.WithTypeImport`.
+`wacogo.WithComponentImport`, or `wacogo.WithResourceTypeImport`.
 
 Runnable demo: [`examples/wasi-greet/`](examples/wasi-greet/).
 

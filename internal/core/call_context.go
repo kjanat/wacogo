@@ -73,13 +73,13 @@ func (cc *CallContext) IssueOwnHandle(tr *TypeResource, rep uint32) ResourceHand
 // LookupOwn returns the ResourceHandle for an own entry in this
 // context's resource table.
 func (cc *CallContext) LookupOwn(tr *TypeResource, handle uint32) (ResourceHandle, error) {
-	return cc.inst.resources.LookupOwn(tr, handle)
+	return cc.inst.runtimeOwner().resources.LookupOwn(tr, handle)
 }
 
 // LookupBorrowable returns the ResourceHandle for an own or borrow
 // entry in this context's resource table.
 func (cc *CallContext) LookupBorrowable(tr *TypeResource, handle uint32) (ResourceHandle, error) {
-	return cc.inst.resources.LookupBorrowable(tr, handle)
+	return cc.inst.runtimeOwner().resources.LookupBorrowable(tr, handle)
 }
 
 // TransferTarget returns the call's resource table as an opaque
@@ -90,5 +90,5 @@ func (cc *CallContext) TransferTarget() TransferTarget {
 	if cc.transferTarget != nil {
 		return cc.transferTarget
 	}
-	return cc.inst.resources
+	return cc.inst.runtimeOwner().resources
 }

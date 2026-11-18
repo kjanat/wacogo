@@ -53,6 +53,28 @@ func TestHostTypeBuilder_PushFuncType_StoresInArena(t *testing.T) {
 	}
 }
 
+func TestComponentSubtypeChecksUnorderedEntries(t *testing.T) {
+	env := ComponentEntityType{Kind: EntityInstance}
+	for _, tc := range []struct {
+		name string
+		a, b ComponentTypeDesc
+	}{
+		{"import", ComponentTypeDesc{Imports: map[string]ComponentEntityType{"env": env}}, ComponentTypeDesc{}},
+		{"export", ComponentTypeDesc{}, ComponentTypeDesc{Exports: map[string]ComponentEntityType{"env": env}}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			arena := NewArena(DefaultFeatures())
+			builder := arena.HostTypeBuilder()
+			a := builder.PushComponentType(tc.a)
+			b := builder.PushComponentType(tc.b)
+			sc := SubtypeChecker{aArena: arena, bArena: arena}
+			if err := sc.isComponentSubtype(a, b); err == nil {
+				t.Fatalf("accepted an unsatisfied %s", tc.name)
+			}
+		})
+	}
+}
+
 func TestHostTypeBuilder_PushComponentType_StoresInArena(t *testing.T) {
 	arena := NewArena(DefaultFeatures())
 	b := arena.HostTypeBuilder()
@@ -77,25 +99,12 @@ func TestHostTypeBuilder_NewComponentTypeHandle(t *testing.T) {
 		t.Fatal("want non-nil *ComponentType")
 	}
 	// Smoke: NewInstance should return a non-nil *InstanceType.
-	inst := h.NewInstance()
+	inst := testInstance(t, h)
 	if inst == nil {
 		t.Fatal("want non-nil *InstanceType")
 	}
 }
 
-func TestHostTypeBuilder_NewFuncTypeHandle(t *testing.T) {
-	arena := NewArena(DefaultFeatures())
-	b := arena.HostTypeBuilder()
-	id := b.PushFuncType(FuncTypeDesc{})
-	h := b.NewFuncTypeHandle(id)
-	if h == nil {
-		t.Fatal("want non-nil *FuncType")
-	}
-}
-
-// TestHostTypeBuilder_SynthComponentCheckInstantiation proves a
-// ComponentType built by HostTypeBuilder is a valid subtype target
-// for another component's EntityInstance import.
 func TestHostTypeBuilder_SynthComponentCheckInstantiation(t *testing.T) {
 	arena := NewArena(DefaultFeatures())
 	b := arena.HostTypeBuilder()
@@ -110,7 +119,7 @@ func TestHostTypeBuilder_SynthComponentCheckInstantiation(t *testing.T) {
 		ExportOrder: []string{"hi"},
 	})
 	hostComp := b.NewComponentTypeHandle(hostCompID)
-	hostInst := hostComp.NewInstance()
+	hostInst := testInstance(t, hostComp)
 
 	// Consumer side: one import "h" of instance type matching host.
 	consFnID := b.PushFuncType(FuncTypeDesc{})
