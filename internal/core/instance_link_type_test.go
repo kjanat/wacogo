@@ -676,7 +676,7 @@ var linkCases = []linkCase{
 		uncomposable: true,
 	},
 	{
-		name: "child narrowed by an ascription is checked by its actual type",
+		name: "child narrowed by an ascription cannot supply a hidden function",
 		providers: []linkProvider{{label: "p", wat: `(component
   ` + lifted + `
   (func $f (param "x" s32) (canon lift (core func $i "f")))
@@ -685,6 +685,7 @@ var linkCases = []linkCase{
 		consumer:     `(component (import "n" (instance (export "f" (func (param "x" s32))))))`,
 		links:        map[string]string{"n": "p.n"},
 		uncomposable: true,
+		wantErr:      "export `f` was not found",
 	},
 	{
 		name: "parent's type includes the ascription narrowing its child",
@@ -790,7 +791,11 @@ func resolveLinkPath(t *testing.T, insts map[string]*ComponentInstance, path str
 // space lines up with the validator's.
 func assertInstanceTypesAligned(t *testing.T, path string, inst *ComponentInstance) {
 	t.Helper()
-	for name, exp := range inst.exports {
+	for name := range inst.runtimeOwner().exports {
+		exp, ok := inst.lookupExport(name)
+		if !ok {
+			continue
+		}
 		childPath := path + "." + name
 		if exp.kind == SortFunc && exp.funcVal.ParserFunctionType() == nil {
 			t.Errorf("%s: func has no type", childPath)
@@ -806,6 +811,38 @@ func assertInstanceTypesAligned(t *testing.T, path string, inst *ComponentInstan
 			t.Errorf("%s: instance holds type %p, evaluated %p", childPath, exp.instance.wpInstance, want)
 		}
 		assertInstanceTypesAligned(t, childPath, exp.instance)
+	}
+}
+
+func TestAscribedInstanceExportSharesRuntimeState(t *testing.T) {
+	ctx := context.Background()
+	engine := NewEngine(ctx)
+	defer engine.Close(ctx)
+	bin := parseLinkWat(t, `(component
+  `+lifted+`
+  (func $f (param "x" s32) (canon lift (core func $i "f")))
+  (instance $n (export "f" (func $f)))
+  (export "full" (instance $n))
+  (export "narrow" (instance $n) (instance)))`)
+	component, err := engine.LoadComponent(ctx, bytes.NewReader(bin))
+	if err != nil {
+		t.Fatal(err)
+	}
+	inst, err := component.Instantiate(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	full, narrow := inst.ExportedInstance("full"), inst.ExportedInstance("narrow")
+	if full == nil || narrow == nil || full.ExportedFunc("f") == nil || narrow.ExportedFunc("f") != nil {
+		t.Fatal("only the unascribed instance should expose f")
+	}
+	if cc := NewCallContext(narrow, nil, nil, nil); cc.Instance() != narrow {
+		t.Fatal("the call context must retain the narrowed view")
+	}
+	reason := fmt.Errorf("test trap")
+	narrow.Poison(reason)
+	if full.Poisoned() != reason {
+		t.Fatal("the narrowed view must share the original instance's lifecycle")
 	}
 }
 
@@ -973,8 +1010,8 @@ func TestRootComponentExport(t *testing.T) {
 		t.Fatalf("want direct export rejected, got: %v", err)
 	}
 
-	// A component exported from an instance loads and stays out of reach, however
-	// the instance got it and whatever its exports declare.
+	// A nested component can be retrieved only if its instance exports it.
+	// Direct instantiation is reserved for its parent.
 	for name, wat := range map[string]string{
 		"inline instance": `(component
   (component $c)
@@ -993,6 +1030,10 @@ func TestRootComponentExport(t *testing.T) {
   (component $c)
   (instance $i (export "c" (component $c)))
   (export "i" (instance $i) (instance)))`,
+		"retained by an ascription": `(component
+  (component $c)
+  (instance $i (export "c" (component $c)))
+  (export "i" (instance $i) (instance (export "c" (component)))))`,
 	} {
 		t.Run(name, func(t *testing.T) {
 			comp, err := engine.LoadComponent(ctx, bytes.NewReader(parseLinkWat(t, wat)))
@@ -1005,6 +1046,12 @@ func TestRootComponentExport(t *testing.T) {
 			}
 			defer inst.Close(ctx)
 			nested := inst.ExportedInstance("i").ExportedComponent("c")
+			if name == "hidden by an ascription" {
+				if nested != nil {
+					t.Fatal("ascription exposed the hidden component")
+				}
+				return
+			}
 			if nested == nil {
 				t.Fatal("want the nested component returned")
 			}

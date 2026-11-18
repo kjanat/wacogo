@@ -766,7 +766,11 @@ func (v *Validator) addExport(cs *ComponentState, exp *ComponentExport) (Compone
 
 	switch et.Kind {
 	case EntityInstance:
-		cs.record(stepExportInstance{name: exp.Name.Name, from: exp.Index})
+		step := stepExportInstance{name: exp.Name.Name, from: exp.Index}
+		if exp.AscribedType.Valid {
+			step.ascribed = Some(et.InstID)
+		}
+		cs.record(step)
 	case EntityComponent:
 		cs.record(stepExportComponent{name: exp.Name.Name, from: exp.Index})
 	}

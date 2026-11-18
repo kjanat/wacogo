@@ -48,6 +48,7 @@ type instantiationState struct {
 	funcs              []*ExportedFunc      // spec: func
 	componentInstances []*ComponentInstance // spec: instance
 	values             []Val                // spec: value
+	ascribedExports    map[string]*ComponentInstance
 	// types is the type index space (spec: type), filled in by
 	// planResolveType steps. It is instantiation-time scratch: once the
 	// plan has run, every type it holds has been copied into whatever
@@ -328,9 +329,13 @@ func (e *Engine) instantiateWithParentCfg(ctx context.Context, component *Compon
 			if int(exp.Index) >= len(state.componentInstances) {
 				panic(fmt.Sprintf("wacogo: export %q: instance index %d out of range (have %d)", exp.Name, exp.Index, len(state.componentInstances)))
 			}
+			child := state.componentInstances[exp.Index]
+			if view, ok := state.ascribedExports[exp.Name]; ok {
+				child = view
+			}
 			inst.exports[exp.Name] = exportEntry{
 				kind:     SortInstance,
-				instance: state.componentInstances[exp.Index],
+				instance: child,
 			}
 		case SortType:
 			// exp.Index is a TypeID in the component type index space,
@@ -534,14 +539,17 @@ func (step *planAlias) execute(_ context.Context, s *instantiationState) error {
 		inst := s.componentInstances[src.instanceIdx]
 		switch step.targetSort {
 		case SortFunc:
-			entry, ok := inst.exports[src.name]
+			entry, ok := inst.lookupExport(src.name)
 			if !ok || entry.kind != SortFunc {
 				return fmt.Errorf("wacogo: alias export: %q not found as func in component instance %d", src.name, src.instanceIdx)
 			}
 			s.funcs = append(s.funcs, entry.funcVal)
 		case SortInstance:
-			sub := inst.ExportedInstance(src.name)
-			if _, exported := inst.exports[src.name]; !exported && step.runtimeEmpty {
+			entry, exported := inst.lookupExport(src.name)
+			var sub *ComponentInstance
+			if exported && entry.kind == SortInstance {
+				sub = entry.instance
+			} else if !exported && step.runtimeEmpty {
 				sub = s.newEmptyInstance()
 			}
 			if sub == nil {
@@ -1244,7 +1252,15 @@ func (step *planExportRebind) execute(_ context.Context, s *instantiationState) 
 		// componentInstances is not pre-initialized from the load-time
 		// scope (it starts empty and grows as instances are created), so
 		// rebind always appends regardless of targetIndex.
-		s.componentInstances = append(s.componentInstances, s.componentInstances[step.sourceIndex])
+		child := s.componentInstances[step.sourceIndex]
+		if step.ascribedInstance != "" {
+			child = child.withExportView(s.nextInstanceType())
+			if s.ascribedExports == nil {
+				s.ascribedExports = make(map[string]*ComponentInstance)
+			}
+			s.ascribedExports[step.ascribedInstance] = child
+		}
+		s.componentInstances = append(s.componentInstances, child)
 	case SortCoreModule:
 		if int(step.sourceIndex) >= len(s.compiledModules) {
 			return fmt.Errorf("wacogo: export rebind: module %d out of range (have %d)", step.sourceIndex, len(s.compiledModules))

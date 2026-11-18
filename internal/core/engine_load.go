@@ -528,11 +528,15 @@ func (l *componentLoader) processExportSection(sec *wasmparser.ValidatedComponen
 			} else {
 				l.scope.componentInstances = append(l.scope.componentInstances, loadInstanceInfo{})
 			}
-			l.plan = append(l.plan, &planExportRebind{
+			rebind := &planExportRebind{
 				sort:        SortInstance,
 				sourceIndex: item.Export.Index,
 				targetIndex: targetIdx,
-			})
+			}
+			if item.Export.AscribedType.Valid {
+				rebind.ascribedInstance = desc.Name
+			}
+			l.plan = append(l.plan, rebind)
 		case SortCoreModule:
 			targetIdx := len(l.scope.compiledModules)
 			if int(item.Export.Index) < len(l.scope.compiledModules) {

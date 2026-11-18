@@ -35,10 +35,11 @@ func (v canonInstanceView) SuspendLeave() bool     { return v.i.SuspendLeave() }
 func (v canonInstanceView) RestoreLeave(prev bool) { v.i.RestoreLeave(prev) }
 func (v canonInstanceView) Poison(reason error)    { v.i.Poison(reason) }
 func (v canonInstanceView) ResourceTable() canon.ResourceTable {
-	if v.i == nil || v.i.resources == nil {
+	i := v.i.runtimeOwner()
+	if i == nil || i.resources == nil {
 		return nil
 	}
-	return canonResourceTableView{t: v.i.resources}
+	return canonResourceTableView{t: i.resources}
 }
 
 var _ canon.Instance = canonInstanceView{}

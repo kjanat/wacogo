@@ -44,8 +44,9 @@ type stepOuterComponent struct{ count, index uint32 }
 type stepDefineComponent struct{ id ComponentTypeID }
 
 type stepExportInstance struct {
-	name string
-	from uint32
+	name     string
+	from     uint32
+	ascribed Optional[ComponentInstanceTypeID]
 }
 
 type stepExportComponent struct {
@@ -340,8 +341,7 @@ func (i *InstanceType) bindSubInstance(view map[string]ComponentEntityType, chil
 // resource identities. It stands for an instance assembled here, or for one that
 // was omitted because it needs nothing at runtime.
 func (f *instanceFrame) declared(view ComponentInstanceTypeID) *InstanceType {
-	arena := f.self.arena
-	return &InstanceType{arena: arena, exports: arena.InstanceTypes[view].Exports, scope: f.self.scope}
+	return f.self.exportView(view, nil)
 }
 
 func (f *instanceFrame) run(step bodyStep) error {
@@ -361,7 +361,7 @@ func (f *instanceFrame) run(step bodyStep) error {
 		}
 		f.instances = append(f.instances, inst)
 	case stepAliasComponent:
-		f.components = append(f.components, f.instances[s.from].components[s.name])
+		f.components = append(f.components, f.instances[s.from].exportedComponent(s.name))
 	case stepOuterComponent:
 		target := f
 		for range s.count {
@@ -371,8 +371,12 @@ func (f *instanceFrame) run(step bodyStep) error {
 	case stepDefineComponent:
 		f.components = append(f.components, &componentValue{id: s.id, frame: f})
 	case stepExportInstance:
-		f.self.setChild(s.name, f.instances[s.from])
-		f.instances = append(f.instances, f.instances[s.from])
+		child := f.instances[s.from]
+		if s.ascribed.Valid {
+			child = f.self.exportView(s.ascribed.Value, child)
+		}
+		f.self.setChild(s.name, child)
+		f.instances = append(f.instances, child)
 	case stepExportComponent:
 		f.self.setComponent(s.name, f.components[s.from])
 		f.components = append(f.components, f.components[s.from])

@@ -32,6 +32,57 @@ func TestExportedComponentRequiresDefiningFrame(t *testing.T) {
 	}
 }
 
+type instantiateTestBindings struct{ instances map[string]*InstanceType }
+
+func (b instantiateTestBindings) Instance(name string) *InstanceType { return b.instances[name] }
+func (instantiateTestBindings) Resource(ImportedResource) (ResourceFrom, bool) {
+	return ResourceFrom{}, false
+}
+
+func TestAscribedInstanceExportNarrowsNestedView(t *testing.T) {
+	lender := testInstance(t, loadComponent(t, `(component
+  (component $child
+    (type $r (resource (rep i32)))
+    (export "r" (type $r))
+    (instance $hidden)
+    (export "hidden" (instance $hidden)))
+  (instance $child-instance (instantiate $child))
+  (export "nested" (instance $child-instance)))`))
+	component := loadComponent(t, `(component
+  (import "i" (instance $i (export "nested" (instance
+    (export "r" (type (sub resource)))
+    (export "hidden" (instance))))))
+  (alias export $i "nested" (instance $nested))
+  (alias export $nested "r" (type $r))
+  (export "full" (instance $i))
+  (export "narrow" (instance $i) (instance
+    (export "nested" (instance
+      (alias outer 2 $r (type $resource))
+      (export "r" (type (eq $resource))))))))`)
+	inst, err := component.NewInstance(instantiateTestBindings{instances: map[string]*InstanceType{"i": lender}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	full := inst.ExportedInstance("full")
+	narrow := inst.ExportedInstance("narrow")
+	if full == nil || narrow == nil || narrow != inst.SubInstance(3) {
+		t.Fatal("the export and the new index entry must share the ascribed view")
+	}
+	fullNested := full.ExportedInstance("nested")
+	narrowNested := narrow.ExportedInstance("nested")
+	if fullNested == nil || narrowNested == nil {
+		t.Fatal("both views must retain the nested instance")
+	}
+	if fullNested.ExportedInstance("hidden") == nil || narrowNested.ExportedInstance("hidden") != nil {
+		t.Fatal("only the unascribed view must expose the hidden instance")
+	}
+	fullID, fullOK := fullNested.resourceAt([]string{"r"})
+	narrowID, narrowOK := narrowNested.resourceAt([]string{"r"})
+	if !fullOK || !narrowOK || resolveResource(fullNested.scope, fullNested.arena, fullID, nil) != resolveResource(narrowNested.scope, narrowNested.arena, narrowID, nil) {
+		t.Fatal("the narrowed nested instance must retain the lender's resource identity")
+	}
+}
+
 func TestNestedInstantiationBindsInstanceArgument(t *testing.T) {
 	component := loadComponent(t, `(component
   (component $child (import "env" (instance)))

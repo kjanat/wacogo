@@ -250,4 +250,6 @@ type planExportRebind struct {
 	sort        Sort
 	sourceIndex uint32
 	targetIndex int
+	// ascribedInstance is the name of an instance export with an explicit type.
+	ascribedInstance string
 }

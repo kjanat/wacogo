@@ -38,6 +38,9 @@ type ComponentInstance struct {
 	// component's Instantiate call.
 	wpInstance *wasmparser.InstanceType
 
+	// ascribedFrom owns the runtime state behind a narrowed export.
+	ascribedFrom *ComponentInstance
+
 	// externTable, when non-nil, supplies LookupExtern. Set from
 	// InstanceSpec.ExternTable at construction time.
 	externTable ExternTable
@@ -51,6 +54,7 @@ type instanceCloser interface {
 // instance's extern table, or (nil, false) if no extern table was
 // supplied at construction time or rep is not registered.
 func (i *ComponentInstance) LookupExtern(rep uint32) (any, bool) {
+	i = i.runtimeOwner()
 	if i.externTable == nil {
 		return nil, false
 	}
@@ -74,9 +78,38 @@ func (i *ComponentInstance) ParserInstanceType() *wasmparser.InstanceType {
 	return i.wpInstance
 }
 
+func (i *ComponentInstance) runtimeOwner() *ComponentInstance {
+	if i != nil && i.ascribedFrom != nil {
+		return i.ascribedFrom
+	}
+	return i
+}
+
+func (i *ComponentInstance) withExportView(view *wasmparser.InstanceType) *ComponentInstance {
+	if i == nil || view == nil || view == i.wpInstance {
+		return i
+	}
+	return &ComponentInstance{wpInstance: view, ascribedFrom: i.runtimeOwner()}
+}
+
+func (i *ComponentInstance) lookupExport(name string) (exportEntry, bool) {
+	if i.ascribedFrom == nil {
+		e, ok := i.exports[name]
+		return e, ok
+	}
+	if !i.wpInstance.HasExport(name) {
+		return exportEntry{}, false
+	}
+	e, ok := i.ascribedFrom.exports[name]
+	if ok && e.kind == SortInstance {
+		e.instance = e.instance.withExportView(i.wpInstance.ExportedInstance(name))
+	}
+	return e, ok
+}
+
 // ExportedFunc returns the exported function with the given name, or nil if not found.
 func (i *ComponentInstance) ExportedFunc(name string) *ExportedFunc {
-	e, ok := i.exports[name]
+	e, ok := i.lookupExport(name)
 	if !ok || e.kind != SortFunc {
 		return nil
 	}
@@ -86,7 +119,7 @@ func (i *ComponentInstance) ExportedFunc(name string) *ExportedFunc {
 // ExportedInstance returns the exported component instance with the given name, or nil if not found.
 // If the returned instance is closed, calls that reach it through this instance fail.
 func (i *ComponentInstance) ExportedInstance(name string) *ComponentInstance {
-	e, ok := i.exports[name]
+	e, ok := i.lookupExport(name)
 	if !ok || e.kind != SortInstance {
 		return nil
 	}
@@ -95,7 +128,7 @@ func (i *ComponentInstance) ExportedInstance(name string) *ComponentInstance {
 
 // ExportedModule returns the exported core module with the given name, or nil if not found.
 func (i *ComponentInstance) ExportedModule(name string) *CompiledModule {
-	e, ok := i.exports[name]
+	e, ok := i.lookupExport(name)
 	if !ok || e.kind != SortCoreModule {
 		return nil
 	}
@@ -104,7 +137,7 @@ func (i *ComponentInstance) ExportedModule(name string) *CompiledModule {
 
 // ExportedComponent returns the exported component with the given name, or nil if not found.
 func (i *ComponentInstance) ExportedComponent(name string) *Component {
-	e, ok := i.exports[name]
+	e, ok := i.lookupExport(name)
 	if !ok || e.kind != SortComponent {
 		return nil
 	}
@@ -116,7 +149,7 @@ func (i *ComponentInstance) ExportedComponent(name string) *Component {
 // surface here as missing exports and must be reported as normal
 // instantiation errors, not runtime panics.
 func (i *ComponentInstance) exportedType(name string) Type {
-	e, ok := i.exports[name]
+	e, ok := i.lookupExport(name)
 	if !ok || e.kind != SortType {
 		return nil
 	}
@@ -135,6 +168,7 @@ func (i *ComponentInstance) ExportedType(name string) Type {
 // Enter with exactly one Exit; a failed Enter must not call Exit.
 // Enter and Exit are not safe for concurrent use. RunInComponent pairs them.
 func (i *ComponentInstance) Enter(ctx context.Context) error {
+	i = i.runtimeOwner()
 	if i == nil {
 		return nil
 	}
@@ -160,6 +194,7 @@ func (i *ComponentInstance) Exit(_ context.Context) {
 }
 
 func (i *ComponentInstance) finishCall() error {
+	i = i.runtimeOwner()
 	if i == nil {
 		return nil
 	}
@@ -174,6 +209,7 @@ func (i *ComponentInstance) finishCall() error {
 // when an external failure (e.g. a Go-side resource error) makes the
 // instance's state unreliable.
 func (i *ComponentInstance) Poison(reason error) {
+	i = i.runtimeOwner()
 	if i == nil || i.poisoned != nil {
 		return
 	}
@@ -186,6 +222,7 @@ func (i *ComponentInstance) Poison(reason error) {
 // Poisoned returns the trap reason that poisoned this instance, or nil
 // when the instance is still usable.
 func (i *ComponentInstance) Poisoned() error {
+	i = i.runtimeOwner()
 	if i == nil {
 		return nil
 	}
@@ -199,6 +236,7 @@ func (i *ComponentInstance) Poisoned() error {
 // never call this: it is exposed only for low-level call paths that
 // build their own lift/lower steps.
 func (i *ComponentInstance) CanLeave() bool {
+	i = i.runtimeOwner()
 	if i == nil {
 		return true
 	}
@@ -214,6 +252,7 @@ func (i *ComponentInstance) CanLeave() bool {
 // Calling without a matching RestoreLeave, or restoring twice, corrupts the
 // runtime invariants. Most users should never call this directly.
 func (i *ComponentInstance) SuspendLeave() (prev bool) {
+	i = i.runtimeOwner()
 	if i == nil {
 		return true
 	}
@@ -225,6 +264,7 @@ func (i *ComponentInstance) SuspendLeave() (prev bool) {
 // RestoreLeave restores the may_leave flag to prev. Idempotent on a nil
 // receiver.
 func (i *ComponentInstance) RestoreLeave(prev bool) {
+	i = i.runtimeOwner()
 	if i == nil {
 		return
 	}
@@ -245,6 +285,7 @@ func (i *ComponentInstance) RunInComponent(ctx context.Context, fn func() error)
 // created. Outstanding resource handles do not run destructors. Further Enter
 // calls fail; repeated Close calls do nothing. Errors are joined after teardown.
 func (i *ComponentInstance) Close(ctx context.Context) (err error) {
+	i = i.runtimeOwner()
 	if i == nil || i.closed {
 		return nil
 	}

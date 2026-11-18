@@ -1,6 +1,9 @@
 package wasmparser
 
-import "fmt"
+import (
+	"fmt"
+	"sync"
+)
 
 // ComponentType is an opaque handle to a component's type signature —
 // imports and exports, resolved against the arena that parsed it.
@@ -43,9 +46,13 @@ type InstanceType struct {
 	funcs     []ComponentFuncTypeID
 
 	// children and components hold the actual instances and components exported
-	// under each name. An ascription can hide them from exports.
+	// under each name.
 	children   map[string]*InstanceType
 	components map[string]*componentValue
+
+	// ascribedSource supplies concrete nested exports behind an ascribed view.
+	ascribedSource   *InstanceType
+	ascribedChildren sync.Map
 }
 
 // ResourceFrom names a resource exported by another instance, to bind to a
@@ -130,7 +137,45 @@ func (i *InstanceType) ExportedInstance(name string) *InstanceType {
 	if !ok || ent.Kind != EntityInstance {
 		return nil
 	}
-	return &InstanceType{arena: i.arena, exports: i.arena.InstanceTypes[ent.InstID].Exports, scope: i.scope}
+	if i.ascribedSource != nil {
+		if child, ok := i.ascribedChildren.Load(name); ok {
+			return child.(*InstanceType)
+		}
+		view := i.exportView(ent.InstID, i.ascribedSource.ExportedInstance(name))
+		child, _ := i.ascribedChildren.LoadOrStore(name, view)
+		return child.(*InstanceType)
+	}
+	return i.exportView(ent.InstID, nil)
+}
+
+// HasExport reports whether name is visible in this instance type.
+func (i *InstanceType) HasExport(name string) bool {
+	_, ok := i.exports[name]
+	return ok
+}
+
+// exportView interprets the declared type in the scope that names its resources.
+// The source supplies concrete nested exports only after a name passes the view.
+func (i *InstanceType) exportView(id ComponentInstanceTypeID, source *InstanceType) *InstanceType {
+	if source != nil && source.ascribedSource != nil {
+		source = source.ascribedSource
+	}
+	return &InstanceType{
+		arena:          i.arena,
+		exports:        i.arena.InstanceTypes[id].Exports,
+		scope:          i.scope,
+		ascribedSource: source,
+	}
+}
+
+func (i *InstanceType) exportedComponent(name string) *componentValue {
+	if i.ascribedSource != nil {
+		if ent, ok := i.exports[name]; !ok || ent.Kind != EntityComponent {
+			return nil
+		}
+		return i.ascribedSource.exportedComponent(name)
+	}
+	return i.components[name]
 }
 
 func (i *InstanceType) setChild(name string, child *InstanceType) {
