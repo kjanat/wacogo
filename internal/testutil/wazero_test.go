@@ -31,3 +31,16 @@ func TestChainedHostBuilderTracksCompile(t *testing.T) {
 		t.Fatalf("closing chained compile: live=%d, err=%v", rt.LiveHost.Load(), err)
 	}
 }
+
+func TestChainedHostBuilderRejectsDirectInstantiate(t *testing.T) {
+	ctx := t.Context()
+	rt := &Runtime{Runtime: wazero.NewRuntime(ctx)}
+	defer rt.Close(ctx)
+
+	builder := rt.NewHostModuleBuilder("host").NewFunctionBuilder().
+		WithFunc(func() {}).Export("f")
+	mod, err := builder.Instantiate(ctx)
+	if err == nil || mod != nil || rt.Module("host") != nil {
+		t.Fatalf("direct Instantiate must fail before creating a module: module=%v, err=%v", mod, err)
+	}
+}

@@ -174,14 +174,17 @@ const closeTestAnswer = `(component
   (func (export "f") (result u32) (canon lift (core func $i "f"))))`
 
 func TestComponentClose_OverlappingInstantiation(t *testing.T) {
-	for _, viaExport := range []bool{false, true} {
-		name := "component"
-		if viaExport {
-			name = "exported module"
-		}
-		t.Run(name, func(t *testing.T) {
-			ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
-			defer cancel()
+	for _, tc := range []struct {
+		name                  string
+		viaExport, sharedCode bool
+	}{
+		{"component with shared code", false, true},
+		{"exported module with shared code", true, true},
+		{"component with sole owner", false, false},
+		{"exported module with sole owner", true, false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			ctx := t.Context()
 			engine, rt, _ := trackAdapterCode(t)
 			load := func(source string) *Component {
 				t.Helper()
@@ -192,33 +195,51 @@ func TestComponentClose_OverlappingInstantiation(t *testing.T) {
 				t.Cleanup(func() { _ = c.Close(context.Background()) })
 				return c
 			}
-			const exported = `(component
+			const prefix = `
+  (import "seed" (func $seed (result u32)))
+  (core func (canon lower (func $seed)))
+  (core module $prefix)
+  (core instance (instantiate $prefix))`
+			const exported = `(component` + prefix + `
   (core module $m (func (export "f") (result i32) i32.const 7))
   (core instance $i (instantiate $m))
   (func (export "f") (result u32) (canon lift (core func $i "f")))
   (export "m" (core module $m)))`
-			first, second := load(exported), load(exported)
-			existing, err := first.Instantiate(ctx)
+			seed, err := load(strings.Replace(closeTestAnswer, "i32.const 7", "i32.const 99", 1)).Instantiate(ctx)
+			if err != nil {
+				t.Fatal(err)
+			}
+			defer seed.Close(ctx)
+			seedImport := WithFuncImport("seed", seed.ExportedFunc("f"))
+			first := load(exported)
+			var second *Component
+			if tc.sharedCode {
+				second = load(exported)
+			}
+			existing, err := first.Instantiate(ctx, seedImport)
 			if err != nil {
 				t.Fatal(err)
 			}
 			defer existing.Close(ctx)
-			instantiate := func(ctx context.Context) (*ComponentInstance, error) { return first.Instantiate(ctx) }
-			if viaExport {
+			instantiate := func(ctx context.Context) (*ComponentInstance, error) { return first.Instantiate(ctx, seedImport) }
+			if tc.viaExport {
 				consumer := load(`(component
- (import "m" (core module $m (export "f" (func (result i32)))))
+ (import "m" (core module $m (export "f" (func (result i32)))))` + prefix + `
  (core instance $i (instantiate $m))
  (func (export "f") (result u32) (canon lift (core func $i "f"))))`)
 				instantiate = func(ctx context.Context) (*ComponentInstance, error) {
-					return consumer.Instantiate(ctx, WithModuleImport("m", existing.ExportedModule("m")))
+					return consumer.Instantiate(ctx, seedImport, WithModuleImport("m", existing.ExportedModule("m")))
 				}
 			}
 			started := make(chan struct{})
 			resume := make(chan struct{})
 			type inFlightKey struct{}
-			inFlight := context.WithValue(ctx, inFlightKey{}, true)
-			rt.BeforeInstantiate = func(ctx context.Context, _ *testutil.Code) error {
-				if ctx.Value(inFlightKey{}) != true {
+			waitCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+			defer cancel()
+			inFlight := context.WithValue(waitCtx, inFlightKey{}, true)
+			target := existing.ExportedModule("m").module
+			rt.BeforeInstantiate = func(ctx context.Context, code *testutil.Code) error {
+				if ctx.Value(inFlightKey{}) != true || code != target {
 					return nil
 				}
 				close(started)
@@ -236,6 +257,7 @@ func TestComponentClose_OverlappingInstantiation(t *testing.T) {
 			result := make(chan outcome, 1)
 			release := sync.OnceFunc(func() { close(resume) })
 			var worker sync.WaitGroup
+			moduleStart, hostStart := len(rt.Modules()), rt.LiveHost.Load()
 			worker.Go(func() {
 				inst, err := instantiate(inFlight)
 				result <- outcome{inst, err}
@@ -246,8 +268,12 @@ func TestComponentClose_OverlappingInstantiation(t *testing.T) {
 			}()
 			select {
 			case <-started:
-			case <-ctx.Done():
+			case <-waitCtx.Done():
 				t.Fatal("instantiation did not reach its core module")
+			}
+			startedModules := rt.Modules()[moduleStart:]
+			if len(startedModules) != 2 || rt.LiveHost.Load() != hostStart+1 {
+				t.Fatal("expected an adapter and a core module before the pause")
 			}
 			if err := first.Close(ctx); err != nil {
 				t.Fatal(err)
@@ -255,14 +281,30 @@ func TestComponentClose_OverlappingInstantiation(t *testing.T) {
 			if _, err := instantiate(ctx); !errors.Is(err, ErrComponentClosed) {
 				t.Fatalf("new instantiation after close returned %v", err)
 			}
+			wasmAfterClose := rt.LiveWasm.Load()
 			release()
 			var got outcome
 			select {
 			case got = <-result:
-			case <-ctx.Done():
+			case <-waitCtx.Done():
 				t.Fatal("in-flight instantiation stopped making progress")
 			}
 			rt.BeforeInstantiate = nil
+			callAnswer(t, ctx, existing)
+			if second == nil {
+				if got.inst != nil || got.err == nil || !strings.Contains(got.err.Error(), "instantiate module") {
+					t.Fatalf("in-flight instantiation with released code: instance=%v, err=%v", got.inst, got.err)
+				}
+				for _, mod := range rt.Modules()[moduleStart:] {
+					if !mod.IsClosed() {
+						t.Fatalf("rollback left module %q open", mod.Name())
+					}
+				}
+				if rt.LiveHost.Load() != hostStart || rt.LiveWasm.Load() != wasmAfterClose {
+					t.Fatal("rollback left a compiled handle live")
+				}
+				return
+			}
 			// The operation passed the owner check before close. The second
 			// component still holds the same compiled bytes, so it can finish.
 			if got.err != nil {
@@ -270,8 +312,7 @@ func TestComponentClose_OverlappingInstantiation(t *testing.T) {
 			}
 			defer got.inst.Close(ctx)
 			callAnswer(t, ctx, got.inst)
-			callAnswer(t, ctx, existing)
-			sibling, err := second.Instantiate(ctx)
+			sibling, err := second.Instantiate(ctx, seedImport)
 			if err != nil {
 				t.Fatal(err)
 			}

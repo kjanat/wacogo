@@ -74,8 +74,8 @@ func loadAscribedLifecycle(t *testing.T) (*Component, *ComponentInstance) {
 }
 
 func TestAscribedInstanceExportClose(t *testing.T) {
-	for _, first := range []string{"full", "narrow"} {
-		t.Run(first+" first", func(t *testing.T) {
+	for first, name := range []string{"full", "narrow", "again", "relayed", "relay.view"} {
+		t.Run(name+" first", func(t *testing.T) {
 			ctx := t.Context()
 			comp, provider := loadAscribedLifecycle(t)
 			inst, err := comp.Instantiate(ctx, WithInstanceImport("provider", provider))
@@ -95,8 +95,9 @@ func TestAscribedInstanceExportClose(t *testing.T) {
 			if !ok || resource == nil {
 				t.Fatal("full view lacks the resource")
 			}
-			for _, view := range []*ComponentInstance{narrow, inst.ExportedInstance("again"),
-				inst.ExportedInstance("relayed"), relay.ExportedInstance("view")} {
+			views := []*ComponentInstance{full, narrow, inst.ExportedInstance("again"),
+				inst.ExportedInstance("relayed"), relay.ExportedInstance("view")}
+			for _, view := range views[1:] {
 				if view == nil || view.exportedType("r") != resource || view.ExportedFunc("hidden") != nil ||
 					view.ExportedInstance("borrowed") != nil {
 					t.Fatal("re-export lost resource identity or exposed a hidden export")
@@ -125,12 +126,11 @@ func TestAscribedInstanceExportClose(t *testing.T) {
 				t.Fatalf("destructors on return from Drop = %v, want [1]", destroyed)
 			}
 			handle := table.IssueOwn(resource, 2)
-			retained := []*ExportedFunc{full.ExportedFunc("f"), narrow.ExportedFunc("f")}
-			views := []*ComponentInstance{full, narrow}
-			if first == "narrow" {
-				slices.Reverse(views)
+			retained := make([]*ExportedFunc, 0, len(views))
+			for _, view := range views {
+				retained = append(retained, view.ExportedFunc("f"))
 			}
-			if err := views[0].Close(ctx); err != nil {
+			if err := views[first].Close(ctx); err != nil {
 				t.Fatal(err)
 			}
 			if closed != 1 {
@@ -144,10 +144,16 @@ func TestAscribedInstanceExportClose(t *testing.T) {
 			if err := handle.Drop(ctx); err == nil || !strings.Contains(err.Error(), "closed") {
 				t.Fatalf("dropping an outstanding handle after close: %v", err)
 			}
-			for _, remaining := range []*ComponentInstance{views[1], inst} {
-				if err := remaining.Close(ctx); err != nil {
+			for i, view := range views {
+				if i == first {
+					continue
+				}
+				if err := view.Close(ctx); err != nil {
 					t.Fatal(err)
 				}
+			}
+			if err := inst.Close(ctx); err != nil {
+				t.Fatal(err)
 			}
 			if closed != 1 || !slices.Equal(destroyed, []uint32{1}) {
 				t.Fatalf("teardowns=%d, destructors=%v; want one teardown and only the explicit drop", closed, destroyed)
@@ -211,8 +217,13 @@ func TestAscribedInstanceGraphsAreCollectible(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
+		relay := inst.ExportedInstance("relay")
+		if relay == nil {
+			t.Fatal("missing relay")
+		}
 		for _, candidate := range []*ComponentInstance{inst, inst.ExportedInstance("full"),
-			inst.ExportedInstance("narrow"), inst.ExportedInstance("relay"), inst.ExportedInstance("relayed")} {
+			inst.ExportedInstance("narrow"), inst.ExportedInstance("again"), relay,
+			inst.ExportedInstance("relayed"), relay.ExportedInstance("view")} {
 			if candidate == nil {
 				t.Fatal("missing runtime instance")
 			}
