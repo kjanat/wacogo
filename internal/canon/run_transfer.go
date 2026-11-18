@@ -201,9 +201,8 @@ func runTransferPlan(
 	// 10. Exit callee — fires via defer above.
 }
 
-// runPhasedTransfer orchestrates a batched-realloc two-phase walk when
-// the callee side has a batch helper, falling back to single-phase serial
-// realloc when it doesn't. In the batched path:
+// runPhasedTransfer batches reallocs when the callee has a helper and both
+// sides use the same string encoding. In the batched path:
 //
 //  1. Discovery: walk every step's sizeStep (if non-nil), writing each
 //     requested (size, align) into the helper's scratch input region.
@@ -216,6 +215,12 @@ func runTransferPlan(
 // Without a helper, the same allocSource issues cabi_realloc on each request.
 func runPhasedTransfer(ctx context.Context, tc *transferContext, steps []transferPlanStep, srcBase, dstBase uint32) {
 	helper := tc.callee.BatchHelper
+	if tc.caller.StringEncoding != tc.callee.StringEncoding {
+		// Transcode each string into owned bytes before realloc. Even the
+		// same source length can encode to a different destination size if
+		// guest realloc changes the source bytes between sizing and copying.
+		helper = nil
+	}
 	// allocSrc and allocSink live on the (heap-allocated, per-adapter)
 	// transferContext so their addresses can be safely shared with the
 	// indirect closures the discovery and transfer walks invoke — no per-

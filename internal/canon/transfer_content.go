@@ -61,18 +61,13 @@ func transferStringContent(ctx context.Context, tc *transferContext, srcPtr, src
 }
 
 // stringContentSizeStep is the discovery walk for a string transfer.
-// A same-encoding copy preserves the representation and size. Otherwise,
-// validate the source and count the exact destination size without allocating.
-func stringContentSizeStep(tc *transferContext, srcPtr, srcCoded uint32, sink *allocSink) {
+// The batched path preserves the source representation and its byte length.
+func stringContentSizeStep(tc *transferContext, srcCoded uint32, sink *allocSink) {
 	srcEnc := tc.caller.StringEncoding
 	dstEnc := tc.callee.StringEncoding
 	byteLen := stringByteLen(srcCoded, srcEnc)
 	if byteLen > uint64(maxStringByteLength) {
 		panic(&Trap{msg: "string byte length exceeds max"})
-	}
-	if srcEnc != dstEnc {
-		b := stringBytes(tc.caller.Memory, srcPtr, srcCoded, srcEnc)
-		byteLen = uint64(transcodedByteLen(b, srcCoded, srcEnc, dstEnc))
 	}
 	sink.add(uint32(byteLen), stringAlign(dstEnc))
 }

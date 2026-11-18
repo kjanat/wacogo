@@ -11,8 +11,9 @@ import (
 //
 // BatchHelper, when non-nil, points to a per-adapter wasm helper that
 // batches N cabi_realloc calls behind a single Go→wasm crossing. It is
-// instantiated when the adapter can bind a Wasm realloc by module and
-// export name. Otherwise, the transfer calls realloc directly.
+// instantiated when both sides use the same string encoding and the adapter
+// can bind a Wasm realloc by module and export name. Otherwise, the transfer
+// calls realloc directly.
 type transferSide struct {
 	Instance       Instance
 	Memory         api.Memory

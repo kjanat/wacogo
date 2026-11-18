@@ -102,8 +102,9 @@ func (h *Host) BuildAdapter(
 	// Construction is deferred to a helper because errors here must be
 	// surfaced as adapter-build failures, not transfer-time panics.
 	var reallocHelpers []*batchReallocHelper
+	sameEncoding := caller.StringEncoding == callee.StringEncoding
 	// A Go allocator needs no batching: each allocation is a Go call.
-	if callee.ReallocModName != "" && callee.GoRealloc == nil {
+	if sameEncoding && callee.ReallocModName != "" && callee.GoRealloc == nil {
 		helper, err := h.buildBatchReallocHelper(ctx, callee.ReallocModName, callee.ReallocFnExport)
 		if err != nil {
 			return nil, fmt.Errorf("wacogo: build callee batch-realloc helper: %w", err)
@@ -111,7 +112,7 @@ func (h *Host) BuildAdapter(
 		calleeSide.BatchHelper = helper
 		reallocHelpers = append(reallocHelpers, helper)
 	}
-	if caller.ReallocModName != "" && caller.GoRealloc == nil {
+	if sameEncoding && caller.ReallocModName != "" && caller.GoRealloc == nil {
 		helper, err := h.buildBatchReallocHelper(ctx, caller.ReallocModName, caller.ReallocFnExport)
 		if err != nil {
 			// Best-effort teardown of the callee helper before bubbling up.

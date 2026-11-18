@@ -74,7 +74,9 @@ Batched realloc shares one compiled helper per engine. It binds
 `cabi_realloc` directly and uses an instance-owned bridge for other export
 names. Each adapter has separate scratch memory. Closing the engine releases
 the compiled helper even if the caller owns a shared wazero compilation
-cache.
+cache. When string encodings differ, transfers use one pass: they convert
+each string into owned bytes before calling realloc, so sizing and copying
+use the same value even if realloc changes source memory.
 
 ## Subtype rules per import kind
 

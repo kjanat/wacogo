@@ -280,11 +280,11 @@ func TestRunPhasedTransfer_GrowsScratchForLargeN(t *testing.T) {
 	}
 }
 
-// TestRunPhasedTransfer_BatchedTranscodeExactSizes verifies that batched
-// cross-encoding string transfers reserve exactly the transcoded length:
+// TestRunPhasedTransfer_TranscodeExactSizes verifies that cross-encoding
+// string transfers reserve exactly the transcoded length:
 // with a bump allocator, each string's destination pointer must directly
 // follow the previous string's bytes.
-func TestRunPhasedTransfer_BatchedTranscodeExactSizes(t *testing.T) {
+func TestRunPhasedTransfer_TranscodeExactSizes(t *testing.T) {
 	strs := []string{"aé", "\U0001F600", "x中"}
 	pairs := []struct{ src, dst StringEncoding }{
 		{EncUTF8, EncUTF16},
@@ -357,5 +357,53 @@ func TestRunPhasedTransfer_BatchedTranscodeExactSizes(t *testing.T) {
 				next = gotPtr + uint32(stringByteLen(gotCoded, p.dst))
 			}
 		})
+	}
+}
+
+// A realloc can modify source memory when the two sides share it. The
+// transferred string must still be the value captured before that call.
+func TestRunPhasedTransfer_TranscodeBeforeRealloc(t *testing.T) {
+	ctx := context.Background()
+	rt := wazero.NewRuntime(ctx)
+	t.Cleanup(func() { _ = rt.Close(ctx) })
+	callee := setupBumpCallee(t, rt, "shared_memory", 1024)
+	host := NewHost(rt)
+	t.Cleanup(func() { _ = host.Close(ctx) })
+	helper, err := host.buildBatchReallocHelper(ctx, callee.Name(), "realloc")
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = helper.Close(ctx) })
+
+	mem := callee.Memory()
+	const src, dst = 64, 1024
+	mem.WriteUint16Le(src, 'a')
+	var reallocs int
+	v := &flatTransferVisitor{}
+	v.VisitString()
+	tc := &transferContext{
+		caller: &transferSide{Memory: mem, StringEncoding: EncUTF16},
+		callee: &transferSide{
+			Memory:         mem,
+			StringEncoding: EncUTF8,
+			BatchHelper:    helper,
+			Realloc: func(_ context.Context, _, _, align, size uint32) (uint32, error) {
+				reallocs++
+				if align != 1 || size != 1 {
+					t.Fatalf("realloc align = %d, size = %d; want 1, 1", align, size)
+				}
+				// Same source code-unit count, different UTF-8 byte count.
+				mem.WriteUint16Le(src, 'é')
+				return dst, nil
+			},
+		},
+		registers: []uint64{src, 1},
+	}
+	runPhasedTransfer(ctx, tc, v.out, 0, 0)
+	if reallocs != 1 || tc.registers[0] != dst || tc.registers[1] != 1 {
+		t.Fatalf("got %d reallocs, result %v; want one realloc and [%d 1]", reallocs, tc.registers, dst)
+	}
+	if got := decodeString(mem, dst, 1, EncUTF8); got != "a" {
+		t.Fatalf("transferred %q; want source captured before realloc", got)
 	}
 }
