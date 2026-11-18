@@ -2,9 +2,12 @@ package canon
 
 import (
 	"context"
+	"errors"
 	"sync/atomic"
 	"testing"
+	"time"
 
+	"github.com/kjanat/wacogo/internal/testutil"
 	"github.com/kjanat/wacogo/internal/wasm"
 	"github.com/kjanat/wazero"
 	"github.com/kjanat/wazero/api"
@@ -233,11 +236,9 @@ func TestBatchReallocHelper_CompileFailureReported(t *testing.T) {
 	}
 }
 
-// TestBatchReallocHelper_FailureReleasesBridge checks a helper that can't bind to
-// its target's realloc reports it, and that the Host stays usable.
 func TestBatchReallocHelper_FailureReleasesBridge(t *testing.T) {
 	ctx := context.Background()
-	rt := wazero.NewRuntime(ctx)
+	rt := &testutil.Runtime{Runtime: wazero.NewRuntime(ctx)}
 	t.Cleanup(func() { _ = rt.Close(ctx) })
 
 	var tb wasm.ModuleBuilder
@@ -259,15 +260,138 @@ func TestBatchReallocHelper_FailureReleasesBridge(t *testing.T) {
 	}
 
 	host := NewHost(rt)
+	t.Cleanup(func() { _ = host.Close(ctx) })
+	var bridgeCode *testutil.Code
+	rt.AfterCompile = func(_ context.Context, c *testutil.Code) { bridgeCode = c }
 	if _, err := host.buildBatchReallocHelper(ctx, target.Name(), "not_exported"); err == nil {
 		t.Fatal("expected a missing realloc export to fail")
 	}
+	if bridgeCode == nil || bridgeCode.Closes.Load() != 1 || rt.LiveWasm.Load() != 2 || len(rt.Modules()) != 1 {
+		t.Fatal("missing export did not release the bridge code")
+	}
+	fault := errors.New("helper instantiation failed")
+	rt.BeforeInstantiate = func(_ context.Context, c *testutil.Code) error {
+		if c == host.batchHelper {
+			return fault
+		}
+		return nil
+	}
+	if _, err := host.buildBatchReallocHelper(ctx, target.Name(), "realloc"); !errors.Is(err, fault) {
+		t.Fatalf("expected injected helper error: %v", err)
+	}
+	mods := rt.Modules()
+	if len(mods) != 2 || !mods[1].IsClosed() || target.IsClosed() {
+		t.Fatal("failed helper must close its instantiated bridge and leave the target open")
+	}
+	if bridgeCode.Closes.Load() != 1 || rt.LiveWasm.Load() != 2 {
+		t.Fatal("failed helper did not release the bridge code")
+	}
+	rt.BeforeInstantiate = nil
 	helper, err := host.buildBatchReallocHelper(ctx, target.Name(), "realloc")
 	if err != nil {
 		t.Fatalf("after a failure: %v", err)
 	}
 	if err := helper.Close(ctx); err != nil {
 		t.Fatal(err)
+	}
+	if err := host.Close(ctx); err != nil || rt.LiveWasm.Load() != 1 {
+		t.Fatalf("closing the host must leave only the target code: %v", err)
+	}
+}
+
+func TestBatchReallocHelper_ConcurrentCache(t *testing.T) {
+	for _, closeDuringCompile := range []bool{false, true} {
+		name := "simultaneous first requests"
+		if closeDuringCompile {
+			name = "close during compile"
+		}
+		t.Run(name, func(t *testing.T) {
+			ctx, cancel := context.WithTimeout(t.Context(), 5*time.Second)
+			defer cancel()
+			cache := wazero.NewCompilationCache()
+			defer cache.Close(context.Background())
+			rt := &testutil.Runtime{Runtime: wazero.NewRuntimeWithConfig(ctx, wazero.NewRuntimeConfig().WithCompilationCache(cache))}
+			defer rt.Close(context.Background())
+			arrived := make(chan *testutil.Code, 2)
+			resume := make(chan struct{})
+			rt.AfterCompile = func(ctx context.Context, c *testutil.Code) {
+				arrived <- c
+				select {
+				case <-resume:
+				case <-ctx.Done():
+				}
+			}
+			host := NewHost(rt)
+			type result struct {
+				code wazero.CompiledModule
+				err  error
+			}
+			results := make(chan result, 2)
+			for range 2 {
+				go func() {
+					code, err := host.compiledBatchHelper(ctx)
+					results <- result{code, err}
+				}()
+			}
+			var candidates []*testutil.Code
+			for range 2 {
+				select {
+				case c := <-arrived:
+					candidates = append(candidates, c)
+				case <-ctx.Done():
+					t.Fatal("both requests must compile before either publishes")
+				}
+			}
+			if closeDuringCompile {
+				done := make(chan error, 1)
+				go func() { done <- host.Close(ctx) }()
+				select {
+				case err := <-done:
+					if err != nil {
+						t.Fatal(err)
+					}
+				case <-ctx.Done():
+					t.Fatal("Close waited for compilation")
+				}
+			}
+			close(resume)
+			var installed wazero.CompiledModule
+			for range 2 {
+				select {
+				case got := <-results:
+					if closeDuringCompile {
+						if got.err == nil || got.code != nil {
+							t.Fatalf("compiled after close: %+v", got)
+						}
+					} else {
+						if got.err != nil || got.code == nil || installed != nil && got.code != installed {
+							t.Fatalf("requests did not share one helper: %+v", got)
+						}
+						installed = got.code
+					}
+				case <-ctx.Done():
+					t.Fatal("compilation did not return")
+				}
+			}
+			want := int64(1)
+			if closeDuringCompile {
+				want = 0
+			}
+			if live := rt.LiveWasm.Load(); live != want {
+				t.Fatalf("retained %d compiled helpers, want %d", live, want)
+			}
+			if err := host.Close(ctx); err != nil {
+				t.Fatal(err)
+			}
+			for _, candidate := range candidates {
+				if n := candidate.Closes.Load(); n != 1 {
+					t.Fatalf("candidate closed %d times, want one", n)
+				}
+			}
+			if got := rt.LiveWasm.Load(); got != 0 {
+				t.Fatalf("retained %d compiled candidates after close", got)
+			}
+		})
 	}
 }
 

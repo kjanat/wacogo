@@ -34,6 +34,9 @@ fixtures in `testdata/generated/` are gitignored.
 go generate ./testdata
 ```
 
+With wasm-tools versions that require explicit core indices in WAST, set
+`WAST_STRICT_COMPONENT_INDICES=0` when generating the older upstream fixtures.
+
 ### Bumping the embedded wasm-tools version
 
 The wasip1 wasm-tools binary is committed to
