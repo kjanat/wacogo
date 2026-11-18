@@ -186,7 +186,7 @@ func TestHostAdapterSourcePreflightBeforeAllocation(t *testing.T) {
 	source.Write(0, []byte("a\x00b\x00c\x00d\x00"))
 	params := []Type{testTypeString{}}
 	reallocs, calls := 0, 0
-	adapter, err := NewHost(runtime).BuildAdapter(ctx, "bounded-source",
+	adapter, err := NewHost(runtime).BuildAdapter(ctx,
 		CallSide{Instance: &testInstance{}, Memory: source, StringEncoding: EncUTF16},
 		Callee{
 			Instance: &testInstance{}, Memory: destination, StringEncoding: EncUTF8,
@@ -198,7 +198,9 @@ func TestHostAdapterSourcePreflightBeforeAllocation(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer adapter.Close(ctx)
-	_, err = adapter.Module.ExportedFunction(adapter.Name).Call(ctx, 0, 4)
+	err = DirectFunc(func(ctx context.Context, stack []uint64) {
+		adapter.Func.Call(ctx, nil, stack)
+	}).CallWithStack(ctx, []uint64{0, 4})
 	if !errors.Is(err, ErrLiftLimit) || reallocs != 0 || calls != 0 {
 		t.Fatalf("adapter dropped source preflight: calls=%d reallocs=%d err=%v", calls, reallocs, err)
 	}

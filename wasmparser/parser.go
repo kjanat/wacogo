@@ -292,9 +292,17 @@ type ComponentCanonicalSectionPayload struct {
 	data       []byte
 	dataOffset uint64
 	Range      Range
+	validated  []ValidatedCanonicalFunction
 }
 
 func (*ComponentCanonicalSectionPayload) payload() {}
+
+// ValidatedItems returns the canonical functions and their core signatures in
+// section order after validation. It returns nil for an unvalidated payload.
+// The returned slice and signatures must not be modified.
+func (p *ComponentCanonicalSectionPayload) ValidatedItems() []ValidatedCanonicalFunction {
+	return p.validated
+}
 
 // Items returns an iterator over the canonical functions in this section.
 func (p *ComponentCanonicalSectionPayload) Items() iter.Seq2[CanonicalFunction, error] {

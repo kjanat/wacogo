@@ -27,7 +27,7 @@ func TestHostGeneratedStorageRejectsBeforeTransfer(t *testing.T) {
 			source, destination := setupMem(t, 0), setupMem(t, 0)
 			params := []Type{testTypeList{elem: tc.element}}
 			reallocs, calls := 0, 0
-			adapter, err := NewHost(runtime).BuildAdapter(ctx, "bounded-generated-args",
+			adapter, err := NewHost(runtime).BuildAdapter(ctx,
 				CallSide{Instance: &testInstance{}, Memory: source, StringEncoding: EncUTF8},
 				Callee{
 					Instance: &testInstance{}, Memory: destination, StringEncoding: EncUTF8,
@@ -39,7 +39,9 @@ func TestHostGeneratedStorageRejectsBeforeTransfer(t *testing.T) {
 				t.Fatal(err)
 			}
 			defer adapter.Close(ctx)
-			_, err = adapter.Module.ExportedFunction(adapter.Name).Call(ctx, 128, 2)
+			err = DirectFunc(func(ctx context.Context, stack []uint64) {
+				adapter.Func.Call(ctx, nil, stack)
+			}).CallWithStack(ctx, []uint64{128, 2})
 			if !errors.Is(err, ErrLiftLimit) || reallocs != 0 || calls != 0 {
 				t.Fatalf("transfer started before budget rejection: reallocs=%d calls=%d err=%v", reallocs, calls, err)
 			}

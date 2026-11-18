@@ -70,11 +70,6 @@ type Engine struct {
 	runtimeClosed   bool
 	tableModules    map[uint64]*accountedModule
 	nextTableModule uint64
-
-	// bridges caches compiled instantiate-from-exports bridge modules by
-	// their bytes, which depend only on the component, not the instance.
-	bridgeMu sync.Mutex
-	bridges  map[string]wazero.CompiledModule
 }
 
 // NewEngine creates a new Engine with the given options.
@@ -92,26 +87,9 @@ func NewEngine(ctx context.Context, opts ...EngineOption) *Engine {
 		runtime:     rt,
 		canonHost:   canon.NewHost(rt),
 		features:    wasmparser.DefaultFeatures(),
-		bridges:     map[string]wazero.CompiledModule{},
 		liftLimits:  cfg.liftLimits,
 		parseLimits: cfg.parseLimits,
 	}
-}
-
-// compiledBridge returns the compiled bridge module for bridgeWasm,
-// compiling it on first use.
-func (e *Engine) compiledBridge(ctx context.Context, bridgeWasm []byte) (wazero.CompiledModule, error) {
-	e.bridgeMu.Lock()
-	defer e.bridgeMu.Unlock()
-	if cm, ok := e.bridges[string(bridgeWasm)]; ok {
-		return cm, nil
-	}
-	cm, err := e.runtime.CompileModule(ctx, bridgeWasm)
-	if err != nil {
-		return nil, err
-	}
-	e.bridges[string(bridgeWasm)] = cm
-	return cm, nil
 }
 
 // Close releases resources held by the engine and rejects further loading or
@@ -140,7 +118,7 @@ func (e *Engine) Close(ctx context.Context) error {
 		modules = append(modules, e.tableModules[id])
 	}
 	e.lifecycleMu.Unlock()
-	errs := []error{runtimeErr}
+	errs := []error{runtimeErr, e.canonHost.Close(ctx)}
 	for _, module := range slices.Backward(modules) {
 		if err := module.refund(); err != nil {
 			errs = append(errs, err)

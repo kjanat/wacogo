@@ -62,6 +62,20 @@ them; one component can be loaded and instantiated against many different
 provider sets. Instantiate is the only place a complete arg map exists,
 and it is the only place subtype checking is meaningful.
 
+### Adapter modules
+
+Loading records the validator's core signatures for lowered functions and
+resource builtins. Instantiation groups them in one host module per component
+instance, splitting only at wazero's function limit. Plan steps bind the
+callbacks to that instance's imports and resources. Closing the instance
+releases its host modules and import bridges.
+
+Batched realloc shares one compiled helper per engine. It binds
+`cabi_realloc` directly and uses an instance-owned bridge for other export
+names. Each adapter has separate scratch memory. Closing the engine releases
+the compiled helper even if the caller owns a shared wazero compilation
+cache.
+
 ## Subtype rules per import kind
 
 The wasmparser-side dispatch lives in

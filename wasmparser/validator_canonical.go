@@ -10,14 +10,25 @@ func (v *Validator) validateCanonicalSection(p *ComponentCanonicalSectionPayload
 	if cs == nil {
 		return fmt.Errorf("canonical section outside component")
 	}
+	p.validated = nil
+	var entries []ValidatedCanonicalFunction
 	for cf, err := range p.Items() {
 		if err != nil {
 			return err
 		}
+		before := len(cs.coreFuncs)
 		if err := v.addCanonical(cs, cf); err != nil {
 			return err
 		}
+		entry := ValidatedCanonicalFunction{Function: cf}
+		if len(cs.coreFuncs) > before {
+			entry.created = true
+			desc := v.arena.CoreFuncTypes[cs.coreFuncs[len(cs.coreFuncs)-1]]
+			entry.params, entry.results = desc.Params, desc.Results
+		}
+		entries = append(entries, entry)
 	}
+	p.validated = entries
 	return nil
 }
 
