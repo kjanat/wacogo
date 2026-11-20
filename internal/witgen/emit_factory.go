@@ -919,8 +919,9 @@ func emitOwnResultLower(w *strings.Builder, rt *TypeResource, valExpr string) {
 // emitWrapCtor emits the wrapNew<R>(f *Factory) host.Func definition
 // for a resource constructor.
 //
-// The user impl's Constructor returns *<R>Handle (an unregistered handle
-// wrapping the impl in a local dispatch wrapper). result.bind(cc, h)
+// A fallible constructor lowers its result<own<R>, E> like any other
+// result. Otherwise the user impl's Constructor returns *<R>Handle (an
+// unregistered handle wrapping the impl in a local dispatch wrapper). result.bind(cc, h)
 // drives the state machine to register the impl on h's extTable and
 // issue an own canon entry on cc.Instance(); result.Invalidate() then
 // transfers ownership of the canon entry to the wasm caller.
@@ -943,6 +944,13 @@ func emitWrapCtor(w *strings.Builder, rt *TypeResource) {
 		args = "ctx"
 	} else {
 		args = "ctx, " + args
+	}
+	if rt.Ctor.Result != nil {
+		emitTrampolineUserCall(w, witName, rt.Ctor.Result, fmt.Sprintf("state_.impl.New%s(%s)", rt.WrapName, args))
+		fmt.Fprint(w, "\t\treturn nil\n")
+		fmt.Fprint(w, "\t}\n")
+		fmt.Fprint(w, "}\n\n")
+		return
 	}
 	fmt.Fprintf(w, "\t\tresult_, err_ := state_.impl.New%s(%s)\n", rt.WrapName, args)
 	fmt.Fprintf(w, "\t\tif err_ != nil { return fmt.Errorf(\"wacogo/witgen: %s: impl returned error: %%w\", err_) }\n", witName)

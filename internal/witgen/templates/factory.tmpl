@@ -55,7 +55,7 @@ func NewFactory(ctx context.Context, e *wacogo.Engine) (*Factory, error) {
 {{- range $rt := .Resources}}
 {{- if $rt.Ctor}}	b_.AddFunction("[constructor]{{$rt.Name}}", &host.FuncType{
 		Params:  []host.Param{ {{range $i, $p := $rt.Ctor.Params}}{{if $i}}, {{end}}{Name: {{printf "%q" $p.GoName}}, Type: {{$p.Type.HostTypeExpr}}}{{end}} },
-		Results: []host.ResultDecl{ {Name: "", Type: f_.{{resourceFieldName $rt}}.Own()} },
+		Results: []host.ResultDecl{ {Name: "", Type: {{if $rt.Ctor.Result}}{{$rt.Ctor.Result.HostTypeExpr}}{{else}}f_.{{resourceFieldName $rt}}.Own(){{end}}} },
 	}, wrapNew{{$rt.GoName}}(f_))
 
 {{end}}

@@ -98,16 +98,15 @@ func funcSigForSide(useImpl bool, fn *Func) string {
 }
 
 // ctorSigForSide returns the constructor signature for a resource's hoisted
-// constructor as it appears on the parent interface. After the handle-
-// management refactor the return type is uniformly (*<R>Handle, error). The
-// useImpl parameter is retained for callsite compatibility but has no
-// effect on resource rendering.
+// constructor as it appears on the parent interface. The useImpl parameter
+// is retained for callsite compatibility but has no effect on resource
+// rendering.
 func ctorSigForSide(useImpl bool, rt *TypeResource) string {
 	ps := []string{"ctx context.Context"}
 	for _, p := range rt.Ctor.Params {
 		ps = append(ps, p.GoName+" "+GoTypeOf(p.Type))
 	}
-	return fmt.Sprintf("New%s(%s) (*%sHandle, error)", rt.WrapName, strings.Join(ps, ", "), rt.WrapName)
+	return fmt.Sprintf("New%s(%s) %s", rt.WrapName, strings.Join(ps, ", "), returnTypeForSide(rt.Ctor.ResultType(rt), false))
 }
 
 // staticSigForSide returns the static-function signature for a resource as it

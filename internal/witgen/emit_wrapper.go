@@ -149,15 +149,11 @@ func emitParentWrapperFunc(w *strings.Builder, ifaceWrapName string, f *Func, re
 }
 
 // emitParentWrapperCtor emits a *<iface>Wrapper method for a hoisted
-// resource ctor. The result is always own<R> lifted into a
-// *<R>Handle via New<R>HandleFrom.
+// resource ctor.
 func emitParentWrapperCtor(w *strings.Builder, ifaceWrapName string, rt *TypeResource) {
 	fmt.Fprintf(w, "func (w *%sWrapper) %s {\n",
 		lcfirst(ifaceWrapName), ctorSigForSide(false, rt))
-	// Reuse the generic emitter by treating the ctor's implicit own<R>
-	// result as a regular result type.
-	ownResult := &TypeOwn{Resource: rt}
-	emitWrapBody(w, "w.fnNew"+rt.WrapName, "w.callerInst", "w", rt.Ctor.Params, ownResult, nil /* selfRT */)
+	emitWrapBody(w, "w.fnNew"+rt.WrapName, "w.callerInst", "w", rt.Ctor.Params, rt.Ctor.ResultType(rt), nil /* selfRT */)
 	fmt.Fprint(w, "}\n\n")
 }
 

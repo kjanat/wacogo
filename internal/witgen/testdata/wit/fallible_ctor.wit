@@ -1,0 +1,34 @@
+package example:demo;
+
+interface failures {
+    variant failure {
+        negative(s32),
+        too-large,
+    }
+}
+
+interface counters {
+    use failures.{failure};
+
+    resource counter {
+        constructor(start: u32) -> result<counter, string>;
+        get: func() -> u32;
+    }
+
+    resource gauge {
+        constructor(level: s32) -> result<gauge, failure>;
+        level: func() -> s32;
+    }
+}
+
+interface registry {
+    use counters.{gauge};
+
+    adopt: func(g: own<gauge>) -> s32;
+}
+
+world counting {
+    import failures;
+    import counters;
+    import registry;
+}

@@ -306,6 +306,9 @@ func collectImports(iface *Interface, all []*Interface, packageRoot string) {
 			for _, p := range r.Ctor.Params {
 				walk(p.Type)
 			}
+			if r.Ctor.Result != nil {
+				walk(r.Ctor.Result)
+			}
 		}
 		for _, m := range r.Methods {
 			for _, p := range m.Params {
@@ -351,6 +354,9 @@ func collectImports(iface *Interface, all []*Interface, packageRoot string) {
 			if r.Ctor != nil {
 				for _, p := range r.Ctor.Params {
 					walk(p.Type)
+				}
+				if r.Ctor.Result != nil {
+					walk(r.Ctor.Result)
 				}
 			}
 			for _, m := range r.Methods {
@@ -454,6 +460,16 @@ func rewriteImports(iface *Interface) {
 	}
 
 	var rewrite func(t Type) Type
+	rewriteResult := func(v *TypeResult) *TypeResult {
+		out := &TypeResult{}
+		if v.OK != nil {
+			out.OK = rewrite(v.OK)
+		}
+		if v.Err != nil {
+			out.Err = rewrite(v.Err)
+		}
+		return out
+	}
 	rewrite = func(t Type) Type {
 		switch v := t.(type) {
 		case *TypeOwn:
@@ -491,14 +507,7 @@ func rewriteImports(iface *Interface) {
 			}
 			return &TypeTuple{Fields: fields, GoPackageQualifier: v.GoPackageQualifier}
 		case *TypeResult:
-			out := &TypeResult{}
-			if v.OK != nil {
-				out.OK = rewrite(v.OK)
-			}
-			if v.Err != nil {
-				out.Err = rewrite(v.Err)
-			}
-			return out
+			return rewriteResult(v)
 		}
 		return t
 	}
@@ -621,6 +630,9 @@ func rewriteImports(iface *Interface) {
 			for _, p := range r.Ctor.Params {
 				p.Type = rewrite(p.Type)
 			}
+			if r.Ctor.Result != nil {
+				r.Ctor.Result = rewriteResult(r.Ctor.Result)
+			}
 		}
 		for i := range r.Methods {
 			for _, p := range r.Methods[i].Params {
@@ -723,6 +735,11 @@ func findImportedResource(iface *Interface, name, wrapName string) *TypeResource
 		if res.Ctor != nil {
 			for _, p := range res.Ctor.Params {
 				if r := findInType(p.Type); r != nil {
+					return r
+				}
+			}
+			if res.Ctor.Result != nil {
+				if r := findInType(res.Ctor.Result); r != nil {
 					return r
 				}
 			}
@@ -1055,7 +1072,7 @@ func lowerInterface(wif *wit.Interface, globalTypeDefIR map[*wit.TypeDef]Type) (
 			if err != nil {
 				return nil, err
 			}
-			ctor, err := lowerCtor(e.f, typeDefIR)
+			ctor, err := lowerCtor(rt, e.f, typeDefIR)
 			if err != nil {
 				return nil, fmt.Errorf("ctor %q: %w", e.name, err)
 			}
@@ -1113,10 +1130,8 @@ func resolveResourceTypeDef(t wit.Type, typeDefIR map[*wit.TypeDef]Type, kind, f
 	return rt, nil
 }
 
-// lowerCtor lowers a wit.Function classified as a constructor. The wit AST
-// represents the constructor's params directly; the implicit own<R> result
-// is recorded by the caller via rt.Ctor.
-func lowerCtor(wfn *wit.Function, typeDefIR map[*wit.TypeDef]Type) (*ResourceCtor, error) {
+// lowerCtor lowers a wit.Function classified as a constructor of rt.
+func lowerCtor(rt *TypeResource, wfn *wit.Function, typeDefIR map[*wit.TypeDef]Type) (*ResourceCtor, error) {
 	c := &ResourceCtor{Docs: wfn.Docs.Contents}
 	for _, p := range wfn.Params {
 		pt, err := lowerType(p.Type, typeDefIR)
@@ -1128,7 +1143,25 @@ func lowerCtor(wfn *wit.Function, typeDefIR map[*wit.TypeDef]Type) (*ResourceCto
 			Type:   pt,
 		})
 	}
-	return c, nil
+	if len(wfn.Results) != 1 {
+		return nil, fmt.Errorf("ctor has %d results, want 1", len(wfn.Results))
+	}
+	res, err := lowerType(wfn.Results[0].Type, typeDefIR)
+	if err != nil {
+		return nil, fmt.Errorf("ctor result: %w", err)
+	}
+	switch r := res.(type) {
+	case *TypeOwn:
+		if r.Resource == rt {
+			return c, nil
+		}
+	case *TypeResult:
+		if own, ok := r.OK.(*TypeOwn); ok && own.Resource == rt {
+			c.Result = r
+			return c, nil
+		}
+	}
+	return nil, fmt.Errorf("ctor result must be own<%s> or result<own<%s>, E>, got %s", rt.Name, rt.Name, TypeName(res))
 }
 
 // lowerMethod lowers a wit.Function classified as a method. The wit AST

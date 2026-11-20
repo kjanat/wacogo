@@ -3,6 +3,8 @@ package witgen
 import (
 	"strings"
 	"testing"
+
+	"github.com/kjanat/go-modules/wit"
 )
 
 func TestLowerWorld_AddInterface(t *testing.T) {
@@ -359,6 +361,9 @@ func TestLowerWorld_Resource(t *testing.T) {
 	}
 	if rt.Ctor.Params[0].GoName != "initial" {
 		t.Errorf("ctor param 0 GoName: %q", rt.Ctor.Params[0].GoName)
+	}
+	if rt.Ctor.Result != nil {
+		t.Errorf("infallible ctor Result: got %s, want nil", TypeName(rt.Ctor.Result))
 	}
 	if len(rt.Methods) != 2 {
 		t.Fatalf("Methods: got %d, want 2", len(rt.Methods))
@@ -737,5 +742,98 @@ func TestLowerWorld_Docs(t *testing.T) {
 	}
 	if len(r.Statics) == 0 || !strings.Contains(r.Statics[0].Docs, "starting at one") {
 		t.Errorf("Statics[0].Docs: %q", r.Statics[0].Docs)
+	}
+}
+
+func TestLowerWorld_FallibleCtor(t *testing.T) {
+	res := loadCached(t, "testdata/wit/fallible_ctor.wit")
+	pkg, err := LowerWorld(res, "example:demo/counting", "example.com/gen")
+	if err != nil {
+		t.Fatalf("LowerWorld: %v", err)
+	}
+	ifaces := map[string]*Interface{}
+	for _, iface := range pkg.Interfaces {
+		ifaces[iface.Name] = iface
+	}
+	counters := ifaces["counters"]
+	if counters == nil || len(counters.Resources) != 2 {
+		t.Fatalf("counters interface: %+v", counters)
+	}
+
+	counter, gauge := counters.Resources[0], counters.Resources[1]
+	if counter.Ctor == nil || counter.Ctor.Result == nil {
+		t.Fatalf("counter ctor Result missing: %+v", counter.Ctor)
+	}
+	if own, ok := counter.Ctor.Result.OK.(*TypeOwn); !ok || own.Resource != counter {
+		t.Errorf("counter ctor OK: got %s, want own<counter>", TypeName(counter.Ctor.Result.OK))
+	}
+	if _, ok := counter.Ctor.Result.Err.(TypeString); !ok {
+		t.Errorf("counter ctor Err: got %T, want TypeString", counter.Ctor.Result.Err)
+	}
+
+	if gauge.Ctor == nil || gauge.Ctor.Result == nil {
+		t.Fatalf("gauge ctor Result missing: %+v", gauge.Ctor)
+	}
+	errV, ok := gauge.Ctor.Result.Err.(*TypeVariant)
+	if !ok {
+		t.Fatalf("gauge ctor Err: got %T, want *TypeVariant", gauge.Ctor.Result.Err)
+	}
+	if errV.GoPackageQualifier != "failures" {
+		t.Errorf("gauge ctor Err qualifier: got %q, want %q", errV.GoPackageQualifier, "failures")
+	}
+	if len(counters.Imports) != 1 || counters.Imports[0].Name != "failures" ||
+		len(counters.Imports[0].Variants) != 1 || counters.Imports[0].Variants[0].Transitive {
+		t.Errorf("counters Imports: got %+v, want direct failures.failure", counters.Imports)
+	}
+
+	registry := ifaces["registry"]
+	if registry == nil {
+		t.Fatal("registry interface missing")
+	}
+	var transitive bool
+	for _, imp := range registry.Imports {
+		for _, v := range imp.Variants {
+			if imp.Name == "failures" && v.Name == "failure" && v.Transitive {
+				transitive = true
+			}
+		}
+	}
+	if !transitive {
+		t.Errorf("registry Imports: got %+v, want transitive failures.failure", registry.Imports)
+	}
+}
+
+func TestLowerCtor_RejectsOtherResults(t *testing.T) {
+	rt := &TypeResource{Name: "counter", GoName: "Counter", WrapName: "Counter"}
+	other := &TypeResource{Name: "other", GoName: "Other", WrapName: "Other"}
+	otherDef := &wit.TypeDef{Kind: &wit.Resource{}}
+	typeDefIR := map[*wit.TypeDef]Type{otherDef: other}
+	cases := []struct {
+		name    string
+		results []wit.Param
+	}{
+		{"none", nil},
+		{"two", []wit.Param{{Type: wit.U32{}}, {Type: wit.U32{}}}},
+		{"u32", []wit.Param{{Type: wit.U32{}}}},
+		{"own-other", []wit.Param{{Type: &wit.TypeDef{Kind: &wit.Own{Type: otherDef}}}}},
+		{"result-u32", []wit.Param{{Type: &wit.TypeDef{Kind: &wit.Result{OK: wit.U32{}, Err: wit.String{}}}}}},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			_, err := lowerCtor(rt, &wit.Function{Name: "[constructor]counter", Results: c.results}, typeDefIR)
+			if err == nil {
+				t.Fatal("lowerCtor: got nil error")
+			}
+		})
+	}
+}
+
+func TestFindImportedResource_CtorResult(t *testing.T) {
+	imported := &TypeResource{Name: "handle", GoName: "Handle", WrapName: "Handle"}
+	local := &TypeResource{Name: "counter", GoName: "Counter", WrapName: "Counter"}
+	local.Ctor = &ResourceCtor{Result: &TypeResult{OK: &TypeOwn{Resource: local}, Err: &TypeOwn{Resource: imported}}}
+	iface := &Interface{Resources: []*TypeResource{local}}
+	if got := findImportedResource(iface, "handle", "Handle"); got != imported {
+		t.Errorf("findImportedResource: got %v, want the ctor error arm's resource", got)
 	}
 }
