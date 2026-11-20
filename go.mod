@@ -2,7 +2,7 @@ module github.com/kjanat/wacogo
 
 go 1.27.0
 
-toolchain go1.27.3
+toolchain go1.27.4
 
 require (
 	github.com/kjanat/go-modules v0.10.0
