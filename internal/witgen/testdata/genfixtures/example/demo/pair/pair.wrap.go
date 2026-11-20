@@ -39,7 +39,7 @@ func (w *pairWrapper) Swap(ctx context.Context, p TupleU32U32) (TupleU32U32, err
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemTupleU32U32(ctx, caller, callee, w.callerInst, w.fnSwap.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemTupleU32U32(ctx, caller, callee, w.callerInst, w, w.fnSwap.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_

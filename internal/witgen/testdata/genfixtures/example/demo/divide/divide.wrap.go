@@ -39,7 +39,7 @@ func (w *divideWrapper) Divide(ctx context.Context, a uint32, b uint32) (ResultU
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemResultU32String(ctx, caller, callee, w.callerInst, w.fnDivide.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemResultU32String(ctx, caller, callee, w.callerInst, w, w.fnDivide.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_

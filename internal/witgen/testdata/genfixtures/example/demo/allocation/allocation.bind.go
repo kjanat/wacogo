@@ -152,14 +152,14 @@ func fromGoMemListListU8(ctx context.Context, cc *host.CallContext, h *host.Comp
 	return nil
 }
 
-func liftFlatListListU8(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) ([][]uint8, error) {
+func liftFlatListListU8(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *allocationWrapper, ty wacogo.Type, stack []uint64) ([][]uint8, error) {
 	lstT_ := ty.(wacogo.TypeList)
 	_ = lstT_
 	ptr_ := uint32(stack[0])
 	ln_ := uint32(stack[1])
 	out_ := make([][]uint8, ln_)
 	for i_ := uint32(0); i_ < ln_; i_++ {
-		if tmp_, err_ := liftMemListU8(ctx, caller, callee, h, lstT_.Elem, ptr_+i_*8); err_ != nil {
+		if tmp_, err_ := liftMemListU8(ctx, caller, callee, h, w_, lstT_.Elem, ptr_+i_*8); err_ != nil {
 			return nil, err_
 		} else {
 			out_[i_] = tmp_
@@ -168,7 +168,7 @@ func liftFlatListListU8(ctx context.Context, caller, callee *host.CallContext, h
 	return out_, nil
 }
 
-func liftMemListListU8(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) ([][]uint8, error) {
+func liftMemListListU8(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *allocationWrapper, ty wacogo.Type, ptr uint32) ([][]uint8, error) {
 	lstT_ := ty.(wacogo.TypeList)
 	_ = lstT_
 	var lptr_ uint32
@@ -185,7 +185,7 @@ func liftMemListListU8(ctx context.Context, caller, callee *host.CallContext, h 
 	}
 	out_ := make([][]uint8, ln_)
 	for i_ := uint32(0); i_ < ln_; i_++ {
-		if tmp_, err_ := liftMemListU8(ctx, caller, callee, h, lstT_.Elem, lptr_+i_*8); err_ != nil {
+		if tmp_, err_ := liftMemListU8(ctx, caller, callee, h, w_, lstT_.Elem, lptr_+i_*8); err_ != nil {
 			return nil, err_
 		} else {
 			out_[i_] = tmp_
@@ -312,14 +312,14 @@ func fromGoMemListOptionWide(ctx context.Context, cc *host.CallContext, h *host.
 	return nil
 }
 
-func liftFlatListOptionWide(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) ([]OptionWide, error) {
+func liftFlatListOptionWide(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *allocationWrapper, ty wacogo.Type, stack []uint64) ([]OptionWide, error) {
 	lstT_ := ty.(wacogo.TypeList)
 	_ = lstT_
 	ptr_ := uint32(stack[0])
 	ln_ := uint32(stack[1])
 	out_ := make([]OptionWide, ln_)
 	for i_ := uint32(0); i_ < ln_; i_++ {
-		if tmp_, err_ := liftMemOptionWide(ctx, caller, callee, h, lstT_.Elem, ptr_+i_*72); err_ != nil {
+		if tmp_, err_ := liftMemOptionWide(ctx, caller, callee, h, w_, lstT_.Elem, ptr_+i_*72); err_ != nil {
 			return nil, err_
 		} else {
 			out_[i_] = tmp_
@@ -328,7 +328,7 @@ func liftFlatListOptionWide(ctx context.Context, caller, callee *host.CallContex
 	return out_, nil
 }
 
-func liftMemListOptionWide(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) ([]OptionWide, error) {
+func liftMemListOptionWide(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *allocationWrapper, ty wacogo.Type, ptr uint32) ([]OptionWide, error) {
 	lstT_ := ty.(wacogo.TypeList)
 	_ = lstT_
 	var lptr_ uint32
@@ -345,7 +345,7 @@ func liftMemListOptionWide(ctx context.Context, caller, callee *host.CallContext
 	}
 	out_ := make([]OptionWide, ln_)
 	for i_ := uint32(0); i_ < ln_; i_++ {
-		if tmp_, err_ := liftMemOptionWide(ctx, caller, callee, h, lstT_.Elem, lptr_+i_*72); err_ != nil {
+		if tmp_, err_ := liftMemOptionWide(ctx, caller, callee, h, w_, lstT_.Elem, lptr_+i_*72); err_ != nil {
 			return nil, err_
 		} else {
 			out_[i_] = tmp_
@@ -484,7 +484,7 @@ func fromGoMemListU8(ctx context.Context, cc *host.CallContext, h *host.Componen
 	return nil
 }
 
-func liftFlatListU8(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) ([]uint8, error) {
+func liftFlatListU8(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *allocationWrapper, ty wacogo.Type, stack []uint64) ([]uint8, error) {
 	lstT_ := ty.(wacogo.TypeList)
 	_ = lstT_
 	ptr_ := uint32(stack[0])
@@ -502,7 +502,7 @@ func liftFlatListU8(ctx context.Context, caller, callee *host.CallContext, h *ho
 	return out_, nil
 }
 
-func liftMemListU8(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) ([]uint8, error) {
+func liftMemListU8(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *allocationWrapper, ty wacogo.Type, ptr uint32) ([]uint8, error) {
 	lstT_ := ty.(wacogo.TypeList)
 	_ = lstT_
 	var lptr_ uint32
@@ -651,14 +651,14 @@ func fromGoMemOptionWide(ctx context.Context, cc *host.CallContext, h *host.Comp
 	return nil
 }
 
-func liftFlatOptionWide(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (OptionWide, error) {
+func liftFlatOptionWide(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *allocationWrapper, ty wacogo.Type, stack []uint64) (OptionWide, error) {
 	optT_ := ty.(wacogo.TypeOption)
 	_ = optT_
 	disc_ := uint32(stack[0])
 	var out_ OptionWide
 	if disc_ != 0 {
 		out_.IsSome = true
-		if tmp_, err_ := liftFlatWide(ctx, caller, callee, h, optT_.Inner, stack[1:9]); err_ != nil {
+		if tmp_, err_ := liftFlatWide(ctx, caller, callee, h, w_, optT_.Inner, stack[1:9]); err_ != nil {
 			return OptionWide{}, err_
 		} else {
 			out_.Value = tmp_
@@ -667,7 +667,7 @@ func liftFlatOptionWide(ctx context.Context, caller, callee *host.CallContext, h
 	return out_, nil
 }
 
-func liftMemOptionWide(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (OptionWide, error) {
+func liftMemOptionWide(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *allocationWrapper, ty wacogo.Type, ptr uint32) (OptionWide, error) {
 	optT_ := ty.(wacogo.TypeOption)
 	_ = optT_
 	var disc_ uint8
@@ -679,7 +679,7 @@ func liftMemOptionWide(ctx context.Context, caller, callee *host.CallContext, h 
 	var out_ OptionWide
 	if disc_ != 0 {
 		out_.IsSome = true
-		if tmp_, err_ := liftMemWide(ctx, caller, callee, h, optT_.Inner, ptr+8); err_ != nil {
+		if tmp_, err_ := liftMemWide(ctx, caller, callee, h, w_, optT_.Inner, ptr+8); err_ != nil {
 			return OptionWide{}, err_
 		} else {
 			out_.Value = tmp_
@@ -832,7 +832,7 @@ func fromGoMemWide(ctx context.Context, cc *host.CallContext, h *host.ComponentI
 	return nil
 }
 
-func liftFlatWide(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (Wide, error) {
+func liftFlatWide(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *allocationWrapper, ty wacogo.Type, stack []uint64) (Wide, error) {
 	var v_ Wide
 	recT_ := ty.(wacogo.TypeRecord)
 	_ = recT_
@@ -847,7 +847,7 @@ func liftFlatWide(ctx context.Context, caller, callee *host.CallContext, h *host
 	return v_, nil
 }
 
-func liftMemWide(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (Wide, error) {
+func liftMemWide(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *allocationWrapper, ty wacogo.Type, ptr uint32) (Wide, error) {
 	var v_ Wide
 	recT_ := ty.(wacogo.TypeRecord)
 	_ = recT_

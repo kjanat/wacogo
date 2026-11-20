@@ -92,7 +92,9 @@ func NewFactory(ctx context.Context, e *wacogo.Engine) (*Factory, error) {
 	f_.inputStreamRef = b_.AddResourceRef("input-stream")
 	f_.outputStreamRef = b_.AddResourceRef("output-stream")
 
+	b_.AddType("duration", host.U64)
 	b_.AddType("field-key", host.String)
+	b_.AddType("field-name", host.String)
 	b_.AddType("status-code", host.U16)
 
 	typDNSErrorPayload_ := b_.AddType("DNS-error-payload", host.Record{Fields: []host.Field{{Name: "rcode", Type: host.Option{Inner: host.String}}, {Name: "info-code", Type: host.Option{Inner: host.U16}}}})
@@ -101,7 +103,6 @@ func NewFactory(ctx context.Context, e *wacogo.Engine) (*Factory, error) {
 	_ = typTLSAlertReceivedPayload_
 	typFieldSizePayload_ := b_.AddType("field-size-payload", host.Record{Fields: []host.Field{{Name: "field-name", Type: host.Option{Inner: host.String}}, {Name: "field-size", Type: host.Option{Inner: host.U32}}}})
 	_ = typFieldSizePayload_
-
 	typMethod_ := b_.AddType("method", host.Variant{Cases: []host.Case{{Name: "get", Payload: nil}, {Name: "head", Payload: nil}, {Name: "post", Payload: nil}, {Name: "put", Payload: nil}, {Name: "delete", Payload: nil}, {Name: "connect", Payload: nil}, {Name: "options", Payload: nil}, {Name: "trace", Payload: nil}, {Name: "patch", Payload: nil}, {Name: "other", Payload: host.String}}})
 	_ = typMethod_
 	typScheme_ := b_.AddType("scheme", host.Variant{Cases: []host.Case{{Name: "HTTP", Payload: nil}, {Name: "HTTPS", Payload: nil}, {Name: "other", Payload: host.String}}})
@@ -520,16 +521,16 @@ func fromGoMemDNSErrorPayload(ctx context.Context, cc *host.CallContext, h *host
 	return nil
 }
 
-func liftFlatDNSErrorPayload(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (DNSErrorPayload, error) {
+func liftFlatDNSErrorPayload(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *typesWrapper, ty wacogo.Type, stack []uint64) (DNSErrorPayload, error) {
 	var v_ DNSErrorPayload
 	recT_ := ty.(wacogo.TypeRecord)
 	_ = recT_
-	if tmp_, err_ := liftFlatOptionString(ctx, caller, callee, h, recT_.Fields[0].Type, stack[0:3]); err_ != nil {
+	if tmp_, err_ := liftFlatOptionString(ctx, caller, callee, h, w_, recT_.Fields[0].Type, stack[0:3]); err_ != nil {
 		return DNSErrorPayload{}, err_
 	} else {
 		v_.Rcode = tmp_
 	}
-	if tmp_, err_ := liftFlatOptionU16(ctx, caller, callee, h, recT_.Fields[1].Type, stack[3:5]); err_ != nil {
+	if tmp_, err_ := liftFlatOptionU16(ctx, caller, callee, h, w_, recT_.Fields[1].Type, stack[3:5]); err_ != nil {
 		return DNSErrorPayload{}, err_
 	} else {
 		v_.InfoCode = tmp_
@@ -537,16 +538,16 @@ func liftFlatDNSErrorPayload(ctx context.Context, caller, callee *host.CallConte
 	return v_, nil
 }
 
-func liftMemDNSErrorPayload(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (DNSErrorPayload, error) {
+func liftMemDNSErrorPayload(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *typesWrapper, ty wacogo.Type, ptr uint32) (DNSErrorPayload, error) {
 	var v_ DNSErrorPayload
 	recT_ := ty.(wacogo.TypeRecord)
 	_ = recT_
-	if tmp_, err_ := liftMemOptionString(ctx, caller, callee, h, recT_.Fields[0].Type, ptr); err_ != nil {
+	if tmp_, err_ := liftMemOptionString(ctx, caller, callee, h, w_, recT_.Fields[0].Type, ptr); err_ != nil {
 		return DNSErrorPayload{}, err_
 	} else {
 		v_.Rcode = tmp_
 	}
-	if tmp_, err_ := liftMemOptionU16(ctx, caller, callee, h, recT_.Fields[1].Type, ptr+12); err_ != nil {
+	if tmp_, err_ := liftMemOptionU16(ctx, caller, callee, h, w_, recT_.Fields[1].Type, ptr+12); err_ != nil {
 		return DNSErrorPayload{}, err_
 	} else {
 		v_.InfoCode = tmp_
@@ -1507,7 +1508,7 @@ func fromGoMemErrorCode(ctx context.Context, cc *host.CallContext, h *host.Compo
 	return nil
 }
 
-func liftFlatErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (ErrorCode, error) {
+func liftFlatErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *typesWrapper, ty wacogo.Type, stack []uint64) (ErrorCode, error) {
 	varT_ := ty.(wacogo.TypeVariant)
 	_ = varT_
 	disc_ := uint32(stack[0])
@@ -1516,7 +1517,7 @@ func liftFlatErrorCode(ctx context.Context, caller, callee *host.CallContext, h 
 		return ErrorCodeDNSTimeout{}, nil
 	case 1:
 		var val DNSErrorPayload
-		if tmp_, err_ := liftFlatDNSErrorPayload(ctx, caller, callee, h, varT_.Cases[1].Payload, stack[1:6]); err_ != nil {
+		if tmp_, err_ := liftFlatDNSErrorPayload(ctx, caller, callee, h, w_, varT_.Cases[1].Payload, stack[1:6]); err_ != nil {
 			return nil, err_
 		} else {
 			val = tmp_
@@ -1548,7 +1549,7 @@ func liftFlatErrorCode(ctx context.Context, caller, callee *host.CallContext, h 
 		return ErrorCodeTLSCertificateError{}, nil
 	case 14:
 		var val TLSAlertReceivedPayload
-		if tmp_, err_ := liftFlatTLSAlertReceivedPayload(ctx, caller, callee, h, varT_.Cases[14].Payload, stack[1:6]); err_ != nil {
+		if tmp_, err_ := liftFlatTLSAlertReceivedPayload(ctx, caller, callee, h, w_, varT_.Cases[14].Payload, stack[1:6]); err_ != nil {
 			return nil, err_
 		} else {
 			val = tmp_
@@ -1560,7 +1561,7 @@ func liftFlatErrorCode(ctx context.Context, caller, callee *host.CallContext, h 
 		return ErrorCodeHTTPRequestLengthRequired{}, nil
 	case 17:
 		var val OptionU64
-		if tmp_, err_ := liftFlatOptionU64(ctx, caller, callee, h, varT_.Cases[17].Payload, stack[1:3]); err_ != nil {
+		if tmp_, err_ := liftFlatOptionU64(ctx, caller, callee, h, w_, varT_.Cases[17].Payload, stack[1:3]); err_ != nil {
 			return nil, err_
 		} else {
 			val = tmp_
@@ -1574,7 +1575,7 @@ func liftFlatErrorCode(ctx context.Context, caller, callee *host.CallContext, h 
 		return ErrorCodeHTTPRequestURITooLong{}, nil
 	case 21:
 		var val OptionU32
-		if tmp_, err_ := liftFlatOptionU32(ctx, caller, callee, h, varT_.Cases[21].Payload, stack[1:3]); err_ != nil {
+		if tmp_, err_ := liftFlatOptionU32(ctx, caller, callee, h, w_, varT_.Cases[21].Payload, stack[1:3]); err_ != nil {
 			return nil, err_
 		} else {
 			val = tmp_
@@ -1582,7 +1583,7 @@ func liftFlatErrorCode(ctx context.Context, caller, callee *host.CallContext, h 
 		return ErrorCodeHTTPRequestHeaderSectionSize{Value: val}, nil
 	case 22:
 		var val OptionFieldSizePayload
-		if tmp_, err_ := liftFlatOptionFieldSizePayload(ctx, caller, callee, h, varT_.Cases[22].Payload, stack[1:7]); err_ != nil {
+		if tmp_, err_ := liftFlatOptionFieldSizePayload(ctx, caller, callee, h, w_, varT_.Cases[22].Payload, stack[1:7]); err_ != nil {
 			return nil, err_
 		} else {
 			val = tmp_
@@ -1590,7 +1591,7 @@ func liftFlatErrorCode(ctx context.Context, caller, callee *host.CallContext, h 
 		return ErrorCodeHTTPRequestHeaderSize{Value: val}, nil
 	case 23:
 		var val OptionU32
-		if tmp_, err_ := liftFlatOptionU32(ctx, caller, callee, h, varT_.Cases[23].Payload, stack[1:3]); err_ != nil {
+		if tmp_, err_ := liftFlatOptionU32(ctx, caller, callee, h, w_, varT_.Cases[23].Payload, stack[1:3]); err_ != nil {
 			return nil, err_
 		} else {
 			val = tmp_
@@ -1598,7 +1599,7 @@ func liftFlatErrorCode(ctx context.Context, caller, callee *host.CallContext, h 
 		return ErrorCodeHTTPRequestTrailerSectionSize{Value: val}, nil
 	case 24:
 		var val FieldSizePayload
-		if tmp_, err_ := liftFlatFieldSizePayload(ctx, caller, callee, h, varT_.Cases[24].Payload, stack[1:6]); err_ != nil {
+		if tmp_, err_ := liftFlatFieldSizePayload(ctx, caller, callee, h, w_, varT_.Cases[24].Payload, stack[1:6]); err_ != nil {
 			return nil, err_
 		} else {
 			val = tmp_
@@ -1608,7 +1609,7 @@ func liftFlatErrorCode(ctx context.Context, caller, callee *host.CallContext, h 
 		return ErrorCodeHTTPResponseIncomplete{}, nil
 	case 26:
 		var val OptionU32
-		if tmp_, err_ := liftFlatOptionU32(ctx, caller, callee, h, varT_.Cases[26].Payload, stack[1:3]); err_ != nil {
+		if tmp_, err_ := liftFlatOptionU32(ctx, caller, callee, h, w_, varT_.Cases[26].Payload, stack[1:3]); err_ != nil {
 			return nil, err_
 		} else {
 			val = tmp_
@@ -1616,7 +1617,7 @@ func liftFlatErrorCode(ctx context.Context, caller, callee *host.CallContext, h 
 		return ErrorCodeHTTPResponseHeaderSectionSize{Value: val}, nil
 	case 27:
 		var val FieldSizePayload
-		if tmp_, err_ := liftFlatFieldSizePayload(ctx, caller, callee, h, varT_.Cases[27].Payload, stack[1:6]); err_ != nil {
+		if tmp_, err_ := liftFlatFieldSizePayload(ctx, caller, callee, h, w_, varT_.Cases[27].Payload, stack[1:6]); err_ != nil {
 			return nil, err_
 		} else {
 			val = tmp_
@@ -1624,7 +1625,7 @@ func liftFlatErrorCode(ctx context.Context, caller, callee *host.CallContext, h 
 		return ErrorCodeHTTPResponseHeaderSize{Value: val}, nil
 	case 28:
 		var val OptionU64
-		if tmp_, err_ := liftFlatOptionU64(ctx, caller, callee, h, varT_.Cases[28].Payload, stack[1:3]); err_ != nil {
+		if tmp_, err_ := liftFlatOptionU64(ctx, caller, callee, h, w_, varT_.Cases[28].Payload, stack[1:3]); err_ != nil {
 			return nil, err_
 		} else {
 			val = tmp_
@@ -1632,7 +1633,7 @@ func liftFlatErrorCode(ctx context.Context, caller, callee *host.CallContext, h 
 		return ErrorCodeHTTPResponseBodySize{Value: val}, nil
 	case 29:
 		var val OptionU32
-		if tmp_, err_ := liftFlatOptionU32(ctx, caller, callee, h, varT_.Cases[29].Payload, stack[1:3]); err_ != nil {
+		if tmp_, err_ := liftFlatOptionU32(ctx, caller, callee, h, w_, varT_.Cases[29].Payload, stack[1:3]); err_ != nil {
 			return nil, err_
 		} else {
 			val = tmp_
@@ -1640,7 +1641,7 @@ func liftFlatErrorCode(ctx context.Context, caller, callee *host.CallContext, h 
 		return ErrorCodeHTTPResponseTrailerSectionSize{Value: val}, nil
 	case 30:
 		var val FieldSizePayload
-		if tmp_, err_ := liftFlatFieldSizePayload(ctx, caller, callee, h, varT_.Cases[30].Payload, stack[1:6]); err_ != nil {
+		if tmp_, err_ := liftFlatFieldSizePayload(ctx, caller, callee, h, w_, varT_.Cases[30].Payload, stack[1:6]); err_ != nil {
 			return nil, err_
 		} else {
 			val = tmp_
@@ -1648,7 +1649,7 @@ func liftFlatErrorCode(ctx context.Context, caller, callee *host.CallContext, h 
 		return ErrorCodeHTTPResponseTrailerSize{Value: val}, nil
 	case 31:
 		var val OptionString
-		if tmp_, err_ := liftFlatOptionString(ctx, caller, callee, h, varT_.Cases[31].Payload, stack[1:4]); err_ != nil {
+		if tmp_, err_ := liftFlatOptionString(ctx, caller, callee, h, w_, varT_.Cases[31].Payload, stack[1:4]); err_ != nil {
 			return nil, err_
 		} else {
 			val = tmp_
@@ -1656,7 +1657,7 @@ func liftFlatErrorCode(ctx context.Context, caller, callee *host.CallContext, h 
 		return ErrorCodeHTTPResponseTransferCoding{Value: val}, nil
 	case 32:
 		var val OptionString
-		if tmp_, err_ := liftFlatOptionString(ctx, caller, callee, h, varT_.Cases[32].Payload, stack[1:4]); err_ != nil {
+		if tmp_, err_ := liftFlatOptionString(ctx, caller, callee, h, w_, varT_.Cases[32].Payload, stack[1:4]); err_ != nil {
 			return nil, err_
 		} else {
 			val = tmp_
@@ -1674,7 +1675,7 @@ func liftFlatErrorCode(ctx context.Context, caller, callee *host.CallContext, h 
 		return ErrorCodeConfigurationError{}, nil
 	case 38:
 		var val OptionString
-		if tmp_, err_ := liftFlatOptionString(ctx, caller, callee, h, varT_.Cases[38].Payload, stack[1:4]); err_ != nil {
+		if tmp_, err_ := liftFlatOptionString(ctx, caller, callee, h, w_, varT_.Cases[38].Payload, stack[1:4]); err_ != nil {
 			return nil, err_
 		} else {
 			val = tmp_
@@ -1684,7 +1685,7 @@ func liftFlatErrorCode(ctx context.Context, caller, callee *host.CallContext, h 
 	return nil, fmt.Errorf("wacogo/witgen: liftFlatErrorCode: invalid discriminant %d", disc_)
 }
 
-func liftMemErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (ErrorCode, error) {
+func liftMemErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *typesWrapper, ty wacogo.Type, ptr uint32) (ErrorCode, error) {
 	varT_ := ty.(wacogo.TypeVariant)
 	_ = varT_
 	var disc_ uint8
@@ -1698,7 +1699,7 @@ func liftMemErrorCode(ctx context.Context, caller, callee *host.CallContext, h *
 		return ErrorCodeDNSTimeout{}, nil
 	case 1:
 		var val DNSErrorPayload
-		if tmp_, err_ := liftMemDNSErrorPayload(ctx, caller, callee, h, varT_.Cases[1].Payload, ptr+8); err_ != nil {
+		if tmp_, err_ := liftMemDNSErrorPayload(ctx, caller, callee, h, w_, varT_.Cases[1].Payload, ptr+8); err_ != nil {
 			return nil, err_
 		} else {
 			val = tmp_
@@ -1730,7 +1731,7 @@ func liftMemErrorCode(ctx context.Context, caller, callee *host.CallContext, h *
 		return ErrorCodeTLSCertificateError{}, nil
 	case 14:
 		var val TLSAlertReceivedPayload
-		if tmp_, err_ := liftMemTLSAlertReceivedPayload(ctx, caller, callee, h, varT_.Cases[14].Payload, ptr+8); err_ != nil {
+		if tmp_, err_ := liftMemTLSAlertReceivedPayload(ctx, caller, callee, h, w_, varT_.Cases[14].Payload, ptr+8); err_ != nil {
 			return nil, err_
 		} else {
 			val = tmp_
@@ -1742,7 +1743,7 @@ func liftMemErrorCode(ctx context.Context, caller, callee *host.CallContext, h *
 		return ErrorCodeHTTPRequestLengthRequired{}, nil
 	case 17:
 		var val OptionU64
-		if tmp_, err_ := liftMemOptionU64(ctx, caller, callee, h, varT_.Cases[17].Payload, ptr+8); err_ != nil {
+		if tmp_, err_ := liftMemOptionU64(ctx, caller, callee, h, w_, varT_.Cases[17].Payload, ptr+8); err_ != nil {
 			return nil, err_
 		} else {
 			val = tmp_
@@ -1756,7 +1757,7 @@ func liftMemErrorCode(ctx context.Context, caller, callee *host.CallContext, h *
 		return ErrorCodeHTTPRequestURITooLong{}, nil
 	case 21:
 		var val OptionU32
-		if tmp_, err_ := liftMemOptionU32(ctx, caller, callee, h, varT_.Cases[21].Payload, ptr+8); err_ != nil {
+		if tmp_, err_ := liftMemOptionU32(ctx, caller, callee, h, w_, varT_.Cases[21].Payload, ptr+8); err_ != nil {
 			return nil, err_
 		} else {
 			val = tmp_
@@ -1764,7 +1765,7 @@ func liftMemErrorCode(ctx context.Context, caller, callee *host.CallContext, h *
 		return ErrorCodeHTTPRequestHeaderSectionSize{Value: val}, nil
 	case 22:
 		var val OptionFieldSizePayload
-		if tmp_, err_ := liftMemOptionFieldSizePayload(ctx, caller, callee, h, varT_.Cases[22].Payload, ptr+8); err_ != nil {
+		if tmp_, err_ := liftMemOptionFieldSizePayload(ctx, caller, callee, h, w_, varT_.Cases[22].Payload, ptr+8); err_ != nil {
 			return nil, err_
 		} else {
 			val = tmp_
@@ -1772,7 +1773,7 @@ func liftMemErrorCode(ctx context.Context, caller, callee *host.CallContext, h *
 		return ErrorCodeHTTPRequestHeaderSize{Value: val}, nil
 	case 23:
 		var val OptionU32
-		if tmp_, err_ := liftMemOptionU32(ctx, caller, callee, h, varT_.Cases[23].Payload, ptr+8); err_ != nil {
+		if tmp_, err_ := liftMemOptionU32(ctx, caller, callee, h, w_, varT_.Cases[23].Payload, ptr+8); err_ != nil {
 			return nil, err_
 		} else {
 			val = tmp_
@@ -1780,7 +1781,7 @@ func liftMemErrorCode(ctx context.Context, caller, callee *host.CallContext, h *
 		return ErrorCodeHTTPRequestTrailerSectionSize{Value: val}, nil
 	case 24:
 		var val FieldSizePayload
-		if tmp_, err_ := liftMemFieldSizePayload(ctx, caller, callee, h, varT_.Cases[24].Payload, ptr+8); err_ != nil {
+		if tmp_, err_ := liftMemFieldSizePayload(ctx, caller, callee, h, w_, varT_.Cases[24].Payload, ptr+8); err_ != nil {
 			return nil, err_
 		} else {
 			val = tmp_
@@ -1790,7 +1791,7 @@ func liftMemErrorCode(ctx context.Context, caller, callee *host.CallContext, h *
 		return ErrorCodeHTTPResponseIncomplete{}, nil
 	case 26:
 		var val OptionU32
-		if tmp_, err_ := liftMemOptionU32(ctx, caller, callee, h, varT_.Cases[26].Payload, ptr+8); err_ != nil {
+		if tmp_, err_ := liftMemOptionU32(ctx, caller, callee, h, w_, varT_.Cases[26].Payload, ptr+8); err_ != nil {
 			return nil, err_
 		} else {
 			val = tmp_
@@ -1798,7 +1799,7 @@ func liftMemErrorCode(ctx context.Context, caller, callee *host.CallContext, h *
 		return ErrorCodeHTTPResponseHeaderSectionSize{Value: val}, nil
 	case 27:
 		var val FieldSizePayload
-		if tmp_, err_ := liftMemFieldSizePayload(ctx, caller, callee, h, varT_.Cases[27].Payload, ptr+8); err_ != nil {
+		if tmp_, err_ := liftMemFieldSizePayload(ctx, caller, callee, h, w_, varT_.Cases[27].Payload, ptr+8); err_ != nil {
 			return nil, err_
 		} else {
 			val = tmp_
@@ -1806,7 +1807,7 @@ func liftMemErrorCode(ctx context.Context, caller, callee *host.CallContext, h *
 		return ErrorCodeHTTPResponseHeaderSize{Value: val}, nil
 	case 28:
 		var val OptionU64
-		if tmp_, err_ := liftMemOptionU64(ctx, caller, callee, h, varT_.Cases[28].Payload, ptr+8); err_ != nil {
+		if tmp_, err_ := liftMemOptionU64(ctx, caller, callee, h, w_, varT_.Cases[28].Payload, ptr+8); err_ != nil {
 			return nil, err_
 		} else {
 			val = tmp_
@@ -1814,7 +1815,7 @@ func liftMemErrorCode(ctx context.Context, caller, callee *host.CallContext, h *
 		return ErrorCodeHTTPResponseBodySize{Value: val}, nil
 	case 29:
 		var val OptionU32
-		if tmp_, err_ := liftMemOptionU32(ctx, caller, callee, h, varT_.Cases[29].Payload, ptr+8); err_ != nil {
+		if tmp_, err_ := liftMemOptionU32(ctx, caller, callee, h, w_, varT_.Cases[29].Payload, ptr+8); err_ != nil {
 			return nil, err_
 		} else {
 			val = tmp_
@@ -1822,7 +1823,7 @@ func liftMemErrorCode(ctx context.Context, caller, callee *host.CallContext, h *
 		return ErrorCodeHTTPResponseTrailerSectionSize{Value: val}, nil
 	case 30:
 		var val FieldSizePayload
-		if tmp_, err_ := liftMemFieldSizePayload(ctx, caller, callee, h, varT_.Cases[30].Payload, ptr+8); err_ != nil {
+		if tmp_, err_ := liftMemFieldSizePayload(ctx, caller, callee, h, w_, varT_.Cases[30].Payload, ptr+8); err_ != nil {
 			return nil, err_
 		} else {
 			val = tmp_
@@ -1830,7 +1831,7 @@ func liftMemErrorCode(ctx context.Context, caller, callee *host.CallContext, h *
 		return ErrorCodeHTTPResponseTrailerSize{Value: val}, nil
 	case 31:
 		var val OptionString
-		if tmp_, err_ := liftMemOptionString(ctx, caller, callee, h, varT_.Cases[31].Payload, ptr+8); err_ != nil {
+		if tmp_, err_ := liftMemOptionString(ctx, caller, callee, h, w_, varT_.Cases[31].Payload, ptr+8); err_ != nil {
 			return nil, err_
 		} else {
 			val = tmp_
@@ -1838,7 +1839,7 @@ func liftMemErrorCode(ctx context.Context, caller, callee *host.CallContext, h *
 		return ErrorCodeHTTPResponseTransferCoding{Value: val}, nil
 	case 32:
 		var val OptionString
-		if tmp_, err_ := liftMemOptionString(ctx, caller, callee, h, varT_.Cases[32].Payload, ptr+8); err_ != nil {
+		if tmp_, err_ := liftMemOptionString(ctx, caller, callee, h, w_, varT_.Cases[32].Payload, ptr+8); err_ != nil {
 			return nil, err_
 		} else {
 			val = tmp_
@@ -1856,7 +1857,7 @@ func liftMemErrorCode(ctx context.Context, caller, callee *host.CallContext, h *
 		return ErrorCodeConfigurationError{}, nil
 	case 38:
 		var val OptionString
-		if tmp_, err_ := liftMemOptionString(ctx, caller, callee, h, varT_.Cases[38].Payload, ptr+8); err_ != nil {
+		if tmp_, err_ := liftMemOptionString(ctx, caller, callee, h, w_, varT_.Cases[38].Payload, ptr+8); err_ != nil {
 			return nil, err_
 		} else {
 			val = tmp_
@@ -2494,16 +2495,16 @@ func fromGoMemFieldSizePayload(ctx context.Context, cc *host.CallContext, h *hos
 	return nil
 }
 
-func liftFlatFieldSizePayload(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (FieldSizePayload, error) {
+func liftFlatFieldSizePayload(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *typesWrapper, ty wacogo.Type, stack []uint64) (FieldSizePayload, error) {
 	var v_ FieldSizePayload
 	recT_ := ty.(wacogo.TypeRecord)
 	_ = recT_
-	if tmp_, err_ := liftFlatOptionString(ctx, caller, callee, h, recT_.Fields[0].Type, stack[0:3]); err_ != nil {
+	if tmp_, err_ := liftFlatOptionString(ctx, caller, callee, h, w_, recT_.Fields[0].Type, stack[0:3]); err_ != nil {
 		return FieldSizePayload{}, err_
 	} else {
 		v_.FieldName = tmp_
 	}
-	if tmp_, err_ := liftFlatOptionU32(ctx, caller, callee, h, recT_.Fields[1].Type, stack[3:5]); err_ != nil {
+	if tmp_, err_ := liftFlatOptionU32(ctx, caller, callee, h, w_, recT_.Fields[1].Type, stack[3:5]); err_ != nil {
 		return FieldSizePayload{}, err_
 	} else {
 		v_.FieldSize = tmp_
@@ -2511,16 +2512,16 @@ func liftFlatFieldSizePayload(ctx context.Context, caller, callee *host.CallCont
 	return v_, nil
 }
 
-func liftMemFieldSizePayload(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (FieldSizePayload, error) {
+func liftMemFieldSizePayload(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *typesWrapper, ty wacogo.Type, ptr uint32) (FieldSizePayload, error) {
 	var v_ FieldSizePayload
 	recT_ := ty.(wacogo.TypeRecord)
 	_ = recT_
-	if tmp_, err_ := liftMemOptionString(ctx, caller, callee, h, recT_.Fields[0].Type, ptr); err_ != nil {
+	if tmp_, err_ := liftMemOptionString(ctx, caller, callee, h, w_, recT_.Fields[0].Type, ptr); err_ != nil {
 		return FieldSizePayload{}, err_
 	} else {
 		v_.FieldName = tmp_
 	}
-	if tmp_, err_ := liftMemOptionU32(ctx, caller, callee, h, recT_.Fields[1].Type, ptr+12); err_ != nil {
+	if tmp_, err_ := liftMemOptionU32(ctx, caller, callee, h, w_, recT_.Fields[1].Type, ptr+12); err_ != nil {
 		return FieldSizePayload{}, err_
 	} else {
 		v_.FieldSize = tmp_
@@ -2627,7 +2628,7 @@ func fromGoMemHeaderError(ctx context.Context, cc *host.CallContext, h *host.Com
 	return nil
 }
 
-func liftFlatHeaderError(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (HeaderError, error) {
+func liftFlatHeaderError(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *typesWrapper, ty wacogo.Type, stack []uint64) (HeaderError, error) {
 	varT_ := ty.(wacogo.TypeVariant)
 	_ = varT_
 	disc_ := uint32(stack[0])
@@ -2642,7 +2643,7 @@ func liftFlatHeaderError(ctx context.Context, caller, callee *host.CallContext, 
 	return nil, fmt.Errorf("wacogo/witgen: liftFlatHeaderError: invalid discriminant %d", disc_)
 }
 
-func liftMemHeaderError(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (HeaderError, error) {
+func liftMemHeaderError(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *typesWrapper, ty wacogo.Type, ptr uint32) (HeaderError, error) {
 	varT_ := ty.(wacogo.TypeVariant)
 	_ = varT_
 	var disc_ uint8
@@ -2784,14 +2785,14 @@ func fromGoMemListListU8(ctx context.Context, cc *host.CallContext, h *host.Comp
 	return nil
 }
 
-func liftFlatListListU8(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) ([][]uint8, error) {
+func liftFlatListListU8(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *typesWrapper, ty wacogo.Type, stack []uint64) ([][]uint8, error) {
 	lstT_ := ty.(wacogo.TypeList)
 	_ = lstT_
 	ptr_ := uint32(stack[0])
 	ln_ := uint32(stack[1])
 	out_ := make([][]uint8, ln_)
 	for i_ := uint32(0); i_ < ln_; i_++ {
-		if tmp_, err_ := liftMemListU8(ctx, caller, callee, h, lstT_.Elem, ptr_+i_*8); err_ != nil {
+		if tmp_, err_ := liftMemListU8(ctx, caller, callee, h, w_, lstT_.Elem, ptr_+i_*8); err_ != nil {
 			return nil, err_
 		} else {
 			out_[i_] = tmp_
@@ -2800,7 +2801,7 @@ func liftFlatListListU8(ctx context.Context, caller, callee *host.CallContext, h
 	return out_, nil
 }
 
-func liftMemListListU8(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) ([][]uint8, error) {
+func liftMemListListU8(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *typesWrapper, ty wacogo.Type, ptr uint32) ([][]uint8, error) {
 	lstT_ := ty.(wacogo.TypeList)
 	_ = lstT_
 	var lptr_ uint32
@@ -2817,7 +2818,7 @@ func liftMemListListU8(ctx context.Context, caller, callee *host.CallContext, h 
 	}
 	out_ := make([][]uint8, ln_)
 	for i_ := uint32(0); i_ < ln_; i_++ {
-		if tmp_, err_ := liftMemListU8(ctx, caller, callee, h, lstT_.Elem, lptr_+i_*8); err_ != nil {
+		if tmp_, err_ := liftMemListU8(ctx, caller, callee, h, w_, lstT_.Elem, lptr_+i_*8); err_ != nil {
 			return nil, err_
 		} else {
 			out_[i_] = tmp_
@@ -2944,14 +2945,14 @@ func fromGoMemListTupleStringListU8(ctx context.Context, cc *host.CallContext, h
 	return nil
 }
 
-func liftFlatListTupleStringListU8(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) ([]TupleStringListU8, error) {
+func liftFlatListTupleStringListU8(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *typesWrapper, ty wacogo.Type, stack []uint64) ([]TupleStringListU8, error) {
 	lstT_ := ty.(wacogo.TypeList)
 	_ = lstT_
 	ptr_ := uint32(stack[0])
 	ln_ := uint32(stack[1])
 	out_ := make([]TupleStringListU8, ln_)
 	for i_ := uint32(0); i_ < ln_; i_++ {
-		if tmp_, err_ := liftMemTupleStringListU8(ctx, caller, callee, h, lstT_.Elem, ptr_+i_*16); err_ != nil {
+		if tmp_, err_ := liftMemTupleStringListU8(ctx, caller, callee, h, w_, lstT_.Elem, ptr_+i_*16); err_ != nil {
 			return nil, err_
 		} else {
 			out_[i_] = tmp_
@@ -2960,7 +2961,7 @@ func liftFlatListTupleStringListU8(ctx context.Context, caller, callee *host.Cal
 	return out_, nil
 }
 
-func liftMemListTupleStringListU8(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) ([]TupleStringListU8, error) {
+func liftMemListTupleStringListU8(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *typesWrapper, ty wacogo.Type, ptr uint32) ([]TupleStringListU8, error) {
 	lstT_ := ty.(wacogo.TypeList)
 	_ = lstT_
 	var lptr_ uint32
@@ -2977,7 +2978,7 @@ func liftMemListTupleStringListU8(ctx context.Context, caller, callee *host.Call
 	}
 	out_ := make([]TupleStringListU8, ln_)
 	for i_ := uint32(0); i_ < ln_; i_++ {
-		if tmp_, err_ := liftMemTupleStringListU8(ctx, caller, callee, h, lstT_.Elem, lptr_+i_*16); err_ != nil {
+		if tmp_, err_ := liftMemTupleStringListU8(ctx, caller, callee, h, w_, lstT_.Elem, lptr_+i_*16); err_ != nil {
 			return nil, err_
 		} else {
 			out_[i_] = tmp_
@@ -3116,7 +3117,7 @@ func fromGoMemListU8(ctx context.Context, cc *host.CallContext, h *host.Componen
 	return nil
 }
 
-func liftFlatListU8(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) ([]uint8, error) {
+func liftFlatListU8(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *typesWrapper, ty wacogo.Type, stack []uint64) ([]uint8, error) {
 	lstT_ := ty.(wacogo.TypeList)
 	_ = lstT_
 	ptr_ := uint32(stack[0])
@@ -3134,7 +3135,7 @@ func liftFlatListU8(ctx context.Context, caller, callee *host.CallContext, h *ho
 	return out_, nil
 }
 
-func liftMemListU8(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) ([]uint8, error) {
+func liftMemListU8(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *typesWrapper, ty wacogo.Type, ptr uint32) ([]uint8, error) {
 	lstT_ := ty.(wacogo.TypeList)
 	_ = lstT_
 	var lptr_ uint32
@@ -3403,7 +3404,7 @@ func fromGoMemMethod(ctx context.Context, cc *host.CallContext, h *host.Componen
 	return nil
 }
 
-func liftFlatMethod(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (Method, error) {
+func liftFlatMethod(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *typesWrapper, ty wacogo.Type, stack []uint64) (Method, error) {
 	varT_ := ty.(wacogo.TypeVariant)
 	_ = varT_
 	disc_ := uint32(stack[0])
@@ -3428,7 +3429,7 @@ func liftFlatMethod(ctx context.Context, caller, callee *host.CallContext, h *ho
 		return MethodPatch{}, nil
 	case 9:
 		var val string
-		if tmp_, err_ := liftFlatString(ctx, caller, callee, h, varT_.Cases[9].Payload, stack[1:3]); err_ != nil {
+		if tmp_, err_ := liftFlatString(ctx, caller, callee, h, w_, varT_.Cases[9].Payload, stack[1:3]); err_ != nil {
 			return nil, err_
 		} else {
 			val = tmp_
@@ -3438,7 +3439,7 @@ func liftFlatMethod(ctx context.Context, caller, callee *host.CallContext, h *ho
 	return nil, fmt.Errorf("wacogo/witgen: liftFlatMethod: invalid discriminant %d", disc_)
 }
 
-func liftMemMethod(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (Method, error) {
+func liftMemMethod(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *typesWrapper, ty wacogo.Type, ptr uint32) (Method, error) {
 	varT_ := ty.(wacogo.TypeVariant)
 	_ = varT_
 	var disc_ uint8
@@ -3468,7 +3469,7 @@ func liftMemMethod(ctx context.Context, caller, callee *host.CallContext, h *hos
 		return MethodPatch{}, nil
 	case 9:
 		var val string
-		if tmp_, err_ := liftMemString(ctx, caller, callee, h, varT_.Cases[9].Payload, ptr+4); err_ != nil {
+		if tmp_, err_ := liftMemString(ctx, caller, callee, h, w_, varT_.Cases[9].Payload, ptr+4); err_ != nil {
 			return nil, err_
 		} else {
 			val = tmp_
@@ -3672,14 +3673,14 @@ func fromGoMemOptionErrorCode(ctx context.Context, cc *host.CallContext, h *host
 	return nil
 }
 
-func liftFlatOptionErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (OptionErrorCode, error) {
+func liftFlatOptionErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *typesWrapper, ty wacogo.Type, stack []uint64) (OptionErrorCode, error) {
 	optT_ := ty.(wacogo.TypeOption)
 	_ = optT_
 	disc_ := uint32(stack[0])
 	var out_ OptionErrorCode
 	if disc_ != 0 {
 		out_.IsSome = true
-		if tmp_, err_ := liftFlatErrorCode(ctx, caller, callee, h, optT_.Inner, stack[1:8]); err_ != nil {
+		if tmp_, err_ := liftFlatErrorCode(ctx, caller, callee, h, w_, optT_.Inner, stack[1:8]); err_ != nil {
 			return OptionErrorCode{}, err_
 		} else {
 			out_.Value = tmp_
@@ -3688,7 +3689,7 @@ func liftFlatOptionErrorCode(ctx context.Context, caller, callee *host.CallConte
 	return out_, nil
 }
 
-func liftMemOptionErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (OptionErrorCode, error) {
+func liftMemOptionErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *typesWrapper, ty wacogo.Type, ptr uint32) (OptionErrorCode, error) {
 	optT_ := ty.(wacogo.TypeOption)
 	_ = optT_
 	var disc_ uint8
@@ -3700,7 +3701,7 @@ func liftMemOptionErrorCode(ctx context.Context, caller, callee *host.CallContex
 	var out_ OptionErrorCode
 	if disc_ != 0 {
 		out_.IsSome = true
-		if tmp_, err_ := liftMemErrorCode(ctx, caller, callee, h, optT_.Inner, ptr+8); err_ != nil {
+		if tmp_, err_ := liftMemErrorCode(ctx, caller, callee, h, w_, optT_.Inner, ptr+8); err_ != nil {
 			return OptionErrorCode{}, err_
 		} else {
 			out_.Value = tmp_
@@ -3820,14 +3821,14 @@ func fromGoMemOptionFieldSizePayload(ctx context.Context, cc *host.CallContext, 
 	return nil
 }
 
-func liftFlatOptionFieldSizePayload(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (OptionFieldSizePayload, error) {
+func liftFlatOptionFieldSizePayload(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *typesWrapper, ty wacogo.Type, stack []uint64) (OptionFieldSizePayload, error) {
 	optT_ := ty.(wacogo.TypeOption)
 	_ = optT_
 	disc_ := uint32(stack[0])
 	var out_ OptionFieldSizePayload
 	if disc_ != 0 {
 		out_.IsSome = true
-		if tmp_, err_ := liftFlatFieldSizePayload(ctx, caller, callee, h, optT_.Inner, stack[1:6]); err_ != nil {
+		if tmp_, err_ := liftFlatFieldSizePayload(ctx, caller, callee, h, w_, optT_.Inner, stack[1:6]); err_ != nil {
 			return OptionFieldSizePayload{}, err_
 		} else {
 			out_.Value = tmp_
@@ -3836,7 +3837,7 @@ func liftFlatOptionFieldSizePayload(ctx context.Context, caller, callee *host.Ca
 	return out_, nil
 }
 
-func liftMemOptionFieldSizePayload(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (OptionFieldSizePayload, error) {
+func liftMemOptionFieldSizePayload(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *typesWrapper, ty wacogo.Type, ptr uint32) (OptionFieldSizePayload, error) {
 	optT_ := ty.(wacogo.TypeOption)
 	_ = optT_
 	var disc_ uint8
@@ -3848,7 +3849,7 @@ func liftMemOptionFieldSizePayload(ctx context.Context, caller, callee *host.Cal
 	var out_ OptionFieldSizePayload
 	if disc_ != 0 {
 		out_.IsSome = true
-		if tmp_, err_ := liftMemFieldSizePayload(ctx, caller, callee, h, optT_.Inner, ptr+4); err_ != nil {
+		if tmp_, err_ := liftMemFieldSizePayload(ctx, caller, callee, h, w_, optT_.Inner, ptr+4); err_ != nil {
 			return OptionFieldSizePayload{}, err_
 		} else {
 			out_.Value = tmp_
@@ -3999,7 +4000,7 @@ func fromGoMemOptionFields(ctx context.Context, cc *host.CallContext, h *host.Co
 	return nil
 }
 
-func liftFlatOptionFields(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (OptionFields, error) {
+func liftFlatOptionFields(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *typesWrapper, ty wacogo.Type, stack []uint64) (OptionFields, error) {
 	optT_ := ty.(wacogo.TypeOption)
 	_ = optT_
 	disc_ := uint32(stack[0])
@@ -4024,12 +4025,15 @@ func liftFlatOptionFields(ctx context.Context, caller, callee *host.CallContext,
 				}
 			}
 			out_.Value = NewFieldsHandleFrom(dstH_, impl_)
+			if impl_ == nil {
+				out_.Value.Fields = &fieldsRemote{w: w_, h: out_.Value}
+			}
 		}
 	}
 	return out_, nil
 }
 
-func liftMemOptionFields(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (OptionFields, error) {
+func liftMemOptionFields(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *typesWrapper, ty wacogo.Type, ptr uint32) (OptionFields, error) {
 	optT_ := ty.(wacogo.TypeOption)
 	_ = optT_
 	var disc_ uint8
@@ -4064,6 +4068,9 @@ func liftMemOptionFields(ctx context.Context, caller, callee *host.CallContext, 
 				}
 			}
 			out_.Value = NewFieldsHandleFrom(dstH_, impl_)
+			if impl_ == nil {
+				out_.Value.Fields = &fieldsRemote{w: w_, h: out_.Value}
+			}
 		}
 	}
 	return out_, nil
@@ -4208,14 +4215,14 @@ func fromGoMemOptionResultResultIncomingResponseErrorCode_(ctx context.Context, 
 	return nil
 }
 
-func liftFlatOptionResultResultIncomingResponseErrorCode_(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (OptionResultResultIncomingResponseErrorCode_, error) {
+func liftFlatOptionResultResultIncomingResponseErrorCode_(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *typesWrapper, ty wacogo.Type, stack []uint64) (OptionResultResultIncomingResponseErrorCode_, error) {
 	optT_ := ty.(wacogo.TypeOption)
 	_ = optT_
 	disc_ := uint32(stack[0])
 	var out_ OptionResultResultIncomingResponseErrorCode_
 	if disc_ != 0 {
 		out_.IsSome = true
-		if tmp_, err_ := liftFlatResultResultIncomingResponseErrorCode_(ctx, caller, callee, h, optT_.Inner, stack[1:10]); err_ != nil {
+		if tmp_, err_ := liftFlatResultResultIncomingResponseErrorCode_(ctx, caller, callee, h, w_, optT_.Inner, stack[1:10]); err_ != nil {
 			return OptionResultResultIncomingResponseErrorCode_{}, err_
 		} else {
 			out_.Value = tmp_
@@ -4224,7 +4231,7 @@ func liftFlatOptionResultResultIncomingResponseErrorCode_(ctx context.Context, c
 	return out_, nil
 }
 
-func liftMemOptionResultResultIncomingResponseErrorCode_(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (OptionResultResultIncomingResponseErrorCode_, error) {
+func liftMemOptionResultResultIncomingResponseErrorCode_(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *typesWrapper, ty wacogo.Type, ptr uint32) (OptionResultResultIncomingResponseErrorCode_, error) {
 	optT_ := ty.(wacogo.TypeOption)
 	_ = optT_
 	var disc_ uint8
@@ -4236,7 +4243,7 @@ func liftMemOptionResultResultIncomingResponseErrorCode_(ctx context.Context, ca
 	var out_ OptionResultResultIncomingResponseErrorCode_
 	if disc_ != 0 {
 		out_.IsSome = true
-		if tmp_, err_ := liftMemResultResultIncomingResponseErrorCode_(ctx, caller, callee, h, optT_.Inner, ptr+8); err_ != nil {
+		if tmp_, err_ := liftMemResultResultIncomingResponseErrorCode_(ctx, caller, callee, h, w_, optT_.Inner, ptr+8); err_ != nil {
 			return OptionResultResultIncomingResponseErrorCode_{}, err_
 		} else {
 			out_.Value = tmp_
@@ -4362,14 +4369,14 @@ func fromGoMemOptionResultResultOptionFieldsErrorCode_(ctx context.Context, cc *
 	return nil
 }
 
-func liftFlatOptionResultResultOptionFieldsErrorCode_(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (OptionResultResultOptionFieldsErrorCode_, error) {
+func liftFlatOptionResultResultOptionFieldsErrorCode_(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *typesWrapper, ty wacogo.Type, stack []uint64) (OptionResultResultOptionFieldsErrorCode_, error) {
 	optT_ := ty.(wacogo.TypeOption)
 	_ = optT_
 	disc_ := uint32(stack[0])
 	var out_ OptionResultResultOptionFieldsErrorCode_
 	if disc_ != 0 {
 		out_.IsSome = true
-		if tmp_, err_ := liftFlatResultResultOptionFieldsErrorCode_(ctx, caller, callee, h, optT_.Inner, stack[1:10]); err_ != nil {
+		if tmp_, err_ := liftFlatResultResultOptionFieldsErrorCode_(ctx, caller, callee, h, w_, optT_.Inner, stack[1:10]); err_ != nil {
 			return OptionResultResultOptionFieldsErrorCode_{}, err_
 		} else {
 			out_.Value = tmp_
@@ -4378,7 +4385,7 @@ func liftFlatOptionResultResultOptionFieldsErrorCode_(ctx context.Context, calle
 	return out_, nil
 }
 
-func liftMemOptionResultResultOptionFieldsErrorCode_(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (OptionResultResultOptionFieldsErrorCode_, error) {
+func liftMemOptionResultResultOptionFieldsErrorCode_(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *typesWrapper, ty wacogo.Type, ptr uint32) (OptionResultResultOptionFieldsErrorCode_, error) {
 	optT_ := ty.(wacogo.TypeOption)
 	_ = optT_
 	var disc_ uint8
@@ -4390,7 +4397,7 @@ func liftMemOptionResultResultOptionFieldsErrorCode_(ctx context.Context, caller
 	var out_ OptionResultResultOptionFieldsErrorCode_
 	if disc_ != 0 {
 		out_.IsSome = true
-		if tmp_, err_ := liftMemResultResultOptionFieldsErrorCode_(ctx, caller, callee, h, optT_.Inner, ptr+8); err_ != nil {
+		if tmp_, err_ := liftMemResultResultOptionFieldsErrorCode_(ctx, caller, callee, h, w_, optT_.Inner, ptr+8); err_ != nil {
 			return OptionResultResultOptionFieldsErrorCode_{}, err_
 		} else {
 			out_.Value = tmp_
@@ -4510,14 +4517,14 @@ func fromGoMemOptionScheme(ctx context.Context, cc *host.CallContext, h *host.Co
 	return nil
 }
 
-func liftFlatOptionScheme(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (OptionScheme, error) {
+func liftFlatOptionScheme(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *typesWrapper, ty wacogo.Type, stack []uint64) (OptionScheme, error) {
 	optT_ := ty.(wacogo.TypeOption)
 	_ = optT_
 	disc_ := uint32(stack[0])
 	var out_ OptionScheme
 	if disc_ != 0 {
 		out_.IsSome = true
-		if tmp_, err_ := liftFlatScheme(ctx, caller, callee, h, optT_.Inner, stack[1:4]); err_ != nil {
+		if tmp_, err_ := liftFlatScheme(ctx, caller, callee, h, w_, optT_.Inner, stack[1:4]); err_ != nil {
 			return OptionScheme{}, err_
 		} else {
 			out_.Value = tmp_
@@ -4526,7 +4533,7 @@ func liftFlatOptionScheme(ctx context.Context, caller, callee *host.CallContext,
 	return out_, nil
 }
 
-func liftMemOptionScheme(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (OptionScheme, error) {
+func liftMemOptionScheme(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *typesWrapper, ty wacogo.Type, ptr uint32) (OptionScheme, error) {
 	optT_ := ty.(wacogo.TypeOption)
 	_ = optT_
 	var disc_ uint8
@@ -4538,7 +4545,7 @@ func liftMemOptionScheme(ctx context.Context, caller, callee *host.CallContext, 
 	var out_ OptionScheme
 	if disc_ != 0 {
 		out_.IsSome = true
-		if tmp_, err_ := liftMemScheme(ctx, caller, callee, h, optT_.Inner, ptr+4); err_ != nil {
+		if tmp_, err_ := liftMemScheme(ctx, caller, callee, h, w_, optT_.Inner, ptr+4); err_ != nil {
 			return OptionScheme{}, err_
 		} else {
 			out_.Value = tmp_
@@ -4651,14 +4658,14 @@ func fromGoMemOptionString(ctx context.Context, cc *host.CallContext, h *host.Co
 	return nil
 }
 
-func liftFlatOptionString(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (OptionString, error) {
+func liftFlatOptionString(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *typesWrapper, ty wacogo.Type, stack []uint64) (OptionString, error) {
 	optT_ := ty.(wacogo.TypeOption)
 	_ = optT_
 	disc_ := uint32(stack[0])
 	var out_ OptionString
 	if disc_ != 0 {
 		out_.IsSome = true
-		if tmp_, err_ := liftFlatString(ctx, caller, callee, h, optT_.Inner, stack[1:3]); err_ != nil {
+		if tmp_, err_ := liftFlatString(ctx, caller, callee, h, w_, optT_.Inner, stack[1:3]); err_ != nil {
 			return OptionString{}, err_
 		} else {
 			out_.Value = tmp_
@@ -4667,7 +4674,7 @@ func liftFlatOptionString(ctx context.Context, caller, callee *host.CallContext,
 	return out_, nil
 }
 
-func liftMemOptionString(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (OptionString, error) {
+func liftMemOptionString(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *typesWrapper, ty wacogo.Type, ptr uint32) (OptionString, error) {
 	optT_ := ty.(wacogo.TypeOption)
 	_ = optT_
 	var disc_ uint8
@@ -4679,7 +4686,7 @@ func liftMemOptionString(ctx context.Context, caller, callee *host.CallContext, 
 	var out_ OptionString
 	if disc_ != 0 {
 		out_.IsSome = true
-		if tmp_, err_ := liftMemString(ctx, caller, callee, h, optT_.Inner, ptr+4); err_ != nil {
+		if tmp_, err_ := liftMemString(ctx, caller, callee, h, w_, optT_.Inner, ptr+4); err_ != nil {
 			return OptionString{}, err_
 		} else {
 			out_.Value = tmp_
@@ -4784,7 +4791,7 @@ func fromGoMemOptionU16(ctx context.Context, cc *host.CallContext, h *host.Compo
 	return nil
 }
 
-func liftFlatOptionU16(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (OptionU16, error) {
+func liftFlatOptionU16(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *typesWrapper, ty wacogo.Type, stack []uint64) (OptionU16, error) {
 	optT_ := ty.(wacogo.TypeOption)
 	_ = optT_
 	disc_ := uint32(stack[0])
@@ -4796,7 +4803,7 @@ func liftFlatOptionU16(ctx context.Context, caller, callee *host.CallContext, h 
 	return out_, nil
 }
 
-func liftMemOptionU16(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (OptionU16, error) {
+func liftMemOptionU16(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *typesWrapper, ty wacogo.Type, ptr uint32) (OptionU16, error) {
 	optT_ := ty.(wacogo.TypeOption)
 	_ = optT_
 	var disc_ uint8
@@ -4910,7 +4917,7 @@ func fromGoMemOptionU32(ctx context.Context, cc *host.CallContext, h *host.Compo
 	return nil
 }
 
-func liftFlatOptionU32(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (OptionU32, error) {
+func liftFlatOptionU32(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *typesWrapper, ty wacogo.Type, stack []uint64) (OptionU32, error) {
 	optT_ := ty.(wacogo.TypeOption)
 	_ = optT_
 	disc_ := uint32(stack[0])
@@ -4922,7 +4929,7 @@ func liftFlatOptionU32(ctx context.Context, caller, callee *host.CallContext, h 
 	return out_, nil
 }
 
-func liftMemOptionU32(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (OptionU32, error) {
+func liftMemOptionU32(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *typesWrapper, ty wacogo.Type, ptr uint32) (OptionU32, error) {
 	optT_ := ty.(wacogo.TypeOption)
 	_ = optT_
 	var disc_ uint8
@@ -5036,7 +5043,7 @@ func fromGoMemOptionU64(ctx context.Context, cc *host.CallContext, h *host.Compo
 	return nil
 }
 
-func liftFlatOptionU64(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (OptionU64, error) {
+func liftFlatOptionU64(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *typesWrapper, ty wacogo.Type, stack []uint64) (OptionU64, error) {
 	optT_ := ty.(wacogo.TypeOption)
 	_ = optT_
 	disc_ := uint32(stack[0])
@@ -5048,7 +5055,7 @@ func liftFlatOptionU64(ctx context.Context, caller, callee *host.CallContext, h 
 	return out_, nil
 }
 
-func liftMemOptionU64(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (OptionU64, error) {
+func liftMemOptionU64(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *typesWrapper, ty wacogo.Type, ptr uint32) (OptionU64, error) {
 	optT_ := ty.(wacogo.TypeOption)
 	_ = optT_
 	var disc_ uint8
@@ -5162,7 +5169,7 @@ func fromGoMemOptionU8(ctx context.Context, cc *host.CallContext, h *host.Compon
 	return nil
 }
 
-func liftFlatOptionU8(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (OptionU8, error) {
+func liftFlatOptionU8(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *typesWrapper, ty wacogo.Type, stack []uint64) (OptionU8, error) {
 	optT_ := ty.(wacogo.TypeOption)
 	_ = optT_
 	disc_ := uint32(stack[0])
@@ -5174,7 +5181,7 @@ func liftFlatOptionU8(ctx context.Context, caller, callee *host.CallContext, h *
 	return out_, nil
 }
 
-func liftMemOptionU8(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (OptionU8, error) {
+func liftMemOptionU8(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *typesWrapper, ty wacogo.Type, ptr uint32) (OptionU8, error) {
 	optT_ := ty.(wacogo.TypeOption)
 	_ = optT_
 	var disc_ uint8
@@ -5354,7 +5361,7 @@ func fromGoMemResultFieldsHeaderError(ctx context.Context, cc *host.CallContext,
 	return nil
 }
 
-func liftFlatResultFieldsHeaderError(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (ResultFieldsHeaderError, error) {
+func liftFlatResultFieldsHeaderError(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *typesWrapper, ty wacogo.Type, stack []uint64) (ResultFieldsHeaderError, error) {
 	resT_ := ty.(wacogo.TypeResult)
 	_ = resT_
 	disc_ := uint32(stack[0])
@@ -5378,11 +5385,14 @@ func liftFlatResultFieldsHeaderError(ctx context.Context, caller, callee *host.C
 				}
 			}
 			okVal_ = NewFieldsHandleFrom(dstH_, impl_)
+			if impl_ == nil {
+				okVal_.Fields = &fieldsRemote{w: w_, h: okVal_}
+			}
 		}
 		return ResultFieldsHeaderErrorOk{Value: okVal_}, nil
 	}
 	var errVal_ HeaderError
-	if tmp_, err_ := liftFlatHeaderError(ctx, caller, callee, h, resT_.Err, stack[1:2]); err_ != nil {
+	if tmp_, err_ := liftFlatHeaderError(ctx, caller, callee, h, w_, resT_.Err, stack[1:2]); err_ != nil {
 		return nil, err_
 	} else {
 		errVal_ = tmp_
@@ -5390,7 +5400,7 @@ func liftFlatResultFieldsHeaderError(ctx context.Context, caller, callee *host.C
 	return ResultFieldsHeaderErrorErr{Value: errVal_}, nil
 }
 
-func liftMemResultFieldsHeaderError(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (ResultFieldsHeaderError, error) {
+func liftMemResultFieldsHeaderError(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *typesWrapper, ty wacogo.Type, ptr uint32) (ResultFieldsHeaderError, error) {
 	resT_ := ty.(wacogo.TypeResult)
 	_ = resT_
 	var disc_ uint8
@@ -5424,11 +5434,14 @@ func liftMemResultFieldsHeaderError(ctx context.Context, caller, callee *host.Ca
 				}
 			}
 			okVal_ = NewFieldsHandleFrom(dstH_, impl_)
+			if impl_ == nil {
+				okVal_.Fields = &fieldsRemote{w: w_, h: okVal_}
+			}
 		}
 		return ResultFieldsHeaderErrorOk{Value: okVal_}, nil
 	}
 	var errVal_ HeaderError
-	if tmp_, err_ := liftMemHeaderError(ctx, caller, callee, h, resT_.Err, ptr+4); err_ != nil {
+	if tmp_, err_ := liftMemHeaderError(ctx, caller, callee, h, w_, resT_.Err, ptr+4); err_ != nil {
 		return nil, err_
 	} else {
 		errVal_ = tmp_
@@ -5621,7 +5634,7 @@ func fromGoMemResultIncomingBody_(ctx context.Context, cc *host.CallContext, h *
 	return nil
 }
 
-func liftFlatResultIncomingBody_(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (ResultIncomingBody_, error) {
+func liftFlatResultIncomingBody_(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *typesWrapper, ty wacogo.Type, stack []uint64) (ResultIncomingBody_, error) {
 	resT_ := ty.(wacogo.TypeResult)
 	_ = resT_
 	disc_ := uint32(stack[0])
@@ -5645,13 +5658,16 @@ func liftFlatResultIncomingBody_(ctx context.Context, caller, callee *host.CallC
 				}
 			}
 			okVal_ = NewIncomingBodyHandleFrom(dstH_, impl_)
+			if impl_ == nil {
+				okVal_.IncomingBody = &incomingBodyRemote{w: w_, h: okVal_}
+			}
 		}
 		return ResultIncomingBody_Ok{Value: okVal_}, nil
 	}
 	return ResultIncomingBody_Err{}, nil
 }
 
-func liftMemResultIncomingBody_(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (ResultIncomingBody_, error) {
+func liftMemResultIncomingBody_(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *typesWrapper, ty wacogo.Type, ptr uint32) (ResultIncomingBody_, error) {
 	resT_ := ty.(wacogo.TypeResult)
 	_ = resT_
 	var disc_ uint8
@@ -5685,6 +5701,9 @@ func liftMemResultIncomingBody_(ctx context.Context, caller, callee *host.CallCo
 				}
 			}
 			okVal_ = NewIncomingBodyHandleFrom(dstH_, impl_)
+			if impl_ == nil {
+				okVal_.IncomingBody = &incomingBodyRemote{w: w_, h: okVal_}
+			}
 		}
 		return ResultIncomingBody_Ok{Value: okVal_}, nil
 	}
@@ -5894,7 +5913,7 @@ func fromGoMemResultIncomingResponseErrorCode(ctx context.Context, cc *host.Call
 	return nil
 }
 
-func liftFlatResultIncomingResponseErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (ResultIncomingResponseErrorCode, error) {
+func liftFlatResultIncomingResponseErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *typesWrapper, ty wacogo.Type, stack []uint64) (ResultIncomingResponseErrorCode, error) {
 	resT_ := ty.(wacogo.TypeResult)
 	_ = resT_
 	disc_ := uint32(stack[0])
@@ -5918,11 +5937,14 @@ func liftFlatResultIncomingResponseErrorCode(ctx context.Context, caller, callee
 				}
 			}
 			okVal_ = NewIncomingResponseHandleFrom(dstH_, impl_)
+			if impl_ == nil {
+				okVal_.IncomingResponse = &incomingResponseRemote{w: w_, h: okVal_}
+			}
 		}
 		return ResultIncomingResponseErrorCodeOk{Value: okVal_}, nil
 	}
 	var errVal_ ErrorCode
-	if tmp_, err_ := liftFlatErrorCode(ctx, caller, callee, h, resT_.Err, stack[1:8]); err_ != nil {
+	if tmp_, err_ := liftFlatErrorCode(ctx, caller, callee, h, w_, resT_.Err, stack[1:8]); err_ != nil {
 		return nil, err_
 	} else {
 		errVal_ = tmp_
@@ -5930,7 +5952,7 @@ func liftFlatResultIncomingResponseErrorCode(ctx context.Context, caller, callee
 	return ResultIncomingResponseErrorCodeErr{Value: errVal_}, nil
 }
 
-func liftMemResultIncomingResponseErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (ResultIncomingResponseErrorCode, error) {
+func liftMemResultIncomingResponseErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *typesWrapper, ty wacogo.Type, ptr uint32) (ResultIncomingResponseErrorCode, error) {
 	resT_ := ty.(wacogo.TypeResult)
 	_ = resT_
 	var disc_ uint8
@@ -5964,11 +5986,14 @@ func liftMemResultIncomingResponseErrorCode(ctx context.Context, caller, callee 
 				}
 			}
 			okVal_ = NewIncomingResponseHandleFrom(dstH_, impl_)
+			if impl_ == nil {
+				okVal_.IncomingResponse = &incomingResponseRemote{w: w_, h: okVal_}
+			}
 		}
 		return ResultIncomingResponseErrorCodeOk{Value: okVal_}, nil
 	}
 	var errVal_ ErrorCode
-	if tmp_, err_ := liftMemErrorCode(ctx, caller, callee, h, resT_.Err, ptr+8); err_ != nil {
+	if tmp_, err_ := liftMemErrorCode(ctx, caller, callee, h, w_, resT_.Err, ptr+8); err_ != nil {
 		return nil, err_
 	} else {
 		errVal_ = tmp_
@@ -6159,7 +6184,7 @@ func fromGoMemResultInputStream_(ctx context.Context, cc *host.CallContext, h *h
 	return nil
 }
 
-func liftFlatResultInputStream_(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (ResultInputStream_, error) {
+func liftFlatResultInputStream_(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *typesWrapper, ty wacogo.Type, stack []uint64) (ResultInputStream_, error) {
 	resT_ := ty.(wacogo.TypeResult)
 	_ = resT_
 	disc_ := uint32(stack[0])
@@ -6185,7 +6210,7 @@ func liftFlatResultInputStream_(ctx context.Context, caller, callee *host.CallCo
 	return ResultInputStream_Err{}, nil
 }
 
-func liftMemResultInputStream_(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (ResultInputStream_, error) {
+func liftMemResultInputStream_(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *typesWrapper, ty wacogo.Type, ptr uint32) (ResultInputStream_, error) {
 	resT_ := ty.(wacogo.TypeResult)
 	_ = resT_
 	var disc_ uint8
@@ -6386,13 +6411,13 @@ func fromGoMemResultOptionFieldsErrorCode(ctx context.Context, cc *host.CallCont
 	return nil
 }
 
-func liftFlatResultOptionFieldsErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (ResultOptionFieldsErrorCode, error) {
+func liftFlatResultOptionFieldsErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *typesWrapper, ty wacogo.Type, stack []uint64) (ResultOptionFieldsErrorCode, error) {
 	resT_ := ty.(wacogo.TypeResult)
 	_ = resT_
 	disc_ := uint32(stack[0])
 	if disc_ == 0 {
 		var okVal_ OptionFields
-		if tmp_, err_ := liftFlatOptionFields(ctx, caller, callee, h, resT_.Ok, stack[1:3]); err_ != nil {
+		if tmp_, err_ := liftFlatOptionFields(ctx, caller, callee, h, w_, resT_.Ok, stack[1:3]); err_ != nil {
 			return nil, err_
 		} else {
 			okVal_ = tmp_
@@ -6400,7 +6425,7 @@ func liftFlatResultOptionFieldsErrorCode(ctx context.Context, caller, callee *ho
 		return ResultOptionFieldsErrorCodeOk{Value: okVal_}, nil
 	}
 	var errVal_ ErrorCode
-	if tmp_, err_ := liftFlatErrorCode(ctx, caller, callee, h, resT_.Err, stack[1:8]); err_ != nil {
+	if tmp_, err_ := liftFlatErrorCode(ctx, caller, callee, h, w_, resT_.Err, stack[1:8]); err_ != nil {
 		return nil, err_
 	} else {
 		errVal_ = tmp_
@@ -6408,7 +6433,7 @@ func liftFlatResultOptionFieldsErrorCode(ctx context.Context, caller, callee *ho
 	return ResultOptionFieldsErrorCodeErr{Value: errVal_}, nil
 }
 
-func liftMemResultOptionFieldsErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (ResultOptionFieldsErrorCode, error) {
+func liftMemResultOptionFieldsErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *typesWrapper, ty wacogo.Type, ptr uint32) (ResultOptionFieldsErrorCode, error) {
 	resT_ := ty.(wacogo.TypeResult)
 	_ = resT_
 	var disc_ uint8
@@ -6419,7 +6444,7 @@ func liftMemResultOptionFieldsErrorCode(ctx context.Context, caller, callee *hos
 	}
 	if disc_ == 0 {
 		var okVal_ OptionFields
-		if tmp_, err_ := liftMemOptionFields(ctx, caller, callee, h, resT_.Ok, ptr+8); err_ != nil {
+		if tmp_, err_ := liftMemOptionFields(ctx, caller, callee, h, w_, resT_.Ok, ptr+8); err_ != nil {
 			return nil, err_
 		} else {
 			okVal_ = tmp_
@@ -6427,7 +6452,7 @@ func liftMemResultOptionFieldsErrorCode(ctx context.Context, caller, callee *hos
 		return ResultOptionFieldsErrorCodeOk{Value: okVal_}, nil
 	}
 	var errVal_ ErrorCode
-	if tmp_, err_ := liftMemErrorCode(ctx, caller, callee, h, resT_.Err, ptr+8); err_ != nil {
+	if tmp_, err_ := liftMemErrorCode(ctx, caller, callee, h, w_, resT_.Err, ptr+8); err_ != nil {
 		return nil, err_
 	} else {
 		errVal_ = tmp_
@@ -6595,7 +6620,7 @@ func fromGoMemResultOutgoingBody_(ctx context.Context, cc *host.CallContext, h *
 	return nil
 }
 
-func liftFlatResultOutgoingBody_(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (ResultOutgoingBody_, error) {
+func liftFlatResultOutgoingBody_(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *typesWrapper, ty wacogo.Type, stack []uint64) (ResultOutgoingBody_, error) {
 	resT_ := ty.(wacogo.TypeResult)
 	_ = resT_
 	disc_ := uint32(stack[0])
@@ -6619,13 +6644,16 @@ func liftFlatResultOutgoingBody_(ctx context.Context, caller, callee *host.CallC
 				}
 			}
 			okVal_ = NewOutgoingBodyHandleFrom(dstH_, impl_)
+			if impl_ == nil {
+				okVal_.OutgoingBody = &outgoingBodyRemote{w: w_, h: okVal_}
+			}
 		}
 		return ResultOutgoingBody_Ok{Value: okVal_}, nil
 	}
 	return ResultOutgoingBody_Err{}, nil
 }
 
-func liftMemResultOutgoingBody_(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (ResultOutgoingBody_, error) {
+func liftMemResultOutgoingBody_(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *typesWrapper, ty wacogo.Type, ptr uint32) (ResultOutgoingBody_, error) {
 	resT_ := ty.(wacogo.TypeResult)
 	_ = resT_
 	var disc_ uint8
@@ -6659,6 +6687,9 @@ func liftMemResultOutgoingBody_(ctx context.Context, caller, callee *host.CallCo
 				}
 			}
 			okVal_ = NewOutgoingBodyHandleFrom(dstH_, impl_)
+			if impl_ == nil {
+				okVal_.OutgoingBody = &outgoingBodyRemote{w: w_, h: okVal_}
+			}
 		}
 		return ResultOutgoingBody_Ok{Value: okVal_}, nil
 	}
@@ -6868,7 +6899,7 @@ func fromGoMemResultOutgoingResponseErrorCode(ctx context.Context, cc *host.Call
 	return nil
 }
 
-func liftFlatResultOutgoingResponseErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (ResultOutgoingResponseErrorCode, error) {
+func liftFlatResultOutgoingResponseErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *typesWrapper, ty wacogo.Type, stack []uint64) (ResultOutgoingResponseErrorCode, error) {
 	resT_ := ty.(wacogo.TypeResult)
 	_ = resT_
 	disc_ := uint32(stack[0])
@@ -6892,11 +6923,14 @@ func liftFlatResultOutgoingResponseErrorCode(ctx context.Context, caller, callee
 				}
 			}
 			okVal_ = NewOutgoingResponseHandleFrom(dstH_, impl_)
+			if impl_ == nil {
+				okVal_.OutgoingResponse = &outgoingResponseRemote{w: w_, h: okVal_}
+			}
 		}
 		return ResultOutgoingResponseErrorCodeOk{Value: okVal_}, nil
 	}
 	var errVal_ ErrorCode
-	if tmp_, err_ := liftFlatErrorCode(ctx, caller, callee, h, resT_.Err, stack[1:8]); err_ != nil {
+	if tmp_, err_ := liftFlatErrorCode(ctx, caller, callee, h, w_, resT_.Err, stack[1:8]); err_ != nil {
 		return nil, err_
 	} else {
 		errVal_ = tmp_
@@ -6904,7 +6938,7 @@ func liftFlatResultOutgoingResponseErrorCode(ctx context.Context, caller, callee
 	return ResultOutgoingResponseErrorCodeErr{Value: errVal_}, nil
 }
 
-func liftMemResultOutgoingResponseErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (ResultOutgoingResponseErrorCode, error) {
+func liftMemResultOutgoingResponseErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *typesWrapper, ty wacogo.Type, ptr uint32) (ResultOutgoingResponseErrorCode, error) {
 	resT_ := ty.(wacogo.TypeResult)
 	_ = resT_
 	var disc_ uint8
@@ -6938,11 +6972,14 @@ func liftMemResultOutgoingResponseErrorCode(ctx context.Context, caller, callee 
 				}
 			}
 			okVal_ = NewOutgoingResponseHandleFrom(dstH_, impl_)
+			if impl_ == nil {
+				okVal_.OutgoingResponse = &outgoingResponseRemote{w: w_, h: okVal_}
+			}
 		}
 		return ResultOutgoingResponseErrorCodeOk{Value: okVal_}, nil
 	}
 	var errVal_ ErrorCode
-	if tmp_, err_ := liftMemErrorCode(ctx, caller, callee, h, resT_.Err, ptr+8); err_ != nil {
+	if tmp_, err_ := liftMemErrorCode(ctx, caller, callee, h, w_, resT_.Err, ptr+8); err_ != nil {
 		return nil, err_
 	} else {
 		errVal_ = tmp_
@@ -7133,7 +7170,7 @@ func fromGoMemResultOutputStream_(ctx context.Context, cc *host.CallContext, h *
 	return nil
 }
 
-func liftFlatResultOutputStream_(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (ResultOutputStream_, error) {
+func liftFlatResultOutputStream_(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *typesWrapper, ty wacogo.Type, stack []uint64) (ResultOutputStream_, error) {
 	resT_ := ty.(wacogo.TypeResult)
 	_ = resT_
 	disc_ := uint32(stack[0])
@@ -7159,7 +7196,7 @@ func liftFlatResultOutputStream_(ctx context.Context, caller, callee *host.CallC
 	return ResultOutputStream_Err{}, nil
 }
 
-func liftMemResultOutputStream_(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (ResultOutputStream_, error) {
+func liftMemResultOutputStream_(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *typesWrapper, ty wacogo.Type, ptr uint32) (ResultOutputStream_, error) {
 	resT_ := ty.(wacogo.TypeResult)
 	_ = resT_
 	var disc_ uint8
@@ -7347,13 +7384,13 @@ func fromGoMemResultResultIncomingResponseErrorCode_(ctx context.Context, cc *ho
 	return nil
 }
 
-func liftFlatResultResultIncomingResponseErrorCode_(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (ResultResultIncomingResponseErrorCode_, error) {
+func liftFlatResultResultIncomingResponseErrorCode_(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *typesWrapper, ty wacogo.Type, stack []uint64) (ResultResultIncomingResponseErrorCode_, error) {
 	resT_ := ty.(wacogo.TypeResult)
 	_ = resT_
 	disc_ := uint32(stack[0])
 	if disc_ == 0 {
 		var okVal_ ResultIncomingResponseErrorCode
-		if tmp_, err_ := liftFlatResultIncomingResponseErrorCode(ctx, caller, callee, h, resT_.Ok, stack[1:9]); err_ != nil {
+		if tmp_, err_ := liftFlatResultIncomingResponseErrorCode(ctx, caller, callee, h, w_, resT_.Ok, stack[1:9]); err_ != nil {
 			return nil, err_
 		} else {
 			okVal_ = tmp_
@@ -7363,7 +7400,7 @@ func liftFlatResultResultIncomingResponseErrorCode_(ctx context.Context, caller,
 	return ResultResultIncomingResponseErrorCode_Err{}, nil
 }
 
-func liftMemResultResultIncomingResponseErrorCode_(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (ResultResultIncomingResponseErrorCode_, error) {
+func liftMemResultResultIncomingResponseErrorCode_(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *typesWrapper, ty wacogo.Type, ptr uint32) (ResultResultIncomingResponseErrorCode_, error) {
 	resT_ := ty.(wacogo.TypeResult)
 	_ = resT_
 	var disc_ uint8
@@ -7374,7 +7411,7 @@ func liftMemResultResultIncomingResponseErrorCode_(ctx context.Context, caller, 
 	}
 	if disc_ == 0 {
 		var okVal_ ResultIncomingResponseErrorCode
-		if tmp_, err_ := liftMemResultIncomingResponseErrorCode(ctx, caller, callee, h, resT_.Ok, ptr+8); err_ != nil {
+		if tmp_, err_ := liftMemResultIncomingResponseErrorCode(ctx, caller, callee, h, w_, resT_.Ok, ptr+8); err_ != nil {
 			return nil, err_
 		} else {
 			okVal_ = tmp_
@@ -7513,13 +7550,13 @@ func fromGoMemResultResultOptionFieldsErrorCode_(ctx context.Context, cc *host.C
 	return nil
 }
 
-func liftFlatResultResultOptionFieldsErrorCode_(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (ResultResultOptionFieldsErrorCode_, error) {
+func liftFlatResultResultOptionFieldsErrorCode_(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *typesWrapper, ty wacogo.Type, stack []uint64) (ResultResultOptionFieldsErrorCode_, error) {
 	resT_ := ty.(wacogo.TypeResult)
 	_ = resT_
 	disc_ := uint32(stack[0])
 	if disc_ == 0 {
 		var okVal_ ResultOptionFieldsErrorCode
-		if tmp_, err_ := liftFlatResultOptionFieldsErrorCode(ctx, caller, callee, h, resT_.Ok, stack[1:9]); err_ != nil {
+		if tmp_, err_ := liftFlatResultOptionFieldsErrorCode(ctx, caller, callee, h, w_, resT_.Ok, stack[1:9]); err_ != nil {
 			return nil, err_
 		} else {
 			okVal_ = tmp_
@@ -7529,7 +7566,7 @@ func liftFlatResultResultOptionFieldsErrorCode_(ctx context.Context, caller, cal
 	return ResultResultOptionFieldsErrorCode_Err{}, nil
 }
 
-func liftMemResultResultOptionFieldsErrorCode_(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (ResultResultOptionFieldsErrorCode_, error) {
+func liftMemResultResultOptionFieldsErrorCode_(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *typesWrapper, ty wacogo.Type, ptr uint32) (ResultResultOptionFieldsErrorCode_, error) {
 	resT_ := ty.(wacogo.TypeResult)
 	_ = resT_
 	var disc_ uint8
@@ -7540,7 +7577,7 @@ func liftMemResultResultOptionFieldsErrorCode_(ctx context.Context, caller, call
 	}
 	if disc_ == 0 {
 		var okVal_ ResultOptionFieldsErrorCode
-		if tmp_, err_ := liftMemResultOptionFieldsErrorCode(ctx, caller, callee, h, resT_.Ok, ptr+8); err_ != nil {
+		if tmp_, err_ := liftMemResultOptionFieldsErrorCode(ctx, caller, callee, h, w_, resT_.Ok, ptr+8); err_ != nil {
 			return nil, err_
 		} else {
 			okVal_ = tmp_
@@ -7678,7 +7715,7 @@ func fromGoMemResult_ErrorCode(ctx context.Context, cc *host.CallContext, h *hos
 	return nil
 }
 
-func liftFlatResult_ErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (Result_ErrorCode, error) {
+func liftFlatResult_ErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *typesWrapper, ty wacogo.Type, stack []uint64) (Result_ErrorCode, error) {
 	resT_ := ty.(wacogo.TypeResult)
 	_ = resT_
 	disc_ := uint32(stack[0])
@@ -7686,7 +7723,7 @@ func liftFlatResult_ErrorCode(ctx context.Context, caller, callee *host.CallCont
 		return Result_ErrorCodeOk{}, nil
 	}
 	var errVal_ ErrorCode
-	if tmp_, err_ := liftFlatErrorCode(ctx, caller, callee, h, resT_.Err, stack[1:8]); err_ != nil {
+	if tmp_, err_ := liftFlatErrorCode(ctx, caller, callee, h, w_, resT_.Err, stack[1:8]); err_ != nil {
 		return nil, err_
 	} else {
 		errVal_ = tmp_
@@ -7694,7 +7731,7 @@ func liftFlatResult_ErrorCode(ctx context.Context, caller, callee *host.CallCont
 	return Result_ErrorCodeErr{Value: errVal_}, nil
 }
 
-func liftMemResult_ErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (Result_ErrorCode, error) {
+func liftMemResult_ErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *typesWrapper, ty wacogo.Type, ptr uint32) (Result_ErrorCode, error) {
 	resT_ := ty.(wacogo.TypeResult)
 	_ = resT_
 	var disc_ uint8
@@ -7707,7 +7744,7 @@ func liftMemResult_ErrorCode(ctx context.Context, caller, callee *host.CallConte
 		return Result_ErrorCodeOk{}, nil
 	}
 	var errVal_ ErrorCode
-	if tmp_, err_ := liftMemErrorCode(ctx, caller, callee, h, resT_.Err, ptr+8); err_ != nil {
+	if tmp_, err_ := liftMemErrorCode(ctx, caller, callee, h, w_, resT_.Err, ptr+8); err_ != nil {
 		return nil, err_
 	} else {
 		errVal_ = tmp_
@@ -7836,7 +7873,7 @@ func fromGoMemResult_HeaderError(ctx context.Context, cc *host.CallContext, h *h
 	return nil
 }
 
-func liftFlatResult_HeaderError(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (Result_HeaderError, error) {
+func liftFlatResult_HeaderError(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *typesWrapper, ty wacogo.Type, stack []uint64) (Result_HeaderError, error) {
 	resT_ := ty.(wacogo.TypeResult)
 	_ = resT_
 	disc_ := uint32(stack[0])
@@ -7844,7 +7881,7 @@ func liftFlatResult_HeaderError(ctx context.Context, caller, callee *host.CallCo
 		return Result_HeaderErrorOk{}, nil
 	}
 	var errVal_ HeaderError
-	if tmp_, err_ := liftFlatHeaderError(ctx, caller, callee, h, resT_.Err, stack[1:2]); err_ != nil {
+	if tmp_, err_ := liftFlatHeaderError(ctx, caller, callee, h, w_, resT_.Err, stack[1:2]); err_ != nil {
 		return nil, err_
 	} else {
 		errVal_ = tmp_
@@ -7852,7 +7889,7 @@ func liftFlatResult_HeaderError(ctx context.Context, caller, callee *host.CallCo
 	return Result_HeaderErrorErr{Value: errVal_}, nil
 }
 
-func liftMemResult_HeaderError(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (Result_HeaderError, error) {
+func liftMemResult_HeaderError(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *typesWrapper, ty wacogo.Type, ptr uint32) (Result_HeaderError, error) {
 	resT_ := ty.(wacogo.TypeResult)
 	_ = resT_
 	var disc_ uint8
@@ -7865,7 +7902,7 @@ func liftMemResult_HeaderError(ctx context.Context, caller, callee *host.CallCon
 		return Result_HeaderErrorOk{}, nil
 	}
 	var errVal_ HeaderError
-	if tmp_, err_ := liftMemHeaderError(ctx, caller, callee, h, resT_.Err, ptr+1); err_ != nil {
+	if tmp_, err_ := liftMemHeaderError(ctx, caller, callee, h, w_, resT_.Err, ptr+1); err_ != nil {
 		return nil, err_
 	} else {
 		errVal_ = tmp_
@@ -7971,7 +8008,7 @@ func fromGoMemResult__(ctx context.Context, cc *host.CallContext, h *host.Compon
 	return nil
 }
 
-func liftFlatResult__(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (Result__, error) {
+func liftFlatResult__(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *typesWrapper, ty wacogo.Type, stack []uint64) (Result__, error) {
 	resT_ := ty.(wacogo.TypeResult)
 	_ = resT_
 	disc_ := uint32(stack[0])
@@ -7981,7 +8018,7 @@ func liftFlatResult__(ctx context.Context, caller, callee *host.CallContext, h *
 	return Result__Err{}, nil
 }
 
-func liftMemResult__(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (Result__, error) {
+func liftMemResult__(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *typesWrapper, ty wacogo.Type, ptr uint32) (Result__, error) {
 	resT_ := ty.(wacogo.TypeResult)
 	_ = resT_
 	var disc_ uint8
@@ -8127,7 +8164,7 @@ func fromGoMemScheme(ctx context.Context, cc *host.CallContext, h *host.Componen
 	return nil
 }
 
-func liftFlatScheme(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (Scheme, error) {
+func liftFlatScheme(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *typesWrapper, ty wacogo.Type, stack []uint64) (Scheme, error) {
 	varT_ := ty.(wacogo.TypeVariant)
 	_ = varT_
 	disc_ := uint32(stack[0])
@@ -8138,7 +8175,7 @@ func liftFlatScheme(ctx context.Context, caller, callee *host.CallContext, h *ho
 		return SchemeHTTPS{}, nil
 	case 2:
 		var val string
-		if tmp_, err_ := liftFlatString(ctx, caller, callee, h, varT_.Cases[2].Payload, stack[1:3]); err_ != nil {
+		if tmp_, err_ := liftFlatString(ctx, caller, callee, h, w_, varT_.Cases[2].Payload, stack[1:3]); err_ != nil {
 			return nil, err_
 		} else {
 			val = tmp_
@@ -8148,7 +8185,7 @@ func liftFlatScheme(ctx context.Context, caller, callee *host.CallContext, h *ho
 	return nil, fmt.Errorf("wacogo/witgen: liftFlatScheme: invalid discriminant %d", disc_)
 }
 
-func liftMemScheme(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (Scheme, error) {
+func liftMemScheme(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *typesWrapper, ty wacogo.Type, ptr uint32) (Scheme, error) {
 	varT_ := ty.(wacogo.TypeVariant)
 	_ = varT_
 	var disc_ uint8
@@ -8164,7 +8201,7 @@ func liftMemScheme(ctx context.Context, caller, callee *host.CallContext, h *hos
 		return SchemeHTTPS{}, nil
 	case 2:
 		var val string
-		if tmp_, err_ := liftMemString(ctx, caller, callee, h, varT_.Cases[2].Payload, ptr+4); err_ != nil {
+		if tmp_, err_ := liftMemString(ctx, caller, callee, h, w_, varT_.Cases[2].Payload, ptr+4); err_ != nil {
 			return nil, err_
 		} else {
 			val = tmp_
@@ -8315,13 +8352,13 @@ func fromGoMemStreamsResultListU8StreamsStreamError(ctx context.Context, cc *hos
 	return nil
 }
 
-func liftFlatStreamsResultListU8StreamsStreamError(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (streams.ResultListU8StreamError, error) {
+func liftFlatStreamsResultListU8StreamsStreamError(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *typesWrapper, ty wacogo.Type, stack []uint64) (streams.ResultListU8StreamError, error) {
 	resT_ := ty.(wacogo.TypeResult)
 	_ = resT_
 	disc_ := uint32(stack[0])
 	if disc_ == 0 {
 		var okVal_ []uint8
-		if tmp_, err_ := liftFlatListU8(ctx, caller, callee, h, resT_.Ok, stack[1:3]); err_ != nil {
+		if tmp_, err_ := liftFlatListU8(ctx, caller, callee, h, w_, resT_.Ok, stack[1:3]); err_ != nil {
 			return nil, err_
 		} else {
 			okVal_ = tmp_
@@ -8329,7 +8366,7 @@ func liftFlatStreamsResultListU8StreamsStreamError(ctx context.Context, caller, 
 		return streams.ResultListU8StreamErrorOk{Value: okVal_}, nil
 	}
 	var errVal_ streams.StreamError
-	if tmp_, err_ := liftFlatStreamsStreamError(ctx, caller, callee, h, resT_.Err, stack[1:3]); err_ != nil {
+	if tmp_, err_ := liftFlatStreamsStreamError(ctx, caller, callee, h, w_, resT_.Err, stack[1:3]); err_ != nil {
 		return nil, err_
 	} else {
 		errVal_ = tmp_
@@ -8337,7 +8374,7 @@ func liftFlatStreamsResultListU8StreamsStreamError(ctx context.Context, caller, 
 	return streams.ResultListU8StreamErrorErr{Value: errVal_}, nil
 }
 
-func liftMemStreamsResultListU8StreamsStreamError(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (streams.ResultListU8StreamError, error) {
+func liftMemStreamsResultListU8StreamsStreamError(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *typesWrapper, ty wacogo.Type, ptr uint32) (streams.ResultListU8StreamError, error) {
 	resT_ := ty.(wacogo.TypeResult)
 	_ = resT_
 	var disc_ uint8
@@ -8348,7 +8385,7 @@ func liftMemStreamsResultListU8StreamsStreamError(ctx context.Context, caller, c
 	}
 	if disc_ == 0 {
 		var okVal_ []uint8
-		if tmp_, err_ := liftMemListU8(ctx, caller, callee, h, resT_.Ok, ptr+4); err_ != nil {
+		if tmp_, err_ := liftMemListU8(ctx, caller, callee, h, w_, resT_.Ok, ptr+4); err_ != nil {
 			return nil, err_
 		} else {
 			okVal_ = tmp_
@@ -8356,7 +8393,7 @@ func liftMemStreamsResultListU8StreamsStreamError(ctx context.Context, caller, c
 		return streams.ResultListU8StreamErrorOk{Value: okVal_}, nil
 	}
 	var errVal_ streams.StreamError
-	if tmp_, err_ := liftMemStreamsStreamError(ctx, caller, callee, h, resT_.Err, ptr+4); err_ != nil {
+	if tmp_, err_ := liftMemStreamsStreamError(ctx, caller, callee, h, w_, resT_.Err, ptr+4); err_ != nil {
 		return nil, err_
 	} else {
 		errVal_ = tmp_
@@ -8492,7 +8529,7 @@ func fromGoMemStreamsResultU64StreamsStreamError(ctx context.Context, cc *host.C
 	return nil
 }
 
-func liftFlatStreamsResultU64StreamsStreamError(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (streams.ResultU64StreamError, error) {
+func liftFlatStreamsResultU64StreamsStreamError(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *typesWrapper, ty wacogo.Type, stack []uint64) (streams.ResultU64StreamError, error) {
 	resT_ := ty.(wacogo.TypeResult)
 	_ = resT_
 	disc_ := uint32(stack[0])
@@ -8502,7 +8539,7 @@ func liftFlatStreamsResultU64StreamsStreamError(ctx context.Context, caller, cal
 		return streams.ResultU64StreamErrorOk{Value: okVal_}, nil
 	}
 	var errVal_ streams.StreamError
-	if tmp_, err_ := liftFlatStreamsStreamError(ctx, caller, callee, h, resT_.Err, stack[1:3]); err_ != nil {
+	if tmp_, err_ := liftFlatStreamsStreamError(ctx, caller, callee, h, w_, resT_.Err, stack[1:3]); err_ != nil {
 		return nil, err_
 	} else {
 		errVal_ = tmp_
@@ -8510,7 +8547,7 @@ func liftFlatStreamsResultU64StreamsStreamError(ctx context.Context, caller, cal
 	return streams.ResultU64StreamErrorErr{Value: errVal_}, nil
 }
 
-func liftMemStreamsResultU64StreamsStreamError(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (streams.ResultU64StreamError, error) {
+func liftMemStreamsResultU64StreamsStreamError(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *typesWrapper, ty wacogo.Type, ptr uint32) (streams.ResultU64StreamError, error) {
 	resT_ := ty.(wacogo.TypeResult)
 	_ = resT_
 	var disc_ uint8
@@ -8529,7 +8566,7 @@ func liftMemStreamsResultU64StreamsStreamError(ctx context.Context, caller, call
 		return streams.ResultU64StreamErrorOk{Value: okVal_}, nil
 	}
 	var errVal_ streams.StreamError
-	if tmp_, err_ := liftMemStreamsStreamError(ctx, caller, callee, h, resT_.Err, ptr+8); err_ != nil {
+	if tmp_, err_ := liftMemStreamsStreamError(ctx, caller, callee, h, w_, resT_.Err, ptr+8); err_ != nil {
 		return nil, err_
 	} else {
 		errVal_ = tmp_
@@ -8655,7 +8692,7 @@ func fromGoMemStreamsResult_StreamsStreamError(ctx context.Context, cc *host.Cal
 	return nil
 }
 
-func liftFlatStreamsResult_StreamsStreamError(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (streams.Result_StreamError, error) {
+func liftFlatStreamsResult_StreamsStreamError(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *typesWrapper, ty wacogo.Type, stack []uint64) (streams.Result_StreamError, error) {
 	resT_ := ty.(wacogo.TypeResult)
 	_ = resT_
 	disc_ := uint32(stack[0])
@@ -8663,7 +8700,7 @@ func liftFlatStreamsResult_StreamsStreamError(ctx context.Context, caller, calle
 		return streams.Result_StreamErrorOk{}, nil
 	}
 	var errVal_ streams.StreamError
-	if tmp_, err_ := liftFlatStreamsStreamError(ctx, caller, callee, h, resT_.Err, stack[1:3]); err_ != nil {
+	if tmp_, err_ := liftFlatStreamsStreamError(ctx, caller, callee, h, w_, resT_.Err, stack[1:3]); err_ != nil {
 		return nil, err_
 	} else {
 		errVal_ = tmp_
@@ -8671,7 +8708,7 @@ func liftFlatStreamsResult_StreamsStreamError(ctx context.Context, caller, calle
 	return streams.Result_StreamErrorErr{Value: errVal_}, nil
 }
 
-func liftMemStreamsResult_StreamsStreamError(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (streams.Result_StreamError, error) {
+func liftMemStreamsResult_StreamsStreamError(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *typesWrapper, ty wacogo.Type, ptr uint32) (streams.Result_StreamError, error) {
 	resT_ := ty.(wacogo.TypeResult)
 	_ = resT_
 	var disc_ uint8
@@ -8684,7 +8721,7 @@ func liftMemStreamsResult_StreamsStreamError(ctx context.Context, caller, callee
 		return streams.Result_StreamErrorOk{}, nil
 	}
 	var errVal_ streams.StreamError
-	if tmp_, err_ := liftMemStreamsStreamError(ctx, caller, callee, h, resT_.Err, ptr+4); err_ != nil {
+	if tmp_, err_ := liftMemStreamsStreamError(ctx, caller, callee, h, w_, resT_.Err, ptr+4); err_ != nil {
 		return nil, err_
 	} else {
 		errVal_ = tmp_
@@ -8843,7 +8880,7 @@ func fromGoMemStreamsStreamError(ctx context.Context, cc *host.CallContext, h *h
 	return nil
 }
 
-func liftFlatStreamsStreamError(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (streams.StreamError, error) {
+func liftFlatStreamsStreamError(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *typesWrapper, ty wacogo.Type, stack []uint64) (streams.StreamError, error) {
 	varT_ := ty.(wacogo.TypeVariant)
 	_ = varT_
 	disc_ := uint32(stack[0])
@@ -8872,7 +8909,7 @@ func liftFlatStreamsStreamError(ctx context.Context, caller, callee *host.CallCo
 	return nil, fmt.Errorf("wacogo/witgen: liftFlatStreamsStreamError: invalid discriminant %d", disc_)
 }
 
-func liftMemStreamsStreamError(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (streams.StreamError, error) {
+func liftMemStreamsStreamError(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *typesWrapper, ty wacogo.Type, ptr uint32) (streams.StreamError, error) {
 	varT_ := ty.(wacogo.TypeVariant)
 	_ = varT_
 	var disc_ uint8
@@ -9046,7 +9083,7 @@ func fromGoMemString(ctx context.Context, cc *host.CallContext, h *host.Componen
 	return nil
 }
 
-func liftFlatString(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (string, error) {
+func liftFlatString(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *typesWrapper, ty wacogo.Type, stack []uint64) (string, error) {
 	ptr_ := uint32(stack[0])
 	ln_ := uint32(stack[1])
 	bs_, ok_ := callee.Memory().Read(ptr_, ln_)
@@ -9056,7 +9093,7 @@ func liftFlatString(ctx context.Context, caller, callee *host.CallContext, h *ho
 	return string(bs_), nil
 }
 
-func liftMemString(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (string, error) {
+func liftMemString(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *typesWrapper, ty wacogo.Type, ptr uint32) (string, error) {
 	var sptr_ uint32
 	if tmp_, ok_ := callee.Memory().ReadUint32Le(ptr); !ok_ {
 		return "", fmt.Errorf("wacogo/witgen: liftMemString: string ptr: bad memory read")
@@ -9162,16 +9199,16 @@ func fromGoMemTLSAlertReceivedPayload(ctx context.Context, cc *host.CallContext,
 	return nil
 }
 
-func liftFlatTLSAlertReceivedPayload(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (TLSAlertReceivedPayload, error) {
+func liftFlatTLSAlertReceivedPayload(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *typesWrapper, ty wacogo.Type, stack []uint64) (TLSAlertReceivedPayload, error) {
 	var v_ TLSAlertReceivedPayload
 	recT_ := ty.(wacogo.TypeRecord)
 	_ = recT_
-	if tmp_, err_ := liftFlatOptionU8(ctx, caller, callee, h, recT_.Fields[0].Type, stack[0:2]); err_ != nil {
+	if tmp_, err_ := liftFlatOptionU8(ctx, caller, callee, h, w_, recT_.Fields[0].Type, stack[0:2]); err_ != nil {
 		return TLSAlertReceivedPayload{}, err_
 	} else {
 		v_.AlertID = tmp_
 	}
-	if tmp_, err_ := liftFlatOptionString(ctx, caller, callee, h, recT_.Fields[1].Type, stack[2:5]); err_ != nil {
+	if tmp_, err_ := liftFlatOptionString(ctx, caller, callee, h, w_, recT_.Fields[1].Type, stack[2:5]); err_ != nil {
 		return TLSAlertReceivedPayload{}, err_
 	} else {
 		v_.AlertMessage = tmp_
@@ -9179,16 +9216,16 @@ func liftFlatTLSAlertReceivedPayload(ctx context.Context, caller, callee *host.C
 	return v_, nil
 }
 
-func liftMemTLSAlertReceivedPayload(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (TLSAlertReceivedPayload, error) {
+func liftMemTLSAlertReceivedPayload(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *typesWrapper, ty wacogo.Type, ptr uint32) (TLSAlertReceivedPayload, error) {
 	var v_ TLSAlertReceivedPayload
 	recT_ := ty.(wacogo.TypeRecord)
 	_ = recT_
-	if tmp_, err_ := liftMemOptionU8(ctx, caller, callee, h, recT_.Fields[0].Type, ptr); err_ != nil {
+	if tmp_, err_ := liftMemOptionU8(ctx, caller, callee, h, w_, recT_.Fields[0].Type, ptr); err_ != nil {
 		return TLSAlertReceivedPayload{}, err_
 	} else {
 		v_.AlertID = tmp_
 	}
-	if tmp_, err_ := liftMemOptionString(ctx, caller, callee, h, recT_.Fields[1].Type, ptr+4); err_ != nil {
+	if tmp_, err_ := liftMemOptionString(ctx, caller, callee, h, w_, recT_.Fields[1].Type, ptr+4); err_ != nil {
 		return TLSAlertReceivedPayload{}, err_
 	} else {
 		v_.AlertMessage = tmp_
@@ -9274,16 +9311,16 @@ func fromGoMemTupleStringListU8(ctx context.Context, cc *host.CallContext, h *ho
 	return nil
 }
 
-func liftFlatTupleStringListU8(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (TupleStringListU8, error) {
+func liftFlatTupleStringListU8(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *typesWrapper, ty wacogo.Type, stack []uint64) (TupleStringListU8, error) {
 	var v_ TupleStringListU8
 	tupT_ := ty.(wacogo.TypeTuple)
 	_ = tupT_
-	if tmp_, err_ := liftFlatString(ctx, caller, callee, h, tupT_.Types[0], stack[0:2]); err_ != nil {
+	if tmp_, err_ := liftFlatString(ctx, caller, callee, h, w_, tupT_.Types[0], stack[0:2]); err_ != nil {
 		return TupleStringListU8{}, err_
 	} else {
 		v_.F0 = tmp_
 	}
-	if tmp_, err_ := liftFlatListU8(ctx, caller, callee, h, tupT_.Types[1], stack[2:4]); err_ != nil {
+	if tmp_, err_ := liftFlatListU8(ctx, caller, callee, h, w_, tupT_.Types[1], stack[2:4]); err_ != nil {
 		return TupleStringListU8{}, err_
 	} else {
 		v_.F1 = tmp_
@@ -9291,16 +9328,16 @@ func liftFlatTupleStringListU8(ctx context.Context, caller, callee *host.CallCon
 	return v_, nil
 }
 
-func liftMemTupleStringListU8(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (TupleStringListU8, error) {
+func liftMemTupleStringListU8(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *typesWrapper, ty wacogo.Type, ptr uint32) (TupleStringListU8, error) {
 	var v_ TupleStringListU8
 	tupT_ := ty.(wacogo.TypeTuple)
 	_ = tupT_
-	if tmp_, err_ := liftMemString(ctx, caller, callee, h, tupT_.Types[0], ptr); err_ != nil {
+	if tmp_, err_ := liftMemString(ctx, caller, callee, h, w_, tupT_.Types[0], ptr); err_ != nil {
 		return TupleStringListU8{}, err_
 	} else {
 		v_.F0 = tmp_
 	}
-	if tmp_, err_ := liftMemListU8(ctx, caller, callee, h, tupT_.Types[1], ptr+8); err_ != nil {
+	if tmp_, err_ := liftMemListU8(ctx, caller, callee, h, w_, tupT_.Types[1], ptr+8); err_ != nil {
 		return TupleStringListU8{}, err_
 	} else {
 		v_.F1 = tmp_
@@ -10792,7 +10829,7 @@ func (f *wioerrorErrorResourceForwarder) ToDebugString(ctx context.Context) (str
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemString(ctx, caller, callee, f.caller, f.fns.fnToDebugString.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemString(ctx, caller, callee, f.caller, nil, f.fns.fnToDebugString.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_
@@ -10891,7 +10928,7 @@ func (f *streamsInputStreamForwarder) BlockingRead(ctx context.Context, len uint
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemStreamsResultListU8StreamsStreamError(ctx, caller, callee, f.caller, f.fns.fnBlockingRead.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemStreamsResultListU8StreamsStreamError(ctx, caller, callee, f.caller, nil, f.fns.fnBlockingRead.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_
@@ -10917,7 +10954,7 @@ func (f *streamsInputStreamForwarder) BlockingSkip(ctx context.Context, len uint
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemStreamsResultU64StreamsStreamError(ctx, caller, callee, f.caller, f.fns.fnBlockingSkip.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemStreamsResultU64StreamsStreamError(ctx, caller, callee, f.caller, nil, f.fns.fnBlockingSkip.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_
@@ -10943,7 +10980,7 @@ func (f *streamsInputStreamForwarder) Read(ctx context.Context, len uint64) (str
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemStreamsResultListU8StreamsStreamError(ctx, caller, callee, f.caller, f.fns.fnRead.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemStreamsResultListU8StreamsStreamError(ctx, caller, callee, f.caller, nil, f.fns.fnRead.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_
@@ -10969,7 +11006,7 @@ func (f *streamsInputStreamForwarder) Skip(ctx context.Context, len uint64) (str
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemStreamsResultU64StreamsStreamError(ctx, caller, callee, f.caller, f.fns.fnSkip.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemStreamsResultU64StreamsStreamError(ctx, caller, callee, f.caller, nil, f.fns.fnSkip.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_
@@ -11051,7 +11088,7 @@ func (f *streamsOutputStreamForwarder) BlockingFlush(ctx context.Context) (strea
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemStreamsResult_StreamsStreamError(ctx, caller, callee, f.caller, f.fns.fnBlockingFlush.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemStreamsResult_StreamsStreamError(ctx, caller, callee, f.caller, nil, f.fns.fnBlockingFlush.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_
@@ -11094,7 +11131,7 @@ func (f *streamsOutputStreamForwarder) BlockingSplice(ctx context.Context, src *
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemStreamsResultU64StreamsStreamError(ctx, caller, callee, f.caller, f.fns.fnBlockingSplice.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemStreamsResultU64StreamsStreamError(ctx, caller, callee, f.caller, nil, f.fns.fnBlockingSplice.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_
@@ -11122,7 +11159,7 @@ func (f *streamsOutputStreamForwarder) BlockingWriteAndFlush(ctx context.Context
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemStreamsResult_StreamsStreamError(ctx, caller, callee, f.caller, f.fns.fnBlockingWriteAndFlush.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemStreamsResult_StreamsStreamError(ctx, caller, callee, f.caller, nil, f.fns.fnBlockingWriteAndFlush.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_
@@ -11148,7 +11185,7 @@ func (f *streamsOutputStreamForwarder) BlockingWriteZeroesAndFlush(ctx context.C
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemStreamsResult_StreamsStreamError(ctx, caller, callee, f.caller, f.fns.fnBlockingWriteZeroesAndFlush.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemStreamsResult_StreamsStreamError(ctx, caller, callee, f.caller, nil, f.fns.fnBlockingWriteZeroesAndFlush.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_
@@ -11172,7 +11209,7 @@ func (f *streamsOutputStreamForwarder) CheckWrite(ctx context.Context) (streams.
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemStreamsResultU64StreamsStreamError(ctx, caller, callee, f.caller, f.fns.fnCheckWrite.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemStreamsResultU64StreamsStreamError(ctx, caller, callee, f.caller, nil, f.fns.fnCheckWrite.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_
@@ -11196,7 +11233,7 @@ func (f *streamsOutputStreamForwarder) Flush(ctx context.Context) (streams.Resul
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemStreamsResult_StreamsStreamError(ctx, caller, callee, f.caller, f.fns.fnFlush.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemStreamsResult_StreamsStreamError(ctx, caller, callee, f.caller, nil, f.fns.fnFlush.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_
@@ -11239,7 +11276,7 @@ func (f *streamsOutputStreamForwarder) Splice(ctx context.Context, src *streams.
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemStreamsResultU64StreamsStreamError(ctx, caller, callee, f.caller, f.fns.fnSplice.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemStreamsResultU64StreamsStreamError(ctx, caller, callee, f.caller, nil, f.fns.fnSplice.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_
@@ -11301,7 +11338,7 @@ func (f *streamsOutputStreamForwarder) Write(ctx context.Context, contents []uin
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemStreamsResult_StreamsStreamError(ctx, caller, callee, f.caller, f.fns.fnWrite.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemStreamsResult_StreamsStreamError(ctx, caller, callee, f.caller, nil, f.fns.fnWrite.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_
@@ -11327,7 +11364,7 @@ func (f *streamsOutputStreamForwarder) WriteZeroes(ctx context.Context, len uint
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemStreamsResult_StreamsStreamError(ctx, caller, callee, f.caller, f.fns.fnWriteZeroes.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemStreamsResult_StreamsStreamError(ctx, caller, callee, f.caller, nil, f.fns.fnWriteZeroes.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_

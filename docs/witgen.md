@@ -206,8 +206,8 @@ pointers and cross-issue handles between the two tables themselves
 callerH`).
 
 ```go
-func liftFlat<X> (ctx, caller, callee, h, stack []uint64) (X, error)
-func liftMem<X>  (ctx, caller, callee, h, ptr uint32)    (X, error)
+func liftFlat<X> (ctx, caller, callee, h, w_, stack []uint64) (X, error)
+func liftMem<X>  (ctx, caller, callee, h, w_, ptr uint32)    (X, error)
 func lowerFlat<X>(ctx, caller, callee, h, stack []uint64, v X) error
 func lowerMem<X> (ctx, caller, callee, h, ptr uint32,    v X) error
 ```
@@ -278,9 +278,13 @@ finish before post-return. Regenerate bindings when upgrading from void
 callbacks; returning an error through a captured variable cannot stop the
 remaining call phases.
 
-Resource methods on a remote (`*<R>Remote`) follow the same shape: the
-remote dispatcher carries a `*counterFns` value with one
-`*host.ExportedFunc` per method.
+Resource methods on a remote (`*<r>Remote`) follow the same shape. The
+lift helpers take the `*<iface>Wrapper` as `w_`. When a returned own
+names a resource with no Go impl in the defining instance's extern
+table, the helper sets the handle's impl to a `*<r>Remote`. The
+`*<r>Remote` keeps that wrapper and the handle. Every `*<r>Remote`
+method calls the wrapper's `[method]` export and lends the handle as
+`self`.
 
 ## Resource handle types
 
@@ -447,7 +451,8 @@ a struct-field deref, not a per-call map lookup.
 
 Same-package lift uses `(*core.ComponentInstance).LookupExtern`
 to recover the local Go impl when a returned own refers to a
-locally-defined resource. Cross-package lift constructs a
+locally-defined resource, and falls back to a `*<r>Remote` when the
+defining instance is wasm. Cross-package lift constructs a
 `<otherPkg>.New<R>HandleFrom(rh, fwd)` carrying the importer's
 forwarder dispatcher, so subsequent method calls round-trip back
 through this package's ExportedFunc slots.

@@ -19,6 +19,8 @@ type countersCounter struct {
 
 func (c *countersCounter) Get(ctx context.Context) (uint32, error) { return c.v, nil }
 
+func (c *countersCounter) Add(ctx context.Context, n uint32) (uint32, error) { return c.v + n, nil }
+
 func (c *countersCounter) Drop(_ context.Context) error {
 	*c.drops++
 	return nil

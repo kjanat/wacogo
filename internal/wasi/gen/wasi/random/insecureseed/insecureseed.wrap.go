@@ -38,7 +38,7 @@ func (w *insecureSeedWrapper) InsecureSeed(ctx context.Context) (TupleU64U64, er
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemTupleU64U64(ctx, caller, callee, w.callerInst, w.fnInsecureSeed.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemTupleU64U64(ctx, caller, callee, w.callerInst, w, w.fnInsecureSeed.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_

@@ -39,7 +39,7 @@ func (w *environmentWrapper) GetArguments(ctx context.Context) ([]string, error)
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemListString(ctx, caller, callee, w.callerInst, w.fnGetArguments.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemListString(ctx, caller, callee, w.callerInst, w, w.fnGetArguments.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_
@@ -62,7 +62,7 @@ func (w *environmentWrapper) GetEnvironment(ctx context.Context) ([]TupleStringS
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemListTupleStringString(ctx, caller, callee, w.callerInst, w.fnGetEnvironment.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemListTupleStringString(ctx, caller, callee, w.callerInst, w, w.fnGetEnvironment.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_
@@ -85,7 +85,7 @@ func (w *environmentWrapper) InitialCwd(ctx context.Context) (OptionString, erro
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemOptionString(ctx, caller, callee, w.callerInst, w.fnInitialCwd.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemOptionString(ctx, caller, callee, w.callerInst, w, w.fnInitialCwd.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_

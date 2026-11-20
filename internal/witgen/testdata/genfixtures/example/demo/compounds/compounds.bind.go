@@ -223,7 +223,7 @@ func fromGoMemListCounter(ctx context.Context, cc *host.CallContext, h *host.Com
 	return nil
 }
 
-func liftFlatListCounter(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) ([]*CounterHandle, error) {
+func liftFlatListCounter(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *compoundsWrapper, ty wacogo.Type, stack []uint64) ([]*CounterHandle, error) {
 	lstT_ := ty.(wacogo.TypeList)
 	_ = lstT_
 	ptr_ := uint32(stack[0])
@@ -253,12 +253,15 @@ func liftFlatListCounter(ctx context.Context, caller, callee *host.CallContext, 
 				}
 			}
 			out_[i_] = NewCounterHandleFrom(dstH_, impl_)
+			if impl_ == nil {
+				out_[i_].Counter = &counterRemote{w: w_, h: out_[i_]}
+			}
 		}
 	}
 	return out_, nil
 }
 
-func liftMemListCounter(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) ([]*CounterHandle, error) {
+func liftMemListCounter(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *compoundsWrapper, ty wacogo.Type, ptr uint32) ([]*CounterHandle, error) {
 	lstT_ := ty.(wacogo.TypeList)
 	_ = lstT_
 	var lptr_ uint32
@@ -298,6 +301,9 @@ func liftMemListCounter(ctx context.Context, caller, callee *host.CallContext, h
 				}
 			}
 			out_[i_] = NewCounterHandleFrom(dstH_, impl_)
+			if impl_ == nil {
+				out_[i_].Counter = &counterRemote{w: w_, h: out_[i_]}
+			}
 		}
 	}
 	return out_, nil
@@ -477,7 +483,7 @@ func fromGoMemListU32(ctx context.Context, cc *host.CallContext, h *host.Compone
 	return nil
 }
 
-func liftFlatListU32(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) ([]uint32, error) {
+func liftFlatListU32(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *compoundsWrapper, ty wacogo.Type, stack []uint64) ([]uint32, error) {
 	lstT_ := ty.(wacogo.TypeList)
 	_ = lstT_
 	ptr_ := uint32(stack[0])
@@ -498,7 +504,7 @@ func liftFlatListU32(ctx context.Context, caller, callee *host.CallContext, h *h
 	return out_, nil
 }
 
-func liftMemListU32(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) ([]uint32, error) {
+func liftMemListU32(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *compoundsWrapper, ty wacogo.Type, ptr uint32) ([]uint32, error) {
 	lstT_ := ty.(wacogo.TypeList)
 	_ = lstT_
 	var lptr_ uint32
@@ -658,7 +664,7 @@ func fromGoMemRecordWithCounter(ctx context.Context, cc *host.CallContext, h *ho
 	return nil
 }
 
-func liftFlatRecordWithCounter(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (RecordWithCounter, error) {
+func liftFlatRecordWithCounter(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *compoundsWrapper, ty wacogo.Type, stack []uint64) (RecordWithCounter, error) {
 	var v_ RecordWithCounter
 	recT_ := ty.(wacogo.TypeRecord)
 	_ = recT_
@@ -680,11 +686,14 @@ func liftFlatRecordWithCounter(ctx context.Context, caller, callee *host.CallCon
 			}
 		}
 		v_.C = NewCounterHandleFrom(dstH_, impl_)
+		if impl_ == nil {
+			v_.C.Counter = &counterRemote{w: w_, h: v_.C}
+		}
 	}
 	return v_, nil
 }
 
-func liftMemRecordWithCounter(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (RecordWithCounter, error) {
+func liftMemRecordWithCounter(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *compoundsWrapper, ty wacogo.Type, ptr uint32) (RecordWithCounter, error) {
 	var v_ RecordWithCounter
 	recT_ := ty.(wacogo.TypeRecord)
 	_ = recT_
@@ -711,6 +720,9 @@ func liftMemRecordWithCounter(ctx context.Context, caller, callee *host.CallCont
 			}
 		}
 		v_.C = NewCounterHandleFrom(dstH_, impl_)
+		if impl_ == nil {
+			v_.C.Counter = &counterRemote{w: w_, h: v_.C}
+		}
 	}
 	return v_, nil
 }

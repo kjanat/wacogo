@@ -8,8 +8,12 @@
 package streams
 
 import (
+	"context"
+	"fmt"
+
 	"github.com/kjanat/wacogo"
 	"github.com/kjanat/wacogo/host"
+	poll "github.com/kjanat/wacogo/internal/wasi/gen/wasi/io/poll"
 )
 
 // streamsWrapper is the concrete type returned by WrapInstance
@@ -55,4 +59,677 @@ func WrapInstance(caller *host.ComponentInstance, callee *wacogo.ComponentInstan
 	w_.fnOutputStreamWrite = host.WrapExportedFunc(callee.ExportedFunc("[method]output-stream.write"))
 	w_.fnOutputStreamWriteZeroes = host.WrapExportedFunc(callee.ExportedFunc("[method]output-stream.write-zeroes"))
 	return w_
+}
+
+type inputStreamRemote struct {
+	w *streamsWrapper
+	h *InputStreamHandle
+}
+
+func (d_ *inputStreamRemote) BlockingRead(ctx context.Context, len uint64) (ResultListU8StreamError, error) {
+	var resVal_ ResultListU8StreamError
+	arg0_ := len
+	{
+		callErr_ := d_.w.fnInputStreamBlockingRead.CallRaw(ctx, d_.w.callerInst,
+			func(caller, callee *host.CallContext, stack []uint64) error {
+				{
+					tr_ := d_.w.fnInputStreamBlockingRead.ParamType(0).(wacogo.TypeBorrow).ResourceType
+					callerH_, err_ := d_.h.bind(caller, d_.w.callerInst)
+					if err_ != nil {
+						return err_
+					}
+					srcH_, err_ := caller.LookupBorrowable(tr_, callerH_)
+					if err_ != nil {
+						return err_
+					}
+					dstH_, err_ := srcH_.LendTo(callee.TransferTarget(), callee.Task())
+					if err_ != nil {
+						return err_
+					}
+					stack[0] = uint64(dstH_.HandleID())
+				}
+				stack[1] = arg0_
+				return nil
+			},
+			func(caller, callee *host.CallContext, stack []uint64) error {
+				if v_, err_ := liftMemResultListU8StreamError(ctx, caller, callee, d_.w.callerInst, d_.w, d_.w.fnInputStreamBlockingRead.ResultType(0), uint32(stack[0])); err_ != nil {
+					return err_
+				} else {
+					resVal_ = v_
+				}
+				return nil
+			},
+		)
+		if callErr_ != nil {
+			return nil, fmt.Errorf("wacogo/witgen: CallRaw failed: %w", callErr_)
+		}
+	}
+	return resVal_, nil
+}
+
+func (d_ *inputStreamRemote) BlockingSkip(ctx context.Context, len uint64) (ResultU64StreamError, error) {
+	var resVal_ ResultU64StreamError
+	arg0_ := len
+	{
+		callErr_ := d_.w.fnInputStreamBlockingSkip.CallRaw(ctx, d_.w.callerInst,
+			func(caller, callee *host.CallContext, stack []uint64) error {
+				{
+					tr_ := d_.w.fnInputStreamBlockingSkip.ParamType(0).(wacogo.TypeBorrow).ResourceType
+					callerH_, err_ := d_.h.bind(caller, d_.w.callerInst)
+					if err_ != nil {
+						return err_
+					}
+					srcH_, err_ := caller.LookupBorrowable(tr_, callerH_)
+					if err_ != nil {
+						return err_
+					}
+					dstH_, err_ := srcH_.LendTo(callee.TransferTarget(), callee.Task())
+					if err_ != nil {
+						return err_
+					}
+					stack[0] = uint64(dstH_.HandleID())
+				}
+				stack[1] = arg0_
+				return nil
+			},
+			func(caller, callee *host.CallContext, stack []uint64) error {
+				if v_, err_ := liftMemResultU64StreamError(ctx, caller, callee, d_.w.callerInst, d_.w, d_.w.fnInputStreamBlockingSkip.ResultType(0), uint32(stack[0])); err_ != nil {
+					return err_
+				} else {
+					resVal_ = v_
+				}
+				return nil
+			},
+		)
+		if callErr_ != nil {
+			return nil, fmt.Errorf("wacogo/witgen: CallRaw failed: %w", callErr_)
+		}
+	}
+	return resVal_, nil
+}
+
+func (d_ *inputStreamRemote) Read(ctx context.Context, len uint64) (ResultListU8StreamError, error) {
+	var resVal_ ResultListU8StreamError
+	arg0_ := len
+	{
+		callErr_ := d_.w.fnInputStreamRead.CallRaw(ctx, d_.w.callerInst,
+			func(caller, callee *host.CallContext, stack []uint64) error {
+				{
+					tr_ := d_.w.fnInputStreamRead.ParamType(0).(wacogo.TypeBorrow).ResourceType
+					callerH_, err_ := d_.h.bind(caller, d_.w.callerInst)
+					if err_ != nil {
+						return err_
+					}
+					srcH_, err_ := caller.LookupBorrowable(tr_, callerH_)
+					if err_ != nil {
+						return err_
+					}
+					dstH_, err_ := srcH_.LendTo(callee.TransferTarget(), callee.Task())
+					if err_ != nil {
+						return err_
+					}
+					stack[0] = uint64(dstH_.HandleID())
+				}
+				stack[1] = arg0_
+				return nil
+			},
+			func(caller, callee *host.CallContext, stack []uint64) error {
+				if v_, err_ := liftMemResultListU8StreamError(ctx, caller, callee, d_.w.callerInst, d_.w, d_.w.fnInputStreamRead.ResultType(0), uint32(stack[0])); err_ != nil {
+					return err_
+				} else {
+					resVal_ = v_
+				}
+				return nil
+			},
+		)
+		if callErr_ != nil {
+			return nil, fmt.Errorf("wacogo/witgen: CallRaw failed: %w", callErr_)
+		}
+	}
+	return resVal_, nil
+}
+
+func (d_ *inputStreamRemote) Skip(ctx context.Context, len uint64) (ResultU64StreamError, error) {
+	var resVal_ ResultU64StreamError
+	arg0_ := len
+	{
+		callErr_ := d_.w.fnInputStreamSkip.CallRaw(ctx, d_.w.callerInst,
+			func(caller, callee *host.CallContext, stack []uint64) error {
+				{
+					tr_ := d_.w.fnInputStreamSkip.ParamType(0).(wacogo.TypeBorrow).ResourceType
+					callerH_, err_ := d_.h.bind(caller, d_.w.callerInst)
+					if err_ != nil {
+						return err_
+					}
+					srcH_, err_ := caller.LookupBorrowable(tr_, callerH_)
+					if err_ != nil {
+						return err_
+					}
+					dstH_, err_ := srcH_.LendTo(callee.TransferTarget(), callee.Task())
+					if err_ != nil {
+						return err_
+					}
+					stack[0] = uint64(dstH_.HandleID())
+				}
+				stack[1] = arg0_
+				return nil
+			},
+			func(caller, callee *host.CallContext, stack []uint64) error {
+				if v_, err_ := liftMemResultU64StreamError(ctx, caller, callee, d_.w.callerInst, d_.w, d_.w.fnInputStreamSkip.ResultType(0), uint32(stack[0])); err_ != nil {
+					return err_
+				} else {
+					resVal_ = v_
+				}
+				return nil
+			},
+		)
+		if callErr_ != nil {
+			return nil, fmt.Errorf("wacogo/witgen: CallRaw failed: %w", callErr_)
+		}
+	}
+	return resVal_, nil
+}
+
+func (d_ *inputStreamRemote) Subscribe(ctx context.Context) (*poll.PollableHandle, error) {
+	var resVal_ *poll.PollableHandle
+	{
+		callErr_ := d_.w.fnInputStreamSubscribe.CallRaw(ctx, d_.w.callerInst,
+			func(caller, callee *host.CallContext, stack []uint64) error {
+				{
+					tr_ := d_.w.fnInputStreamSubscribe.ParamType(0).(wacogo.TypeBorrow).ResourceType
+					callerH_, err_ := d_.h.bind(caller, d_.w.callerInst)
+					if err_ != nil {
+						return err_
+					}
+					srcH_, err_ := caller.LookupBorrowable(tr_, callerH_)
+					if err_ != nil {
+						return err_
+					}
+					dstH_, err_ := srcH_.LendTo(callee.TransferTarget(), callee.Task())
+					if err_ != nil {
+						return err_
+					}
+					stack[0] = uint64(dstH_.HandleID())
+				}
+				return nil
+			},
+			func(caller, callee *host.CallContext, stack []uint64) error {
+				{
+					tr_ := d_.w.fnInputStreamSubscribe.ResultType(0).(wacogo.TypeOwn).ResourceType
+					calleeH_ := uint32(stack[0])
+					srcH_, srcErr_ := callee.LookupOwn(tr_, calleeH_)
+					if srcErr_ != nil {
+						return srcErr_
+					}
+					dstH_, dstErr_ := srcH_.TransferOwn(caller.TransferTarget())
+					if dstErr_ != nil {
+						return dstErr_
+					}
+					state_ := d_.w.callerInst.UserState().(*instanceState)
+					fwd_ := &pollPollableForwarder{caller: d_.w.callerInst, rh: dstH_, fns: state_.pollPollableFwdFns}
+					resVal_ = poll.NewPollableHandleFrom(dstH_, fwd_)
+				}
+				return nil
+			},
+		)
+		if callErr_ != nil {
+			return nil, fmt.Errorf("wacogo/witgen: CallRaw failed: %w", callErr_)
+		}
+	}
+	return resVal_, nil
+}
+
+type outputStreamRemote struct {
+	w *streamsWrapper
+	h *OutputStreamHandle
+}
+
+func (d_ *outputStreamRemote) BlockingFlush(ctx context.Context) (Result_StreamError, error) {
+	var resVal_ Result_StreamError
+	{
+		callErr_ := d_.w.fnOutputStreamBlockingFlush.CallRaw(ctx, d_.w.callerInst,
+			func(caller, callee *host.CallContext, stack []uint64) error {
+				{
+					tr_ := d_.w.fnOutputStreamBlockingFlush.ParamType(0).(wacogo.TypeBorrow).ResourceType
+					callerH_, err_ := d_.h.bind(caller, d_.w.callerInst)
+					if err_ != nil {
+						return err_
+					}
+					srcH_, err_ := caller.LookupBorrowable(tr_, callerH_)
+					if err_ != nil {
+						return err_
+					}
+					dstH_, err_ := srcH_.LendTo(callee.TransferTarget(), callee.Task())
+					if err_ != nil {
+						return err_
+					}
+					stack[0] = uint64(dstH_.HandleID())
+				}
+				return nil
+			},
+			func(caller, callee *host.CallContext, stack []uint64) error {
+				if v_, err_ := liftMemResult_StreamError(ctx, caller, callee, d_.w.callerInst, d_.w, d_.w.fnOutputStreamBlockingFlush.ResultType(0), uint32(stack[0])); err_ != nil {
+					return err_
+				} else {
+					resVal_ = v_
+				}
+				return nil
+			},
+		)
+		if callErr_ != nil {
+			return nil, fmt.Errorf("wacogo/witgen: CallRaw failed: %w", callErr_)
+		}
+	}
+	return resVal_, nil
+}
+
+func (d_ *outputStreamRemote) BlockingSplice(ctx context.Context, src *InputStreamHandle, len uint64) (ResultU64StreamError, error) {
+	var resVal_ ResultU64StreamError
+	arg0_ := src
+	arg1_ := len
+	{
+		callErr_ := d_.w.fnOutputStreamBlockingSplice.CallRaw(ctx, d_.w.callerInst,
+			func(caller, callee *host.CallContext, stack []uint64) error {
+				{
+					tr_ := d_.w.fnOutputStreamBlockingSplice.ParamType(0).(wacogo.TypeBorrow).ResourceType
+					callerH_, err_ := d_.h.bind(caller, d_.w.callerInst)
+					if err_ != nil {
+						return err_
+					}
+					srcH_, err_ := caller.LookupBorrowable(tr_, callerH_)
+					if err_ != nil {
+						return err_
+					}
+					dstH_, err_ := srcH_.LendTo(callee.TransferTarget(), callee.Task())
+					if err_ != nil {
+						return err_
+					}
+					stack[0] = uint64(dstH_.HandleID())
+				}
+				{
+					tr_ := d_.w.fnOutputStreamBlockingSplice.ParamType(1).(wacogo.TypeBorrow).ResourceType
+					callerH_, err_ := arg0_.bind(caller, d_.w.callerInst)
+					if err_ != nil {
+						return err_
+					}
+					srcH_, err_ := caller.LookupBorrowable(tr_, callerH_)
+					if err_ != nil {
+						return err_
+					}
+					dstH_, err_ := srcH_.LendTo(callee.TransferTarget(), callee.Task())
+					if err_ != nil {
+						return err_
+					}
+					stack[1] = uint64(dstH_.HandleID())
+				}
+				stack[2] = arg1_
+				return nil
+			},
+			func(caller, callee *host.CallContext, stack []uint64) error {
+				if v_, err_ := liftMemResultU64StreamError(ctx, caller, callee, d_.w.callerInst, d_.w, d_.w.fnOutputStreamBlockingSplice.ResultType(0), uint32(stack[0])); err_ != nil {
+					return err_
+				} else {
+					resVal_ = v_
+				}
+				return nil
+			},
+		)
+		if callErr_ != nil {
+			return nil, fmt.Errorf("wacogo/witgen: CallRaw failed: %w", callErr_)
+		}
+	}
+	return resVal_, nil
+}
+
+func (d_ *outputStreamRemote) BlockingWriteAndFlush(ctx context.Context, contents []uint8) (Result_StreamError, error) {
+	var resVal_ Result_StreamError
+	arg0_ := contents
+	{
+		callErr_ := d_.w.fnOutputStreamBlockingWriteAndFlush.CallRaw(ctx, d_.w.callerInst,
+			func(caller, callee *host.CallContext, stack []uint64) error {
+				{
+					tr_ := d_.w.fnOutputStreamBlockingWriteAndFlush.ParamType(0).(wacogo.TypeBorrow).ResourceType
+					callerH_, err_ := d_.h.bind(caller, d_.w.callerInst)
+					if err_ != nil {
+						return err_
+					}
+					srcH_, err_ := caller.LookupBorrowable(tr_, callerH_)
+					if err_ != nil {
+						return err_
+					}
+					dstH_, err_ := srcH_.LendTo(callee.TransferTarget(), callee.Task())
+					if err_ != nil {
+						return err_
+					}
+					stack[0] = uint64(dstH_.HandleID())
+				}
+				if err_ := lowerFlatListU8(ctx, caller, callee, d_.w.callerInst, d_.w.fnOutputStreamBlockingWriteAndFlush.ParamType(1), stack[1:3], arg0_); err_ != nil {
+					return err_
+				}
+				return nil
+			},
+			func(caller, callee *host.CallContext, stack []uint64) error {
+				if v_, err_ := liftMemResult_StreamError(ctx, caller, callee, d_.w.callerInst, d_.w, d_.w.fnOutputStreamBlockingWriteAndFlush.ResultType(0), uint32(stack[0])); err_ != nil {
+					return err_
+				} else {
+					resVal_ = v_
+				}
+				return nil
+			},
+		)
+		if callErr_ != nil {
+			return nil, fmt.Errorf("wacogo/witgen: CallRaw failed: %w", callErr_)
+		}
+	}
+	return resVal_, nil
+}
+
+func (d_ *outputStreamRemote) BlockingWriteZeroesAndFlush(ctx context.Context, len uint64) (Result_StreamError, error) {
+	var resVal_ Result_StreamError
+	arg0_ := len
+	{
+		callErr_ := d_.w.fnOutputStreamBlockingWriteZeroesAndFlush.CallRaw(ctx, d_.w.callerInst,
+			func(caller, callee *host.CallContext, stack []uint64) error {
+				{
+					tr_ := d_.w.fnOutputStreamBlockingWriteZeroesAndFlush.ParamType(0).(wacogo.TypeBorrow).ResourceType
+					callerH_, err_ := d_.h.bind(caller, d_.w.callerInst)
+					if err_ != nil {
+						return err_
+					}
+					srcH_, err_ := caller.LookupBorrowable(tr_, callerH_)
+					if err_ != nil {
+						return err_
+					}
+					dstH_, err_ := srcH_.LendTo(callee.TransferTarget(), callee.Task())
+					if err_ != nil {
+						return err_
+					}
+					stack[0] = uint64(dstH_.HandleID())
+				}
+				stack[1] = arg0_
+				return nil
+			},
+			func(caller, callee *host.CallContext, stack []uint64) error {
+				if v_, err_ := liftMemResult_StreamError(ctx, caller, callee, d_.w.callerInst, d_.w, d_.w.fnOutputStreamBlockingWriteZeroesAndFlush.ResultType(0), uint32(stack[0])); err_ != nil {
+					return err_
+				} else {
+					resVal_ = v_
+				}
+				return nil
+			},
+		)
+		if callErr_ != nil {
+			return nil, fmt.Errorf("wacogo/witgen: CallRaw failed: %w", callErr_)
+		}
+	}
+	return resVal_, nil
+}
+
+func (d_ *outputStreamRemote) CheckWrite(ctx context.Context) (ResultU64StreamError, error) {
+	var resVal_ ResultU64StreamError
+	{
+		callErr_ := d_.w.fnOutputStreamCheckWrite.CallRaw(ctx, d_.w.callerInst,
+			func(caller, callee *host.CallContext, stack []uint64) error {
+				{
+					tr_ := d_.w.fnOutputStreamCheckWrite.ParamType(0).(wacogo.TypeBorrow).ResourceType
+					callerH_, err_ := d_.h.bind(caller, d_.w.callerInst)
+					if err_ != nil {
+						return err_
+					}
+					srcH_, err_ := caller.LookupBorrowable(tr_, callerH_)
+					if err_ != nil {
+						return err_
+					}
+					dstH_, err_ := srcH_.LendTo(callee.TransferTarget(), callee.Task())
+					if err_ != nil {
+						return err_
+					}
+					stack[0] = uint64(dstH_.HandleID())
+				}
+				return nil
+			},
+			func(caller, callee *host.CallContext, stack []uint64) error {
+				if v_, err_ := liftMemResultU64StreamError(ctx, caller, callee, d_.w.callerInst, d_.w, d_.w.fnOutputStreamCheckWrite.ResultType(0), uint32(stack[0])); err_ != nil {
+					return err_
+				} else {
+					resVal_ = v_
+				}
+				return nil
+			},
+		)
+		if callErr_ != nil {
+			return nil, fmt.Errorf("wacogo/witgen: CallRaw failed: %w", callErr_)
+		}
+	}
+	return resVal_, nil
+}
+
+func (d_ *outputStreamRemote) Flush(ctx context.Context) (Result_StreamError, error) {
+	var resVal_ Result_StreamError
+	{
+		callErr_ := d_.w.fnOutputStreamFlush.CallRaw(ctx, d_.w.callerInst,
+			func(caller, callee *host.CallContext, stack []uint64) error {
+				{
+					tr_ := d_.w.fnOutputStreamFlush.ParamType(0).(wacogo.TypeBorrow).ResourceType
+					callerH_, err_ := d_.h.bind(caller, d_.w.callerInst)
+					if err_ != nil {
+						return err_
+					}
+					srcH_, err_ := caller.LookupBorrowable(tr_, callerH_)
+					if err_ != nil {
+						return err_
+					}
+					dstH_, err_ := srcH_.LendTo(callee.TransferTarget(), callee.Task())
+					if err_ != nil {
+						return err_
+					}
+					stack[0] = uint64(dstH_.HandleID())
+				}
+				return nil
+			},
+			func(caller, callee *host.CallContext, stack []uint64) error {
+				if v_, err_ := liftMemResult_StreamError(ctx, caller, callee, d_.w.callerInst, d_.w, d_.w.fnOutputStreamFlush.ResultType(0), uint32(stack[0])); err_ != nil {
+					return err_
+				} else {
+					resVal_ = v_
+				}
+				return nil
+			},
+		)
+		if callErr_ != nil {
+			return nil, fmt.Errorf("wacogo/witgen: CallRaw failed: %w", callErr_)
+		}
+	}
+	return resVal_, nil
+}
+
+func (d_ *outputStreamRemote) Splice(ctx context.Context, src *InputStreamHandle, len uint64) (ResultU64StreamError, error) {
+	var resVal_ ResultU64StreamError
+	arg0_ := src
+	arg1_ := len
+	{
+		callErr_ := d_.w.fnOutputStreamSplice.CallRaw(ctx, d_.w.callerInst,
+			func(caller, callee *host.CallContext, stack []uint64) error {
+				{
+					tr_ := d_.w.fnOutputStreamSplice.ParamType(0).(wacogo.TypeBorrow).ResourceType
+					callerH_, err_ := d_.h.bind(caller, d_.w.callerInst)
+					if err_ != nil {
+						return err_
+					}
+					srcH_, err_ := caller.LookupBorrowable(tr_, callerH_)
+					if err_ != nil {
+						return err_
+					}
+					dstH_, err_ := srcH_.LendTo(callee.TransferTarget(), callee.Task())
+					if err_ != nil {
+						return err_
+					}
+					stack[0] = uint64(dstH_.HandleID())
+				}
+				{
+					tr_ := d_.w.fnOutputStreamSplice.ParamType(1).(wacogo.TypeBorrow).ResourceType
+					callerH_, err_ := arg0_.bind(caller, d_.w.callerInst)
+					if err_ != nil {
+						return err_
+					}
+					srcH_, err_ := caller.LookupBorrowable(tr_, callerH_)
+					if err_ != nil {
+						return err_
+					}
+					dstH_, err_ := srcH_.LendTo(callee.TransferTarget(), callee.Task())
+					if err_ != nil {
+						return err_
+					}
+					stack[1] = uint64(dstH_.HandleID())
+				}
+				stack[2] = arg1_
+				return nil
+			},
+			func(caller, callee *host.CallContext, stack []uint64) error {
+				if v_, err_ := liftMemResultU64StreamError(ctx, caller, callee, d_.w.callerInst, d_.w, d_.w.fnOutputStreamSplice.ResultType(0), uint32(stack[0])); err_ != nil {
+					return err_
+				} else {
+					resVal_ = v_
+				}
+				return nil
+			},
+		)
+		if callErr_ != nil {
+			return nil, fmt.Errorf("wacogo/witgen: CallRaw failed: %w", callErr_)
+		}
+	}
+	return resVal_, nil
+}
+
+func (d_ *outputStreamRemote) Subscribe(ctx context.Context) (*poll.PollableHandle, error) {
+	var resVal_ *poll.PollableHandle
+	{
+		callErr_ := d_.w.fnOutputStreamSubscribe.CallRaw(ctx, d_.w.callerInst,
+			func(caller, callee *host.CallContext, stack []uint64) error {
+				{
+					tr_ := d_.w.fnOutputStreamSubscribe.ParamType(0).(wacogo.TypeBorrow).ResourceType
+					callerH_, err_ := d_.h.bind(caller, d_.w.callerInst)
+					if err_ != nil {
+						return err_
+					}
+					srcH_, err_ := caller.LookupBorrowable(tr_, callerH_)
+					if err_ != nil {
+						return err_
+					}
+					dstH_, err_ := srcH_.LendTo(callee.TransferTarget(), callee.Task())
+					if err_ != nil {
+						return err_
+					}
+					stack[0] = uint64(dstH_.HandleID())
+				}
+				return nil
+			},
+			func(caller, callee *host.CallContext, stack []uint64) error {
+				{
+					tr_ := d_.w.fnOutputStreamSubscribe.ResultType(0).(wacogo.TypeOwn).ResourceType
+					calleeH_ := uint32(stack[0])
+					srcH_, srcErr_ := callee.LookupOwn(tr_, calleeH_)
+					if srcErr_ != nil {
+						return srcErr_
+					}
+					dstH_, dstErr_ := srcH_.TransferOwn(caller.TransferTarget())
+					if dstErr_ != nil {
+						return dstErr_
+					}
+					state_ := d_.w.callerInst.UserState().(*instanceState)
+					fwd_ := &pollPollableForwarder{caller: d_.w.callerInst, rh: dstH_, fns: state_.pollPollableFwdFns}
+					resVal_ = poll.NewPollableHandleFrom(dstH_, fwd_)
+				}
+				return nil
+			},
+		)
+		if callErr_ != nil {
+			return nil, fmt.Errorf("wacogo/witgen: CallRaw failed: %w", callErr_)
+		}
+	}
+	return resVal_, nil
+}
+
+func (d_ *outputStreamRemote) Write(ctx context.Context, contents []uint8) (Result_StreamError, error) {
+	var resVal_ Result_StreamError
+	arg0_ := contents
+	{
+		callErr_ := d_.w.fnOutputStreamWrite.CallRaw(ctx, d_.w.callerInst,
+			func(caller, callee *host.CallContext, stack []uint64) error {
+				{
+					tr_ := d_.w.fnOutputStreamWrite.ParamType(0).(wacogo.TypeBorrow).ResourceType
+					callerH_, err_ := d_.h.bind(caller, d_.w.callerInst)
+					if err_ != nil {
+						return err_
+					}
+					srcH_, err_ := caller.LookupBorrowable(tr_, callerH_)
+					if err_ != nil {
+						return err_
+					}
+					dstH_, err_ := srcH_.LendTo(callee.TransferTarget(), callee.Task())
+					if err_ != nil {
+						return err_
+					}
+					stack[0] = uint64(dstH_.HandleID())
+				}
+				if err_ := lowerFlatListU8(ctx, caller, callee, d_.w.callerInst, d_.w.fnOutputStreamWrite.ParamType(1), stack[1:3], arg0_); err_ != nil {
+					return err_
+				}
+				return nil
+			},
+			func(caller, callee *host.CallContext, stack []uint64) error {
+				if v_, err_ := liftMemResult_StreamError(ctx, caller, callee, d_.w.callerInst, d_.w, d_.w.fnOutputStreamWrite.ResultType(0), uint32(stack[0])); err_ != nil {
+					return err_
+				} else {
+					resVal_ = v_
+				}
+				return nil
+			},
+		)
+		if callErr_ != nil {
+			return nil, fmt.Errorf("wacogo/witgen: CallRaw failed: %w", callErr_)
+		}
+	}
+	return resVal_, nil
+}
+
+func (d_ *outputStreamRemote) WriteZeroes(ctx context.Context, len uint64) (Result_StreamError, error) {
+	var resVal_ Result_StreamError
+	arg0_ := len
+	{
+		callErr_ := d_.w.fnOutputStreamWriteZeroes.CallRaw(ctx, d_.w.callerInst,
+			func(caller, callee *host.CallContext, stack []uint64) error {
+				{
+					tr_ := d_.w.fnOutputStreamWriteZeroes.ParamType(0).(wacogo.TypeBorrow).ResourceType
+					callerH_, err_ := d_.h.bind(caller, d_.w.callerInst)
+					if err_ != nil {
+						return err_
+					}
+					srcH_, err_ := caller.LookupBorrowable(tr_, callerH_)
+					if err_ != nil {
+						return err_
+					}
+					dstH_, err_ := srcH_.LendTo(callee.TransferTarget(), callee.Task())
+					if err_ != nil {
+						return err_
+					}
+					stack[0] = uint64(dstH_.HandleID())
+				}
+				stack[1] = arg0_
+				return nil
+			},
+			func(caller, callee *host.CallContext, stack []uint64) error {
+				if v_, err_ := liftMemResult_StreamError(ctx, caller, callee, d_.w.callerInst, d_.w, d_.w.fnOutputStreamWriteZeroes.ResultType(0), uint32(stack[0])); err_ != nil {
+					return err_
+				} else {
+					resVal_ = v_
+				}
+				return nil
+			},
+		)
+		if callErr_ != nil {
+			return nil, fmt.Errorf("wacogo/witgen: CallRaw failed: %w", callErr_)
+		}
+	}
+	return resVal_, nil
 }

@@ -264,14 +264,14 @@ func fromGoMemListTupleDescriptorString(ctx context.Context, cc *host.CallContex
 	return nil
 }
 
-func liftFlatListTupleDescriptorString(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) ([]TupleDescriptorString, error) {
+func liftFlatListTupleDescriptorString(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *preopensWrapper, ty wacogo.Type, stack []uint64) ([]TupleDescriptorString, error) {
 	lstT_ := ty.(wacogo.TypeList)
 	_ = lstT_
 	ptr_ := uint32(stack[0])
 	ln_ := uint32(stack[1])
 	out_ := make([]TupleDescriptorString, ln_)
 	for i_ := uint32(0); i_ < ln_; i_++ {
-		if tmp_, err_ := liftMemTupleDescriptorString(ctx, caller, callee, h, lstT_.Elem, ptr_+i_*12); err_ != nil {
+		if tmp_, err_ := liftMemTupleDescriptorString(ctx, caller, callee, h, w_, lstT_.Elem, ptr_+i_*12); err_ != nil {
 			return nil, err_
 		} else {
 			out_[i_] = tmp_
@@ -280,7 +280,7 @@ func liftFlatListTupleDescriptorString(ctx context.Context, caller, callee *host
 	return out_, nil
 }
 
-func liftMemListTupleDescriptorString(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) ([]TupleDescriptorString, error) {
+func liftMemListTupleDescriptorString(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *preopensWrapper, ty wacogo.Type, ptr uint32) ([]TupleDescriptorString, error) {
 	lstT_ := ty.(wacogo.TypeList)
 	_ = lstT_
 	var lptr_ uint32
@@ -297,7 +297,7 @@ func liftMemListTupleDescriptorString(ctx context.Context, caller, callee *host.
 	}
 	out_ := make([]TupleDescriptorString, ln_)
 	for i_ := uint32(0); i_ < ln_; i_++ {
-		if tmp_, err_ := liftMemTupleDescriptorString(ctx, caller, callee, h, lstT_.Elem, lptr_+i_*12); err_ != nil {
+		if tmp_, err_ := liftMemTupleDescriptorString(ctx, caller, callee, h, w_, lstT_.Elem, lptr_+i_*12); err_ != nil {
 			return nil, err_
 		} else {
 			out_[i_] = tmp_
@@ -436,7 +436,7 @@ func fromGoMemListU8(ctx context.Context, cc *host.CallContext, h *host.Componen
 	return nil
 }
 
-func liftFlatListU8(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) ([]uint8, error) {
+func liftFlatListU8(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *preopensWrapper, ty wacogo.Type, stack []uint64) ([]uint8, error) {
 	lstT_ := ty.(wacogo.TypeList)
 	_ = lstT_
 	ptr_ := uint32(stack[0])
@@ -454,7 +454,7 @@ func liftFlatListU8(ctx context.Context, caller, callee *host.CallContext, h *ho
 	return out_, nil
 }
 
-func liftMemListU8(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) ([]uint8, error) {
+func liftMemListU8(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *preopensWrapper, ty wacogo.Type, ptr uint32) ([]uint8, error) {
 	lstT_ := ty.(wacogo.TypeList)
 	_ = lstT_
 	var lptr_ uint32
@@ -619,13 +619,13 @@ func fromGoMemStreamsResultListU8StreamsStreamError(ctx context.Context, cc *hos
 	return nil
 }
 
-func liftFlatStreamsResultListU8StreamsStreamError(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (streams.ResultListU8StreamError, error) {
+func liftFlatStreamsResultListU8StreamsStreamError(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *preopensWrapper, ty wacogo.Type, stack []uint64) (streams.ResultListU8StreamError, error) {
 	resT_ := ty.(wacogo.TypeResult)
 	_ = resT_
 	disc_ := uint32(stack[0])
 	if disc_ == 0 {
 		var okVal_ []uint8
-		if tmp_, err_ := liftFlatListU8(ctx, caller, callee, h, resT_.Ok, stack[1:3]); err_ != nil {
+		if tmp_, err_ := liftFlatListU8(ctx, caller, callee, h, w_, resT_.Ok, stack[1:3]); err_ != nil {
 			return nil, err_
 		} else {
 			okVal_ = tmp_
@@ -633,7 +633,7 @@ func liftFlatStreamsResultListU8StreamsStreamError(ctx context.Context, caller, 
 		return streams.ResultListU8StreamErrorOk{Value: okVal_}, nil
 	}
 	var errVal_ streams.StreamError
-	if tmp_, err_ := liftFlatStreamsStreamError(ctx, caller, callee, h, resT_.Err, stack[1:3]); err_ != nil {
+	if tmp_, err_ := liftFlatStreamsStreamError(ctx, caller, callee, h, w_, resT_.Err, stack[1:3]); err_ != nil {
 		return nil, err_
 	} else {
 		errVal_ = tmp_
@@ -641,7 +641,7 @@ func liftFlatStreamsResultListU8StreamsStreamError(ctx context.Context, caller, 
 	return streams.ResultListU8StreamErrorErr{Value: errVal_}, nil
 }
 
-func liftMemStreamsResultListU8StreamsStreamError(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (streams.ResultListU8StreamError, error) {
+func liftMemStreamsResultListU8StreamsStreamError(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *preopensWrapper, ty wacogo.Type, ptr uint32) (streams.ResultListU8StreamError, error) {
 	resT_ := ty.(wacogo.TypeResult)
 	_ = resT_
 	var disc_ uint8
@@ -652,7 +652,7 @@ func liftMemStreamsResultListU8StreamsStreamError(ctx context.Context, caller, c
 	}
 	if disc_ == 0 {
 		var okVal_ []uint8
-		if tmp_, err_ := liftMemListU8(ctx, caller, callee, h, resT_.Ok, ptr+4); err_ != nil {
+		if tmp_, err_ := liftMemListU8(ctx, caller, callee, h, w_, resT_.Ok, ptr+4); err_ != nil {
 			return nil, err_
 		} else {
 			okVal_ = tmp_
@@ -660,7 +660,7 @@ func liftMemStreamsResultListU8StreamsStreamError(ctx context.Context, caller, c
 		return streams.ResultListU8StreamErrorOk{Value: okVal_}, nil
 	}
 	var errVal_ streams.StreamError
-	if tmp_, err_ := liftMemStreamsStreamError(ctx, caller, callee, h, resT_.Err, ptr+4); err_ != nil {
+	if tmp_, err_ := liftMemStreamsStreamError(ctx, caller, callee, h, w_, resT_.Err, ptr+4); err_ != nil {
 		return nil, err_
 	} else {
 		errVal_ = tmp_
@@ -796,7 +796,7 @@ func fromGoMemStreamsResultU64StreamsStreamError(ctx context.Context, cc *host.C
 	return nil
 }
 
-func liftFlatStreamsResultU64StreamsStreamError(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (streams.ResultU64StreamError, error) {
+func liftFlatStreamsResultU64StreamsStreamError(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *preopensWrapper, ty wacogo.Type, stack []uint64) (streams.ResultU64StreamError, error) {
 	resT_ := ty.(wacogo.TypeResult)
 	_ = resT_
 	disc_ := uint32(stack[0])
@@ -806,7 +806,7 @@ func liftFlatStreamsResultU64StreamsStreamError(ctx context.Context, caller, cal
 		return streams.ResultU64StreamErrorOk{Value: okVal_}, nil
 	}
 	var errVal_ streams.StreamError
-	if tmp_, err_ := liftFlatStreamsStreamError(ctx, caller, callee, h, resT_.Err, stack[1:3]); err_ != nil {
+	if tmp_, err_ := liftFlatStreamsStreamError(ctx, caller, callee, h, w_, resT_.Err, stack[1:3]); err_ != nil {
 		return nil, err_
 	} else {
 		errVal_ = tmp_
@@ -814,7 +814,7 @@ func liftFlatStreamsResultU64StreamsStreamError(ctx context.Context, caller, cal
 	return streams.ResultU64StreamErrorErr{Value: errVal_}, nil
 }
 
-func liftMemStreamsResultU64StreamsStreamError(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (streams.ResultU64StreamError, error) {
+func liftMemStreamsResultU64StreamsStreamError(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *preopensWrapper, ty wacogo.Type, ptr uint32) (streams.ResultU64StreamError, error) {
 	resT_ := ty.(wacogo.TypeResult)
 	_ = resT_
 	var disc_ uint8
@@ -833,7 +833,7 @@ func liftMemStreamsResultU64StreamsStreamError(ctx context.Context, caller, call
 		return streams.ResultU64StreamErrorOk{Value: okVal_}, nil
 	}
 	var errVal_ streams.StreamError
-	if tmp_, err_ := liftMemStreamsStreamError(ctx, caller, callee, h, resT_.Err, ptr+8); err_ != nil {
+	if tmp_, err_ := liftMemStreamsStreamError(ctx, caller, callee, h, w_, resT_.Err, ptr+8); err_ != nil {
 		return nil, err_
 	} else {
 		errVal_ = tmp_
@@ -959,7 +959,7 @@ func fromGoMemStreamsResult_StreamsStreamError(ctx context.Context, cc *host.Cal
 	return nil
 }
 
-func liftFlatStreamsResult_StreamsStreamError(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (streams.Result_StreamError, error) {
+func liftFlatStreamsResult_StreamsStreamError(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *preopensWrapper, ty wacogo.Type, stack []uint64) (streams.Result_StreamError, error) {
 	resT_ := ty.(wacogo.TypeResult)
 	_ = resT_
 	disc_ := uint32(stack[0])
@@ -967,7 +967,7 @@ func liftFlatStreamsResult_StreamsStreamError(ctx context.Context, caller, calle
 		return streams.Result_StreamErrorOk{}, nil
 	}
 	var errVal_ streams.StreamError
-	if tmp_, err_ := liftFlatStreamsStreamError(ctx, caller, callee, h, resT_.Err, stack[1:3]); err_ != nil {
+	if tmp_, err_ := liftFlatStreamsStreamError(ctx, caller, callee, h, w_, resT_.Err, stack[1:3]); err_ != nil {
 		return nil, err_
 	} else {
 		errVal_ = tmp_
@@ -975,7 +975,7 @@ func liftFlatStreamsResult_StreamsStreamError(ctx context.Context, caller, calle
 	return streams.Result_StreamErrorErr{Value: errVal_}, nil
 }
 
-func liftMemStreamsResult_StreamsStreamError(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (streams.Result_StreamError, error) {
+func liftMemStreamsResult_StreamsStreamError(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *preopensWrapper, ty wacogo.Type, ptr uint32) (streams.Result_StreamError, error) {
 	resT_ := ty.(wacogo.TypeResult)
 	_ = resT_
 	var disc_ uint8
@@ -988,7 +988,7 @@ func liftMemStreamsResult_StreamsStreamError(ctx context.Context, caller, callee
 		return streams.Result_StreamErrorOk{}, nil
 	}
 	var errVal_ streams.StreamError
-	if tmp_, err_ := liftMemStreamsStreamError(ctx, caller, callee, h, resT_.Err, ptr+4); err_ != nil {
+	if tmp_, err_ := liftMemStreamsStreamError(ctx, caller, callee, h, w_, resT_.Err, ptr+4); err_ != nil {
 		return nil, err_
 	} else {
 		errVal_ = tmp_
@@ -1147,7 +1147,7 @@ func fromGoMemStreamsStreamError(ctx context.Context, cc *host.CallContext, h *h
 	return nil
 }
 
-func liftFlatStreamsStreamError(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (streams.StreamError, error) {
+func liftFlatStreamsStreamError(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *preopensWrapper, ty wacogo.Type, stack []uint64) (streams.StreamError, error) {
 	varT_ := ty.(wacogo.TypeVariant)
 	_ = varT_
 	disc_ := uint32(stack[0])
@@ -1176,7 +1176,7 @@ func liftFlatStreamsStreamError(ctx context.Context, caller, callee *host.CallCo
 	return nil, fmt.Errorf("wacogo/witgen: liftFlatStreamsStreamError: invalid discriminant %d", disc_)
 }
 
-func liftMemStreamsStreamError(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (streams.StreamError, error) {
+func liftMemStreamsStreamError(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *preopensWrapper, ty wacogo.Type, ptr uint32) (streams.StreamError, error) {
 	varT_ := ty.(wacogo.TypeVariant)
 	_ = varT_
 	var disc_ uint8
@@ -1350,7 +1350,7 @@ func fromGoMemString(ctx context.Context, cc *host.CallContext, h *host.Componen
 	return nil
 }
 
-func liftFlatString(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (string, error) {
+func liftFlatString(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *preopensWrapper, ty wacogo.Type, stack []uint64) (string, error) {
 	ptr_ := uint32(stack[0])
 	ln_ := uint32(stack[1])
 	bs_, ok_ := callee.Memory().Read(ptr_, ln_)
@@ -1360,7 +1360,7 @@ func liftFlatString(ctx context.Context, caller, callee *host.CallContext, h *ho
 	return string(bs_), nil
 }
 
-func liftMemString(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (string, error) {
+func liftMemString(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *preopensWrapper, ty wacogo.Type, ptr uint32) (string, error) {
 	var sptr_ uint32
 	if tmp_, ok_ := callee.Memory().ReadUint32Le(ptr); !ok_ {
 		return "", fmt.Errorf("wacogo/witgen: liftMemString: string ptr: bad memory read")
@@ -1495,7 +1495,7 @@ func fromGoMemTupleDescriptorString(ctx context.Context, cc *host.CallContext, h
 	return nil
 }
 
-func liftFlatTupleDescriptorString(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (TupleDescriptorString, error) {
+func liftFlatTupleDescriptorString(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *preopensWrapper, ty wacogo.Type, stack []uint64) (TupleDescriptorString, error) {
 	var v_ TupleDescriptorString
 	tupT_ := ty.(wacogo.TypeTuple)
 	_ = tupT_
@@ -1514,7 +1514,7 @@ func liftFlatTupleDescriptorString(ctx context.Context, caller, callee *host.Cal
 		fwd_ := &typesDescriptorForwarder{caller: h, rh: dstH_, fns: state_.typesDescriptorFwdFns}
 		v_.F0 = types.NewDescriptorHandleFrom(dstH_, fwd_)
 	}
-	if tmp_, err_ := liftFlatString(ctx, caller, callee, h, tupT_.Types[1], stack[1:3]); err_ != nil {
+	if tmp_, err_ := liftFlatString(ctx, caller, callee, h, w_, tupT_.Types[1], stack[1:3]); err_ != nil {
 		return TupleDescriptorString{}, err_
 	} else {
 		v_.F1 = tmp_
@@ -1522,7 +1522,7 @@ func liftFlatTupleDescriptorString(ctx context.Context, caller, callee *host.Cal
 	return v_, nil
 }
 
-func liftMemTupleDescriptorString(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (TupleDescriptorString, error) {
+func liftMemTupleDescriptorString(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *preopensWrapper, ty wacogo.Type, ptr uint32) (TupleDescriptorString, error) {
 	var v_ TupleDescriptorString
 	tupT_ := ty.(wacogo.TypeTuple)
 	_ = tupT_
@@ -1546,7 +1546,7 @@ func liftMemTupleDescriptorString(ctx context.Context, caller, callee *host.Call
 		fwd_ := &typesDescriptorForwarder{caller: h, rh: dstH_, fns: state_.typesDescriptorFwdFns}
 		v_.F0 = types.NewDescriptorHandleFrom(dstH_, fwd_)
 	}
-	if tmp_, err_ := liftMemString(ctx, caller, callee, h, tupT_.Types[1], ptr+4); err_ != nil {
+	if tmp_, err_ := liftMemString(ctx, caller, callee, h, w_, tupT_.Types[1], ptr+4); err_ != nil {
 		return TupleDescriptorString{}, err_
 	} else {
 		v_.F1 = tmp_
@@ -1708,24 +1708,24 @@ func fromGoMemTypesDescriptorStat(ctx context.Context, cc *host.CallContext, h *
 	return nil
 }
 
-func liftFlatTypesDescriptorStat(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (types.DescriptorStat, error) {
+func liftFlatTypesDescriptorStat(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *preopensWrapper, ty wacogo.Type, stack []uint64) (types.DescriptorStat, error) {
 	var v_ types.DescriptorStat
 	recT_ := ty.(wacogo.TypeRecord)
 	_ = recT_
 	v_.Type = types.DescriptorType(stack[0])
 	v_.LinkCount = stack[1]
 	v_.Size = stack[2]
-	if tmp_, err_ := liftFlatTypesOptionDatetime(ctx, caller, callee, h, recT_.Fields[3].Type, stack[3:6]); err_ != nil {
+	if tmp_, err_ := liftFlatTypesOptionDatetime(ctx, caller, callee, h, w_, recT_.Fields[3].Type, stack[3:6]); err_ != nil {
 		return types.DescriptorStat{}, err_
 	} else {
 		v_.DataAccessTimestamp = tmp_
 	}
-	if tmp_, err_ := liftFlatTypesOptionDatetime(ctx, caller, callee, h, recT_.Fields[4].Type, stack[6:9]); err_ != nil {
+	if tmp_, err_ := liftFlatTypesOptionDatetime(ctx, caller, callee, h, w_, recT_.Fields[4].Type, stack[6:9]); err_ != nil {
 		return types.DescriptorStat{}, err_
 	} else {
 		v_.DataModificationTimestamp = tmp_
 	}
-	if tmp_, err_ := liftFlatTypesOptionDatetime(ctx, caller, callee, h, recT_.Fields[5].Type, stack[9:12]); err_ != nil {
+	if tmp_, err_ := liftFlatTypesOptionDatetime(ctx, caller, callee, h, w_, recT_.Fields[5].Type, stack[9:12]); err_ != nil {
 		return types.DescriptorStat{}, err_
 	} else {
 		v_.StatusChangeTimestamp = tmp_
@@ -1733,7 +1733,7 @@ func liftFlatTypesDescriptorStat(ctx context.Context, caller, callee *host.CallC
 	return v_, nil
 }
 
-func liftMemTypesDescriptorStat(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (types.DescriptorStat, error) {
+func liftMemTypesDescriptorStat(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *preopensWrapper, ty wacogo.Type, ptr uint32) (types.DescriptorStat, error) {
 	var v_ types.DescriptorStat
 	recT_ := ty.(wacogo.TypeRecord)
 	_ = recT_
@@ -1752,17 +1752,17 @@ func liftMemTypesDescriptorStat(ctx context.Context, caller, callee *host.CallCo
 	} else {
 		v_.Size = tmp_
 	}
-	if tmp_, err_ := liftMemTypesOptionDatetime(ctx, caller, callee, h, recT_.Fields[3].Type, ptr+24); err_ != nil {
+	if tmp_, err_ := liftMemTypesOptionDatetime(ctx, caller, callee, h, w_, recT_.Fields[3].Type, ptr+24); err_ != nil {
 		return types.DescriptorStat{}, err_
 	} else {
 		v_.DataAccessTimestamp = tmp_
 	}
-	if tmp_, err_ := liftMemTypesOptionDatetime(ctx, caller, callee, h, recT_.Fields[4].Type, ptr+48); err_ != nil {
+	if tmp_, err_ := liftMemTypesOptionDatetime(ctx, caller, callee, h, w_, recT_.Fields[4].Type, ptr+48); err_ != nil {
 		return types.DescriptorStat{}, err_
 	} else {
 		v_.DataModificationTimestamp = tmp_
 	}
-	if tmp_, err_ := liftMemTypesOptionDatetime(ctx, caller, callee, h, recT_.Fields[5].Type, ptr+72); err_ != nil {
+	if tmp_, err_ := liftMemTypesOptionDatetime(ctx, caller, callee, h, w_, recT_.Fields[5].Type, ptr+72); err_ != nil {
 		return types.DescriptorStat{}, err_
 	} else {
 		v_.StatusChangeTimestamp = tmp_
@@ -1860,12 +1860,12 @@ func fromGoMemTypesDirectoryEntry(ctx context.Context, cc *host.CallContext, h *
 	return nil
 }
 
-func liftFlatTypesDirectoryEntry(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (types.DirectoryEntry, error) {
+func liftFlatTypesDirectoryEntry(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *preopensWrapper, ty wacogo.Type, stack []uint64) (types.DirectoryEntry, error) {
 	var v_ types.DirectoryEntry
 	recT_ := ty.(wacogo.TypeRecord)
 	_ = recT_
 	v_.Type = types.DescriptorType(stack[0])
-	if tmp_, err_ := liftFlatString(ctx, caller, callee, h, recT_.Fields[1].Type, stack[1:3]); err_ != nil {
+	if tmp_, err_ := liftFlatString(ctx, caller, callee, h, w_, recT_.Fields[1].Type, stack[1:3]); err_ != nil {
 		return types.DirectoryEntry{}, err_
 	} else {
 		v_.Name = tmp_
@@ -1873,7 +1873,7 @@ func liftFlatTypesDirectoryEntry(ctx context.Context, caller, callee *host.CallC
 	return v_, nil
 }
 
-func liftMemTypesDirectoryEntry(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (types.DirectoryEntry, error) {
+func liftMemTypesDirectoryEntry(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *preopensWrapper, ty wacogo.Type, ptr uint32) (types.DirectoryEntry, error) {
 	var v_ types.DirectoryEntry
 	recT_ := ty.(wacogo.TypeRecord)
 	_ = recT_
@@ -1882,7 +1882,7 @@ func liftMemTypesDirectoryEntry(ctx context.Context, caller, callee *host.CallCo
 	} else {
 		v_.Type = types.DescriptorType(tmp_)
 	}
-	if tmp_, err_ := liftMemString(ctx, caller, callee, h, recT_.Fields[1].Type, ptr+4); err_ != nil {
+	if tmp_, err_ := liftMemString(ctx, caller, callee, h, w_, recT_.Fields[1].Type, ptr+4); err_ != nil {
 		return types.DirectoryEntry{}, err_
 	} else {
 		v_.Name = tmp_
@@ -1954,7 +1954,7 @@ func fromGoMemTypesMetadataHashValue(ctx context.Context, cc *host.CallContext, 
 	return nil
 }
 
-func liftFlatTypesMetadataHashValue(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (types.MetadataHashValue, error) {
+func liftFlatTypesMetadataHashValue(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *preopensWrapper, ty wacogo.Type, stack []uint64) (types.MetadataHashValue, error) {
 	var v_ types.MetadataHashValue
 	recT_ := ty.(wacogo.TypeRecord)
 	_ = recT_
@@ -1963,7 +1963,7 @@ func liftFlatTypesMetadataHashValue(ctx context.Context, caller, callee *host.Ca
 	return v_, nil
 }
 
-func liftMemTypesMetadataHashValue(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (types.MetadataHashValue, error) {
+func liftMemTypesMetadataHashValue(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *preopensWrapper, ty wacogo.Type, ptr uint32) (types.MetadataHashValue, error) {
 	var v_ types.MetadataHashValue
 	recT_ := ty.(wacogo.TypeRecord)
 	_ = recT_
@@ -2095,7 +2095,7 @@ func fromGoMemTypesNewTimestamp(ctx context.Context, cc *host.CallContext, h *ho
 	return nil
 }
 
-func liftFlatTypesNewTimestamp(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (types.NewTimestamp, error) {
+func liftFlatTypesNewTimestamp(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *preopensWrapper, ty wacogo.Type, stack []uint64) (types.NewTimestamp, error) {
 	varT_ := ty.(wacogo.TypeVariant)
 	_ = varT_
 	disc_ := uint32(stack[0])
@@ -2106,7 +2106,7 @@ func liftFlatTypesNewTimestamp(ctx context.Context, caller, callee *host.CallCon
 		return types.NewTimestampNow{}, nil
 	case 2:
 		var val wallclock.Datetime
-		if tmp_, err_ := liftFlatWallclockDatetime(ctx, caller, callee, h, varT_.Cases[2].Payload, stack[1:3]); err_ != nil {
+		if tmp_, err_ := liftFlatWallclockDatetime(ctx, caller, callee, h, w_, varT_.Cases[2].Payload, stack[1:3]); err_ != nil {
 			return nil, err_
 		} else {
 			val = tmp_
@@ -2116,7 +2116,7 @@ func liftFlatTypesNewTimestamp(ctx context.Context, caller, callee *host.CallCon
 	return nil, fmt.Errorf("wacogo/witgen: liftFlatTypesNewTimestamp: invalid discriminant %d", disc_)
 }
 
-func liftMemTypesNewTimestamp(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (types.NewTimestamp, error) {
+func liftMemTypesNewTimestamp(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *preopensWrapper, ty wacogo.Type, ptr uint32) (types.NewTimestamp, error) {
 	varT_ := ty.(wacogo.TypeVariant)
 	_ = varT_
 	var disc_ uint8
@@ -2132,7 +2132,7 @@ func liftMemTypesNewTimestamp(ctx context.Context, caller, callee *host.CallCont
 		return types.NewTimestampNow{}, nil
 	case 2:
 		var val wallclock.Datetime
-		if tmp_, err_ := liftMemWallclockDatetime(ctx, caller, callee, h, varT_.Cases[2].Payload, ptr+8); err_ != nil {
+		if tmp_, err_ := liftMemWallclockDatetime(ctx, caller, callee, h, w_, varT_.Cases[2].Payload, ptr+8); err_ != nil {
 			return nil, err_
 		} else {
 			val = tmp_
@@ -2261,14 +2261,14 @@ func fromGoMemTypesOptionDatetime(ctx context.Context, cc *host.CallContext, h *
 	return nil
 }
 
-func liftFlatTypesOptionDatetime(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (types.OptionWallclockDatetime, error) {
+func liftFlatTypesOptionDatetime(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *preopensWrapper, ty wacogo.Type, stack []uint64) (types.OptionWallclockDatetime, error) {
 	optT_ := ty.(wacogo.TypeOption)
 	_ = optT_
 	disc_ := uint32(stack[0])
 	var out_ types.OptionWallclockDatetime
 	if disc_ != 0 {
 		out_.IsSome = true
-		if tmp_, err_ := liftFlatWallclockDatetime(ctx, caller, callee, h, optT_.Inner, stack[1:3]); err_ != nil {
+		if tmp_, err_ := liftFlatWallclockDatetime(ctx, caller, callee, h, w_, optT_.Inner, stack[1:3]); err_ != nil {
 			return types.OptionWallclockDatetime{}, err_
 		} else {
 			out_.Value = tmp_
@@ -2277,7 +2277,7 @@ func liftFlatTypesOptionDatetime(ctx context.Context, caller, callee *host.CallC
 	return out_, nil
 }
 
-func liftMemTypesOptionDatetime(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (types.OptionWallclockDatetime, error) {
+func liftMemTypesOptionDatetime(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *preopensWrapper, ty wacogo.Type, ptr uint32) (types.OptionWallclockDatetime, error) {
 	optT_ := ty.(wacogo.TypeOption)
 	_ = optT_
 	var disc_ uint8
@@ -2289,7 +2289,7 @@ func liftMemTypesOptionDatetime(ctx context.Context, caller, callee *host.CallCo
 	var out_ types.OptionWallclockDatetime
 	if disc_ != 0 {
 		out_.IsSome = true
-		if tmp_, err_ := liftMemWallclockDatetime(ctx, caller, callee, h, optT_.Inner, ptr+8); err_ != nil {
+		if tmp_, err_ := liftMemWallclockDatetime(ctx, caller, callee, h, w_, optT_.Inner, ptr+8); err_ != nil {
 			return types.OptionWallclockDatetime{}, err_
 		} else {
 			out_.Value = tmp_
@@ -2402,14 +2402,14 @@ func fromGoMemTypesOptionDirectoryEntry(ctx context.Context, cc *host.CallContex
 	return nil
 }
 
-func liftFlatTypesOptionDirectoryEntry(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (types.OptionDirectoryEntry, error) {
+func liftFlatTypesOptionDirectoryEntry(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *preopensWrapper, ty wacogo.Type, stack []uint64) (types.OptionDirectoryEntry, error) {
 	optT_ := ty.(wacogo.TypeOption)
 	_ = optT_
 	disc_ := uint32(stack[0])
 	var out_ types.OptionDirectoryEntry
 	if disc_ != 0 {
 		out_.IsSome = true
-		if tmp_, err_ := liftFlatTypesDirectoryEntry(ctx, caller, callee, h, optT_.Inner, stack[1:4]); err_ != nil {
+		if tmp_, err_ := liftFlatTypesDirectoryEntry(ctx, caller, callee, h, w_, optT_.Inner, stack[1:4]); err_ != nil {
 			return types.OptionDirectoryEntry{}, err_
 		} else {
 			out_.Value = tmp_
@@ -2418,7 +2418,7 @@ func liftFlatTypesOptionDirectoryEntry(ctx context.Context, caller, callee *host
 	return out_, nil
 }
 
-func liftMemTypesOptionDirectoryEntry(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (types.OptionDirectoryEntry, error) {
+func liftMemTypesOptionDirectoryEntry(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *preopensWrapper, ty wacogo.Type, ptr uint32) (types.OptionDirectoryEntry, error) {
 	optT_ := ty.(wacogo.TypeOption)
 	_ = optT_
 	var disc_ uint8
@@ -2430,7 +2430,7 @@ func liftMemTypesOptionDirectoryEntry(ctx context.Context, caller, callee *host.
 	var out_ types.OptionDirectoryEntry
 	if disc_ != 0 {
 		out_.IsSome = true
-		if tmp_, err_ := liftMemTypesDirectoryEntry(ctx, caller, callee, h, optT_.Inner, ptr+4); err_ != nil {
+		if tmp_, err_ := liftMemTypesDirectoryEntry(ctx, caller, callee, h, w_, optT_.Inner, ptr+4); err_ != nil {
 			return types.OptionDirectoryEntry{}, err_
 		} else {
 			out_.Value = tmp_
@@ -2588,7 +2588,7 @@ func fromGoMemTypesResultDescriptorTypesErrorCode(ctx context.Context, cc *host.
 	return nil
 }
 
-func liftFlatTypesResultDescriptorTypesErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (types.ResultDescriptorErrorCode, error) {
+func liftFlatTypesResultDescriptorTypesErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *preopensWrapper, ty wacogo.Type, stack []uint64) (types.ResultDescriptorErrorCode, error) {
 	resT_ := ty.(wacogo.TypeResult)
 	_ = resT_
 	disc_ := uint32(stack[0])
@@ -2616,7 +2616,7 @@ func liftFlatTypesResultDescriptorTypesErrorCode(ctx context.Context, caller, ca
 	return types.ResultDescriptorErrorCodeErr{Value: errVal_}, nil
 }
 
-func liftMemTypesResultDescriptorTypesErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (types.ResultDescriptorErrorCode, error) {
+func liftMemTypesResultDescriptorTypesErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *preopensWrapper, ty wacogo.Type, ptr uint32) (types.ResultDescriptorErrorCode, error) {
 	resT_ := ty.(wacogo.TypeResult)
 	_ = resT_
 	var disc_ uint8
@@ -2842,7 +2842,7 @@ func fromGoMemTypesResultDirectoryEntryStreamTypesErrorCode(ctx context.Context,
 	return nil
 }
 
-func liftFlatTypesResultDirectoryEntryStreamTypesErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (types.ResultDirectoryEntryStreamErrorCode, error) {
+func liftFlatTypesResultDirectoryEntryStreamTypesErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *preopensWrapper, ty wacogo.Type, stack []uint64) (types.ResultDirectoryEntryStreamErrorCode, error) {
 	resT_ := ty.(wacogo.TypeResult)
 	_ = resT_
 	disc_ := uint32(stack[0])
@@ -2870,7 +2870,7 @@ func liftFlatTypesResultDirectoryEntryStreamTypesErrorCode(ctx context.Context, 
 	return types.ResultDirectoryEntryStreamErrorCodeErr{Value: errVal_}, nil
 }
 
-func liftMemTypesResultDirectoryEntryStreamTypesErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (types.ResultDirectoryEntryStreamErrorCode, error) {
+func liftMemTypesResultDirectoryEntryStreamTypesErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *preopensWrapper, ty wacogo.Type, ptr uint32) (types.ResultDirectoryEntryStreamErrorCode, error) {
 	resT_ := ty.(wacogo.TypeResult)
 	_ = resT_
 	var disc_ uint8
@@ -3096,7 +3096,7 @@ func fromGoMemTypesResultInputStreamTypesErrorCode(ctx context.Context, cc *host
 	return nil
 }
 
-func liftFlatTypesResultInputStreamTypesErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (types.ResultInputStreamErrorCode, error) {
+func liftFlatTypesResultInputStreamTypesErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *preopensWrapper, ty wacogo.Type, stack []uint64) (types.ResultInputStreamErrorCode, error) {
 	resT_ := ty.(wacogo.TypeResult)
 	_ = resT_
 	disc_ := uint32(stack[0])
@@ -3124,7 +3124,7 @@ func liftFlatTypesResultInputStreamTypesErrorCode(ctx context.Context, caller, c
 	return types.ResultInputStreamErrorCodeErr{Value: errVal_}, nil
 }
 
-func liftMemTypesResultInputStreamTypesErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (types.ResultInputStreamErrorCode, error) {
+func liftMemTypesResultInputStreamTypesErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *preopensWrapper, ty wacogo.Type, ptr uint32) (types.ResultInputStreamErrorCode, error) {
 	resT_ := ty.(wacogo.TypeResult)
 	_ = resT_
 	var disc_ uint8
@@ -3350,7 +3350,7 @@ func fromGoMemTypesResultOutputStreamTypesErrorCode(ctx context.Context, cc *hos
 	return nil
 }
 
-func liftFlatTypesResultOutputStreamTypesErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (types.ResultOutputStreamErrorCode, error) {
+func liftFlatTypesResultOutputStreamTypesErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *preopensWrapper, ty wacogo.Type, stack []uint64) (types.ResultOutputStreamErrorCode, error) {
 	resT_ := ty.(wacogo.TypeResult)
 	_ = resT_
 	disc_ := uint32(stack[0])
@@ -3378,7 +3378,7 @@ func liftFlatTypesResultOutputStreamTypesErrorCode(ctx context.Context, caller, 
 	return types.ResultOutputStreamErrorCodeErr{Value: errVal_}, nil
 }
 
-func liftMemTypesResultOutputStreamTypesErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (types.ResultOutputStreamErrorCode, error) {
+func liftMemTypesResultOutputStreamTypesErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *preopensWrapper, ty wacogo.Type, ptr uint32) (types.ResultOutputStreamErrorCode, error) {
 	resT_ := ty.(wacogo.TypeResult)
 	_ = resT_
 	var disc_ uint8
@@ -3576,13 +3576,13 @@ func fromGoMemTypesResultStringTypesErrorCode(ctx context.Context, cc *host.Call
 	return nil
 }
 
-func liftFlatTypesResultStringTypesErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (types.ResultStringErrorCode, error) {
+func liftFlatTypesResultStringTypesErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *preopensWrapper, ty wacogo.Type, stack []uint64) (types.ResultStringErrorCode, error) {
 	resT_ := ty.(wacogo.TypeResult)
 	_ = resT_
 	disc_ := uint32(stack[0])
 	if disc_ == 0 {
 		var okVal_ string
-		if tmp_, err_ := liftFlatString(ctx, caller, callee, h, resT_.Ok, stack[1:3]); err_ != nil {
+		if tmp_, err_ := liftFlatString(ctx, caller, callee, h, w_, resT_.Ok, stack[1:3]); err_ != nil {
 			return nil, err_
 		} else {
 			okVal_ = tmp_
@@ -3594,7 +3594,7 @@ func liftFlatTypesResultStringTypesErrorCode(ctx context.Context, caller, callee
 	return types.ResultStringErrorCodeErr{Value: errVal_}, nil
 }
 
-func liftMemTypesResultStringTypesErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (types.ResultStringErrorCode, error) {
+func liftMemTypesResultStringTypesErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *preopensWrapper, ty wacogo.Type, ptr uint32) (types.ResultStringErrorCode, error) {
 	resT_ := ty.(wacogo.TypeResult)
 	_ = resT_
 	var disc_ uint8
@@ -3605,7 +3605,7 @@ func liftMemTypesResultStringTypesErrorCode(ctx context.Context, caller, callee 
 	}
 	if disc_ == 0 {
 		var okVal_ string
-		if tmp_, err_ := liftMemString(ctx, caller, callee, h, resT_.Ok, ptr+4); err_ != nil {
+		if tmp_, err_ := liftMemString(ctx, caller, callee, h, w_, resT_.Ok, ptr+4); err_ != nil {
 			return nil, err_
 		} else {
 			okVal_ = tmp_
@@ -3741,7 +3741,7 @@ func fromGoMemTypesResultTypesDescriptorFlagsTypesErrorCode(ctx context.Context,
 	return nil
 }
 
-func liftFlatTypesResultTypesDescriptorFlagsTypesErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (types.ResultDescriptorFlagsErrorCode, error) {
+func liftFlatTypesResultTypesDescriptorFlagsTypesErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *preopensWrapper, ty wacogo.Type, stack []uint64) (types.ResultDescriptorFlagsErrorCode, error) {
 	resT_ := ty.(wacogo.TypeResult)
 	_ = resT_
 	disc_ := uint32(stack[0])
@@ -3755,7 +3755,7 @@ func liftFlatTypesResultTypesDescriptorFlagsTypesErrorCode(ctx context.Context, 
 	return types.ResultDescriptorFlagsErrorCodeErr{Value: errVal_}, nil
 }
 
-func liftMemTypesResultTypesDescriptorFlagsTypesErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (types.ResultDescriptorFlagsErrorCode, error) {
+func liftMemTypesResultTypesDescriptorFlagsTypesErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *preopensWrapper, ty wacogo.Type, ptr uint32) (types.ResultDescriptorFlagsErrorCode, error) {
 	resT_ := ty.(wacogo.TypeResult)
 	_ = resT_
 	var disc_ uint8
@@ -3916,13 +3916,13 @@ func fromGoMemTypesResultTypesDescriptorStatTypesErrorCode(ctx context.Context, 
 	return nil
 }
 
-func liftFlatTypesResultTypesDescriptorStatTypesErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (types.ResultDescriptorStatErrorCode, error) {
+func liftFlatTypesResultTypesDescriptorStatTypesErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *preopensWrapper, ty wacogo.Type, stack []uint64) (types.ResultDescriptorStatErrorCode, error) {
 	resT_ := ty.(wacogo.TypeResult)
 	_ = resT_
 	disc_ := uint32(stack[0])
 	if disc_ == 0 {
 		var okVal_ types.DescriptorStat
-		if tmp_, err_ := liftFlatTypesDescriptorStat(ctx, caller, callee, h, resT_.Ok, stack[1:13]); err_ != nil {
+		if tmp_, err_ := liftFlatTypesDescriptorStat(ctx, caller, callee, h, w_, resT_.Ok, stack[1:13]); err_ != nil {
 			return nil, err_
 		} else {
 			okVal_ = tmp_
@@ -3934,7 +3934,7 @@ func liftFlatTypesResultTypesDescriptorStatTypesErrorCode(ctx context.Context, c
 	return types.ResultDescriptorStatErrorCodeErr{Value: errVal_}, nil
 }
 
-func liftMemTypesResultTypesDescriptorStatTypesErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (types.ResultDescriptorStatErrorCode, error) {
+func liftMemTypesResultTypesDescriptorStatTypesErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *preopensWrapper, ty wacogo.Type, ptr uint32) (types.ResultDescriptorStatErrorCode, error) {
 	resT_ := ty.(wacogo.TypeResult)
 	_ = resT_
 	var disc_ uint8
@@ -3945,7 +3945,7 @@ func liftMemTypesResultTypesDescriptorStatTypesErrorCode(ctx context.Context, ca
 	}
 	if disc_ == 0 {
 		var okVal_ types.DescriptorStat
-		if tmp_, err_ := liftMemTypesDescriptorStat(ctx, caller, callee, h, resT_.Ok, ptr+8); err_ != nil {
+		if tmp_, err_ := liftMemTypesDescriptorStat(ctx, caller, callee, h, w_, resT_.Ok, ptr+8); err_ != nil {
 			return nil, err_
 		} else {
 			okVal_ = tmp_
@@ -4091,7 +4091,7 @@ func fromGoMemTypesResultTypesDescriptorTypeTypesErrorCode(ctx context.Context, 
 	return nil
 }
 
-func liftFlatTypesResultTypesDescriptorTypeTypesErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (types.ResultDescriptorTypeErrorCode, error) {
+func liftFlatTypesResultTypesDescriptorTypeTypesErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *preopensWrapper, ty wacogo.Type, stack []uint64) (types.ResultDescriptorTypeErrorCode, error) {
 	resT_ := ty.(wacogo.TypeResult)
 	_ = resT_
 	disc_ := uint32(stack[0])
@@ -4105,7 +4105,7 @@ func liftFlatTypesResultTypesDescriptorTypeTypesErrorCode(ctx context.Context, c
 	return types.ResultDescriptorTypeErrorCodeErr{Value: errVal_}, nil
 }
 
-func liftMemTypesResultTypesDescriptorTypeTypesErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (types.ResultDescriptorTypeErrorCode, error) {
+func liftMemTypesResultTypesDescriptorTypeTypesErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *preopensWrapper, ty wacogo.Type, ptr uint32) (types.ResultDescriptorTypeErrorCode, error) {
 	resT_ := ty.(wacogo.TypeResult)
 	_ = resT_
 	var disc_ uint8
@@ -4256,13 +4256,13 @@ func fromGoMemTypesResultTypesMetadataHashValueTypesErrorCode(ctx context.Contex
 	return nil
 }
 
-func liftFlatTypesResultTypesMetadataHashValueTypesErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (types.ResultMetadataHashValueErrorCode, error) {
+func liftFlatTypesResultTypesMetadataHashValueTypesErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *preopensWrapper, ty wacogo.Type, stack []uint64) (types.ResultMetadataHashValueErrorCode, error) {
 	resT_ := ty.(wacogo.TypeResult)
 	_ = resT_
 	disc_ := uint32(stack[0])
 	if disc_ == 0 {
 		var okVal_ types.MetadataHashValue
-		if tmp_, err_ := liftFlatTypesMetadataHashValue(ctx, caller, callee, h, resT_.Ok, stack[1:3]); err_ != nil {
+		if tmp_, err_ := liftFlatTypesMetadataHashValue(ctx, caller, callee, h, w_, resT_.Ok, stack[1:3]); err_ != nil {
 			return nil, err_
 		} else {
 			okVal_ = tmp_
@@ -4274,7 +4274,7 @@ func liftFlatTypesResultTypesMetadataHashValueTypesErrorCode(ctx context.Context
 	return types.ResultMetadataHashValueErrorCodeErr{Value: errVal_}, nil
 }
 
-func liftMemTypesResultTypesMetadataHashValueTypesErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (types.ResultMetadataHashValueErrorCode, error) {
+func liftMemTypesResultTypesMetadataHashValueTypesErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *preopensWrapper, ty wacogo.Type, ptr uint32) (types.ResultMetadataHashValueErrorCode, error) {
 	resT_ := ty.(wacogo.TypeResult)
 	_ = resT_
 	var disc_ uint8
@@ -4285,7 +4285,7 @@ func liftMemTypesResultTypesMetadataHashValueTypesErrorCode(ctx context.Context,
 	}
 	if disc_ == 0 {
 		var okVal_ types.MetadataHashValue
-		if tmp_, err_ := liftMemTypesMetadataHashValue(ctx, caller, callee, h, resT_.Ok, ptr+8); err_ != nil {
+		if tmp_, err_ := liftMemTypesMetadataHashValue(ctx, caller, callee, h, w_, resT_.Ok, ptr+8); err_ != nil {
 			return nil, err_
 		} else {
 			okVal_ = tmp_
@@ -4430,13 +4430,13 @@ func fromGoMemTypesResultTypesOptionDirectoryEntryTypesErrorCode(ctx context.Con
 	return nil
 }
 
-func liftFlatTypesResultTypesOptionDirectoryEntryTypesErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (types.ResultOptionDirectoryEntryErrorCode, error) {
+func liftFlatTypesResultTypesOptionDirectoryEntryTypesErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *preopensWrapper, ty wacogo.Type, stack []uint64) (types.ResultOptionDirectoryEntryErrorCode, error) {
 	resT_ := ty.(wacogo.TypeResult)
 	_ = resT_
 	disc_ := uint32(stack[0])
 	if disc_ == 0 {
 		var okVal_ types.OptionDirectoryEntry
-		if tmp_, err_ := liftFlatTypesOptionDirectoryEntry(ctx, caller, callee, h, resT_.Ok, stack[1:5]); err_ != nil {
+		if tmp_, err_ := liftFlatTypesOptionDirectoryEntry(ctx, caller, callee, h, w_, resT_.Ok, stack[1:5]); err_ != nil {
 			return nil, err_
 		} else {
 			okVal_ = tmp_
@@ -4448,7 +4448,7 @@ func liftFlatTypesResultTypesOptionDirectoryEntryTypesErrorCode(ctx context.Cont
 	return types.ResultOptionDirectoryEntryErrorCodeErr{Value: errVal_}, nil
 }
 
-func liftMemTypesResultTypesOptionDirectoryEntryTypesErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (types.ResultOptionDirectoryEntryErrorCode, error) {
+func liftMemTypesResultTypesOptionDirectoryEntryTypesErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *preopensWrapper, ty wacogo.Type, ptr uint32) (types.ResultOptionDirectoryEntryErrorCode, error) {
 	resT_ := ty.(wacogo.TypeResult)
 	_ = resT_
 	var disc_ uint8
@@ -4459,7 +4459,7 @@ func liftMemTypesResultTypesOptionDirectoryEntryTypesErrorCode(ctx context.Conte
 	}
 	if disc_ == 0 {
 		var okVal_ types.OptionDirectoryEntry
-		if tmp_, err_ := liftMemTypesOptionDirectoryEntry(ctx, caller, callee, h, resT_.Ok, ptr+4); err_ != nil {
+		if tmp_, err_ := liftMemTypesOptionDirectoryEntry(ctx, caller, callee, h, w_, resT_.Ok, ptr+4); err_ != nil {
 			return nil, err_
 		} else {
 			okVal_ = tmp_
@@ -4605,13 +4605,13 @@ func fromGoMemTypesResultTypesTupleListU8BoolTypesErrorCode(ctx context.Context,
 	return nil
 }
 
-func liftFlatTypesResultTypesTupleListU8BoolTypesErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (types.ResultTupleListU8BoolErrorCode, error) {
+func liftFlatTypesResultTypesTupleListU8BoolTypesErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *preopensWrapper, ty wacogo.Type, stack []uint64) (types.ResultTupleListU8BoolErrorCode, error) {
 	resT_ := ty.(wacogo.TypeResult)
 	_ = resT_
 	disc_ := uint32(stack[0])
 	if disc_ == 0 {
 		var okVal_ types.TupleListU8Bool
-		if tmp_, err_ := liftFlatTypesTupleListU8Bool(ctx, caller, callee, h, resT_.Ok, stack[1:4]); err_ != nil {
+		if tmp_, err_ := liftFlatTypesTupleListU8Bool(ctx, caller, callee, h, w_, resT_.Ok, stack[1:4]); err_ != nil {
 			return nil, err_
 		} else {
 			okVal_ = tmp_
@@ -4623,7 +4623,7 @@ func liftFlatTypesResultTypesTupleListU8BoolTypesErrorCode(ctx context.Context, 
 	return types.ResultTupleListU8BoolErrorCodeErr{Value: errVal_}, nil
 }
 
-func liftMemTypesResultTypesTupleListU8BoolTypesErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (types.ResultTupleListU8BoolErrorCode, error) {
+func liftMemTypesResultTypesTupleListU8BoolTypesErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *preopensWrapper, ty wacogo.Type, ptr uint32) (types.ResultTupleListU8BoolErrorCode, error) {
 	resT_ := ty.(wacogo.TypeResult)
 	_ = resT_
 	var disc_ uint8
@@ -4634,7 +4634,7 @@ func liftMemTypesResultTypesTupleListU8BoolTypesErrorCode(ctx context.Context, c
 	}
 	if disc_ == 0 {
 		var okVal_ types.TupleListU8Bool
-		if tmp_, err_ := liftMemTypesTupleListU8Bool(ctx, caller, callee, h, resT_.Ok, ptr+4); err_ != nil {
+		if tmp_, err_ := liftMemTypesTupleListU8Bool(ctx, caller, callee, h, w_, resT_.Ok, ptr+4); err_ != nil {
 			return nil, err_
 		} else {
 			okVal_ = tmp_
@@ -4771,7 +4771,7 @@ func fromGoMemTypesResultU64TypesErrorCode(ctx context.Context, cc *host.CallCon
 	return nil
 }
 
-func liftFlatTypesResultU64TypesErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (types.ResultU64ErrorCode, error) {
+func liftFlatTypesResultU64TypesErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *preopensWrapper, ty wacogo.Type, stack []uint64) (types.ResultU64ErrorCode, error) {
 	resT_ := ty.(wacogo.TypeResult)
 	_ = resT_
 	disc_ := uint32(stack[0])
@@ -4785,7 +4785,7 @@ func liftFlatTypesResultU64TypesErrorCode(ctx context.Context, caller, callee *h
 	return types.ResultU64ErrorCodeErr{Value: errVal_}, nil
 }
 
-func liftMemTypesResultU64TypesErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (types.ResultU64ErrorCode, error) {
+func liftMemTypesResultU64TypesErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *preopensWrapper, ty wacogo.Type, ptr uint32) (types.ResultU64ErrorCode, error) {
 	resT_ := ty.(wacogo.TypeResult)
 	_ = resT_
 	var disc_ uint8
@@ -4920,7 +4920,7 @@ func fromGoMemTypesResult_TypesErrorCode(ctx context.Context, cc *host.CallConte
 	return nil
 }
 
-func liftFlatTypesResult_TypesErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (types.Result_ErrorCode, error) {
+func liftFlatTypesResult_TypesErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *preopensWrapper, ty wacogo.Type, stack []uint64) (types.Result_ErrorCode, error) {
 	resT_ := ty.(wacogo.TypeResult)
 	_ = resT_
 	disc_ := uint32(stack[0])
@@ -4932,7 +4932,7 @@ func liftFlatTypesResult_TypesErrorCode(ctx context.Context, caller, callee *hos
 	return types.Result_ErrorCodeErr{Value: errVal_}, nil
 }
 
-func liftMemTypesResult_TypesErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (types.Result_ErrorCode, error) {
+func liftMemTypesResult_TypesErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *preopensWrapper, ty wacogo.Type, ptr uint32) (types.Result_ErrorCode, error) {
 	resT_ := ty.(wacogo.TypeResult)
 	_ = resT_
 	var disc_ uint8
@@ -5050,11 +5050,11 @@ func fromGoMemTypesTupleListU8Bool(ctx context.Context, cc *host.CallContext, h 
 	return nil
 }
 
-func liftFlatTypesTupleListU8Bool(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (types.TupleListU8Bool, error) {
+func liftFlatTypesTupleListU8Bool(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *preopensWrapper, ty wacogo.Type, stack []uint64) (types.TupleListU8Bool, error) {
 	var v_ types.TupleListU8Bool
 	tupT_ := ty.(wacogo.TypeTuple)
 	_ = tupT_
-	if tmp_, err_ := liftFlatListU8(ctx, caller, callee, h, tupT_.Types[0], stack[0:2]); err_ != nil {
+	if tmp_, err_ := liftFlatListU8(ctx, caller, callee, h, w_, tupT_.Types[0], stack[0:2]); err_ != nil {
 		return types.TupleListU8Bool{}, err_
 	} else {
 		v_.F0 = tmp_
@@ -5063,11 +5063,11 @@ func liftFlatTypesTupleListU8Bool(ctx context.Context, caller, callee *host.Call
 	return v_, nil
 }
 
-func liftMemTypesTupleListU8Bool(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (types.TupleListU8Bool, error) {
+func liftMemTypesTupleListU8Bool(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *preopensWrapper, ty wacogo.Type, ptr uint32) (types.TupleListU8Bool, error) {
 	var v_ types.TupleListU8Bool
 	tupT_ := ty.(wacogo.TypeTuple)
 	_ = tupT_
-	if tmp_, err_ := liftMemListU8(ctx, caller, callee, h, tupT_.Types[0], ptr); err_ != nil {
+	if tmp_, err_ := liftMemListU8(ctx, caller, callee, h, w_, tupT_.Types[0], ptr); err_ != nil {
 		return types.TupleListU8Bool{}, err_
 	} else {
 		v_.F0 = tmp_
@@ -5154,7 +5154,7 @@ func fromGoMemWallclockDatetime(ctx context.Context, cc *host.CallContext, h *ho
 	return nil
 }
 
-func liftFlatWallclockDatetime(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (wallclock.Datetime, error) {
+func liftFlatWallclockDatetime(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *preopensWrapper, ty wacogo.Type, stack []uint64) (wallclock.Datetime, error) {
 	var v_ wallclock.Datetime
 	recT_ := ty.(wacogo.TypeRecord)
 	_ = recT_
@@ -5163,7 +5163,7 @@ func liftFlatWallclockDatetime(ctx context.Context, caller, callee *host.CallCon
 	return v_, nil
 }
 
-func liftMemWallclockDatetime(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (wallclock.Datetime, error) {
+func liftMemWallclockDatetime(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *preopensWrapper, ty wacogo.Type, ptr uint32) (wallclock.Datetime, error) {
 	var v_ wallclock.Datetime
 	recT_ := ty.(wacogo.TypeRecord)
 	_ = recT_
@@ -5245,7 +5245,7 @@ func (f *wioerrorErrorResourceForwarder) ToDebugString(ctx context.Context) (str
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemString(ctx, caller, callee, f.caller, f.fns.fnToDebugString.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemString(ctx, caller, callee, f.caller, nil, f.fns.fnToDebugString.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_
@@ -5347,7 +5347,7 @@ func (f *streamsOutputStreamForwarder) BlockingFlush(ctx context.Context) (strea
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemStreamsResult_StreamsStreamError(ctx, caller, callee, f.caller, f.fns.fnBlockingFlush.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemStreamsResult_StreamsStreamError(ctx, caller, callee, f.caller, nil, f.fns.fnBlockingFlush.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_
@@ -5390,7 +5390,7 @@ func (f *streamsOutputStreamForwarder) BlockingSplice(ctx context.Context, src *
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemStreamsResultU64StreamsStreamError(ctx, caller, callee, f.caller, f.fns.fnBlockingSplice.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemStreamsResultU64StreamsStreamError(ctx, caller, callee, f.caller, nil, f.fns.fnBlockingSplice.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_
@@ -5418,7 +5418,7 @@ func (f *streamsOutputStreamForwarder) BlockingWriteAndFlush(ctx context.Context
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemStreamsResult_StreamsStreamError(ctx, caller, callee, f.caller, f.fns.fnBlockingWriteAndFlush.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemStreamsResult_StreamsStreamError(ctx, caller, callee, f.caller, nil, f.fns.fnBlockingWriteAndFlush.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_
@@ -5444,7 +5444,7 @@ func (f *streamsOutputStreamForwarder) BlockingWriteZeroesAndFlush(ctx context.C
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemStreamsResult_StreamsStreamError(ctx, caller, callee, f.caller, f.fns.fnBlockingWriteZeroesAndFlush.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemStreamsResult_StreamsStreamError(ctx, caller, callee, f.caller, nil, f.fns.fnBlockingWriteZeroesAndFlush.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_
@@ -5468,7 +5468,7 @@ func (f *streamsOutputStreamForwarder) CheckWrite(ctx context.Context) (streams.
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemStreamsResultU64StreamsStreamError(ctx, caller, callee, f.caller, f.fns.fnCheckWrite.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemStreamsResultU64StreamsStreamError(ctx, caller, callee, f.caller, nil, f.fns.fnCheckWrite.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_
@@ -5492,7 +5492,7 @@ func (f *streamsOutputStreamForwarder) Flush(ctx context.Context) (streams.Resul
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemStreamsResult_StreamsStreamError(ctx, caller, callee, f.caller, f.fns.fnFlush.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemStreamsResult_StreamsStreamError(ctx, caller, callee, f.caller, nil, f.fns.fnFlush.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_
@@ -5535,7 +5535,7 @@ func (f *streamsOutputStreamForwarder) Splice(ctx context.Context, src *streams.
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemStreamsResultU64StreamsStreamError(ctx, caller, callee, f.caller, f.fns.fnSplice.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemStreamsResultU64StreamsStreamError(ctx, caller, callee, f.caller, nil, f.fns.fnSplice.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_
@@ -5597,7 +5597,7 @@ func (f *streamsOutputStreamForwarder) Write(ctx context.Context, contents []uin
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemStreamsResult_StreamsStreamError(ctx, caller, callee, f.caller, f.fns.fnWrite.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemStreamsResult_StreamsStreamError(ctx, caller, callee, f.caller, nil, f.fns.fnWrite.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_
@@ -5623,7 +5623,7 @@ func (f *streamsOutputStreamForwarder) WriteZeroes(ctx context.Context, len uint
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemStreamsResult_StreamsStreamError(ctx, caller, callee, f.caller, f.fns.fnWriteZeroes.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemStreamsResult_StreamsStreamError(ctx, caller, callee, f.caller, nil, f.fns.fnWriteZeroes.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_
@@ -5668,7 +5668,7 @@ func (f *streamsInputStreamForwarder) BlockingRead(ctx context.Context, len uint
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemStreamsResultListU8StreamsStreamError(ctx, caller, callee, f.caller, f.fns.fnBlockingRead.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemStreamsResultListU8StreamsStreamError(ctx, caller, callee, f.caller, nil, f.fns.fnBlockingRead.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_
@@ -5694,7 +5694,7 @@ func (f *streamsInputStreamForwarder) BlockingSkip(ctx context.Context, len uint
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemStreamsResultU64StreamsStreamError(ctx, caller, callee, f.caller, f.fns.fnBlockingSkip.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemStreamsResultU64StreamsStreamError(ctx, caller, callee, f.caller, nil, f.fns.fnBlockingSkip.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_
@@ -5720,7 +5720,7 @@ func (f *streamsInputStreamForwarder) Read(ctx context.Context, len uint64) (str
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemStreamsResultListU8StreamsStreamError(ctx, caller, callee, f.caller, f.fns.fnRead.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemStreamsResultListU8StreamsStreamError(ctx, caller, callee, f.caller, nil, f.fns.fnRead.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_
@@ -5746,7 +5746,7 @@ func (f *streamsInputStreamForwarder) Skip(ctx context.Context, len uint64) (str
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemStreamsResultU64StreamsStreamError(ctx, caller, callee, f.caller, f.fns.fnSkip.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemStreamsResultU64StreamsStreamError(ctx, caller, callee, f.caller, nil, f.fns.fnSkip.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_
@@ -5851,7 +5851,7 @@ func (f *typesDescriptorForwarder) Advise(ctx context.Context, offset uint64, le
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemTypesResult_TypesErrorCode(ctx, caller, callee, f.caller, f.fns.fnAdvise.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemTypesResult_TypesErrorCode(ctx, caller, callee, f.caller, nil, f.fns.fnAdvise.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_
@@ -5875,7 +5875,7 @@ func (f *typesDescriptorForwarder) AppendViaStream(ctx context.Context) (types.R
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemTypesResultOutputStreamTypesErrorCode(ctx, caller, callee, f.caller, f.fns.fnAppendViaStream.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemTypesResultOutputStreamTypesErrorCode(ctx, caller, callee, f.caller, nil, f.fns.fnAppendViaStream.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_
@@ -5903,7 +5903,7 @@ func (f *typesDescriptorForwarder) CreateDirectoryAt(ctx context.Context, path s
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemTypesResult_TypesErrorCode(ctx, caller, callee, f.caller, f.fns.fnCreateDirectoryAt.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemTypesResult_TypesErrorCode(ctx, caller, callee, f.caller, nil, f.fns.fnCreateDirectoryAt.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_
@@ -5927,7 +5927,7 @@ func (f *typesDescriptorForwarder) GetFlags(ctx context.Context) (types.ResultDe
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemTypesResultTypesDescriptorFlagsTypesErrorCode(ctx, caller, callee, f.caller, f.fns.fnGetFlags.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemTypesResultTypesDescriptorFlagsTypesErrorCode(ctx, caller, callee, f.caller, nil, f.fns.fnGetFlags.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_
@@ -5951,7 +5951,7 @@ func (f *typesDescriptorForwarder) GetType(ctx context.Context) (types.ResultDes
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemTypesResultTypesDescriptorTypeTypesErrorCode(ctx, caller, callee, f.caller, f.fns.fnGetType.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemTypesResultTypesDescriptorTypeTypesErrorCode(ctx, caller, callee, f.caller, nil, f.fns.fnGetType.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_
@@ -6039,7 +6039,7 @@ func (f *typesDescriptorForwarder) LinkAt(ctx context.Context, oldPathFlags type
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemTypesResult_TypesErrorCode(ctx, caller, callee, f.caller, f.fns.fnLinkAt.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemTypesResult_TypesErrorCode(ctx, caller, callee, f.caller, nil, f.fns.fnLinkAt.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_
@@ -6063,7 +6063,7 @@ func (f *typesDescriptorForwarder) MetadataHash(ctx context.Context) (types.Resu
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemTypesResultTypesMetadataHashValueTypesErrorCode(ctx, caller, callee, f.caller, f.fns.fnMetadataHash.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemTypesResultTypesMetadataHashValueTypesErrorCode(ctx, caller, callee, f.caller, nil, f.fns.fnMetadataHash.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_
@@ -6093,7 +6093,7 @@ func (f *typesDescriptorForwarder) MetadataHashAt(ctx context.Context, pathFlags
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemTypesResultTypesMetadataHashValueTypesErrorCode(ctx, caller, callee, f.caller, f.fns.fnMetadataHashAt.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemTypesResultTypesMetadataHashValueTypesErrorCode(ctx, caller, callee, f.caller, nil, f.fns.fnMetadataHashAt.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_
@@ -6127,7 +6127,7 @@ func (f *typesDescriptorForwarder) OpenAt(ctx context.Context, pathFlags types.P
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemTypesResultDescriptorTypesErrorCode(ctx, caller, callee, f.caller, f.fns.fnOpenAt.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemTypesResultDescriptorTypesErrorCode(ctx, caller, callee, f.caller, nil, f.fns.fnOpenAt.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_
@@ -6155,7 +6155,7 @@ func (f *typesDescriptorForwarder) Read(ctx context.Context, length uint64, offs
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemTypesResultTypesTupleListU8BoolTypesErrorCode(ctx, caller, callee, f.caller, f.fns.fnRead.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemTypesResultTypesTupleListU8BoolTypesErrorCode(ctx, caller, callee, f.caller, nil, f.fns.fnRead.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_
@@ -6179,7 +6179,7 @@ func (f *typesDescriptorForwarder) ReadDirectory(ctx context.Context) (types.Res
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemTypesResultDirectoryEntryStreamTypesErrorCode(ctx, caller, callee, f.caller, f.fns.fnReadDirectory.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemTypesResultDirectoryEntryStreamTypesErrorCode(ctx, caller, callee, f.caller, nil, f.fns.fnReadDirectory.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_
@@ -6205,7 +6205,7 @@ func (f *typesDescriptorForwarder) ReadViaStream(ctx context.Context, offset uin
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemTypesResultInputStreamTypesErrorCode(ctx, caller, callee, f.caller, f.fns.fnReadViaStream.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemTypesResultInputStreamTypesErrorCode(ctx, caller, callee, f.caller, nil, f.fns.fnReadViaStream.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_
@@ -6233,7 +6233,7 @@ func (f *typesDescriptorForwarder) ReadlinkAt(ctx context.Context, path string) 
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemTypesResultStringTypesErrorCode(ctx, caller, callee, f.caller, f.fns.fnReadlinkAt.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemTypesResultStringTypesErrorCode(ctx, caller, callee, f.caller, nil, f.fns.fnReadlinkAt.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_
@@ -6261,7 +6261,7 @@ func (f *typesDescriptorForwarder) RemoveDirectoryAt(ctx context.Context, path s
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemTypesResult_TypesErrorCode(ctx, caller, callee, f.caller, f.fns.fnRemoveDirectoryAt.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemTypesResult_TypesErrorCode(ctx, caller, callee, f.caller, nil, f.fns.fnRemoveDirectoryAt.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_
@@ -6310,7 +6310,7 @@ func (f *typesDescriptorForwarder) RenameAt(ctx context.Context, oldPath string,
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemTypesResult_TypesErrorCode(ctx, caller, callee, f.caller, f.fns.fnRenameAt.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemTypesResult_TypesErrorCode(ctx, caller, callee, f.caller, nil, f.fns.fnRenameAt.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_
@@ -6336,7 +6336,7 @@ func (f *typesDescriptorForwarder) SetSize(ctx context.Context, size uint64) (ty
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemTypesResult_TypesErrorCode(ctx, caller, callee, f.caller, f.fns.fnSetSize.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemTypesResult_TypesErrorCode(ctx, caller, callee, f.caller, nil, f.fns.fnSetSize.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_
@@ -6368,7 +6368,7 @@ func (f *typesDescriptorForwarder) SetTimes(ctx context.Context, dataAccessTimes
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemTypesResult_TypesErrorCode(ctx, caller, callee, f.caller, f.fns.fnSetTimes.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemTypesResult_TypesErrorCode(ctx, caller, callee, f.caller, nil, f.fns.fnSetTimes.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_
@@ -6406,7 +6406,7 @@ func (f *typesDescriptorForwarder) SetTimesAt(ctx context.Context, pathFlags typ
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemTypesResult_TypesErrorCode(ctx, caller, callee, f.caller, f.fns.fnSetTimesAt.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemTypesResult_TypesErrorCode(ctx, caller, callee, f.caller, nil, f.fns.fnSetTimesAt.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_
@@ -6430,7 +6430,7 @@ func (f *typesDescriptorForwarder) Stat(ctx context.Context) (types.ResultDescri
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemTypesResultTypesDescriptorStatTypesErrorCode(ctx, caller, callee, f.caller, f.fns.fnStat.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemTypesResultTypesDescriptorStatTypesErrorCode(ctx, caller, callee, f.caller, nil, f.fns.fnStat.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_
@@ -6460,7 +6460,7 @@ func (f *typesDescriptorForwarder) StatAt(ctx context.Context, pathFlags types.P
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemTypesResultTypesDescriptorStatTypesErrorCode(ctx, caller, callee, f.caller, f.fns.fnStatAt.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemTypesResultTypesDescriptorStatTypesErrorCode(ctx, caller, callee, f.caller, nil, f.fns.fnStatAt.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_
@@ -6492,7 +6492,7 @@ func (f *typesDescriptorForwarder) SymlinkAt(ctx context.Context, oldPath string
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemTypesResult_TypesErrorCode(ctx, caller, callee, f.caller, f.fns.fnSymlinkAt.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemTypesResult_TypesErrorCode(ctx, caller, callee, f.caller, nil, f.fns.fnSymlinkAt.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_
@@ -6516,7 +6516,7 @@ func (f *typesDescriptorForwarder) Sync(ctx context.Context) (types.Result_Error
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemTypesResult_TypesErrorCode(ctx, caller, callee, f.caller, f.fns.fnSync.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemTypesResult_TypesErrorCode(ctx, caller, callee, f.caller, nil, f.fns.fnSync.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_
@@ -6540,7 +6540,7 @@ func (f *typesDescriptorForwarder) SyncData(ctx context.Context) (types.Result_E
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemTypesResult_TypesErrorCode(ctx, caller, callee, f.caller, f.fns.fnSyncData.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemTypesResult_TypesErrorCode(ctx, caller, callee, f.caller, nil, f.fns.fnSyncData.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_
@@ -6568,7 +6568,7 @@ func (f *typesDescriptorForwarder) UnlinkFileAt(ctx context.Context, path string
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemTypesResult_TypesErrorCode(ctx, caller, callee, f.caller, f.fns.fnUnlinkFileAt.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemTypesResult_TypesErrorCode(ctx, caller, callee, f.caller, nil, f.fns.fnUnlinkFileAt.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_
@@ -6598,7 +6598,7 @@ func (f *typesDescriptorForwarder) Write(ctx context.Context, buffer []uint8, of
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemTypesResultU64TypesErrorCode(ctx, caller, callee, f.caller, f.fns.fnWrite.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemTypesResultU64TypesErrorCode(ctx, caller, callee, f.caller, nil, f.fns.fnWrite.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_
@@ -6624,7 +6624,7 @@ func (f *typesDescriptorForwarder) WriteViaStream(ctx context.Context, offset ui
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemTypesResultOutputStreamTypesErrorCode(ctx, caller, callee, f.caller, f.fns.fnWriteViaStream.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemTypesResultOutputStreamTypesErrorCode(ctx, caller, callee, f.caller, nil, f.fns.fnWriteViaStream.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_
@@ -6663,7 +6663,7 @@ func (f *typesDirectoryEntryStreamForwarder) ReadDirectoryEntry(ctx context.Cont
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemTypesResultTypesOptionDirectoryEntryTypesErrorCode(ctx, caller, callee, f.caller, f.fns.fnReadDirectoryEntry.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemTypesResultTypesOptionDirectoryEntryTypesErrorCode(ctx, caller, callee, f.caller, nil, f.fns.fnReadDirectoryEntry.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_

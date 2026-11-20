@@ -42,7 +42,7 @@ func (w *randomWrapper) GetRandomBytes(ctx context.Context, len uint64) ([]uint8
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemListU8(ctx, caller, callee, w.callerInst, w.fnGetRandomBytes.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemListU8(ctx, caller, callee, w.callerInst, w, w.fnGetRandomBytes.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_

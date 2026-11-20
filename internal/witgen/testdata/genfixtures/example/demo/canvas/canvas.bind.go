@@ -161,14 +161,14 @@ func fromGoMemListShapesShape(ctx context.Context, cc *host.CallContext, h *host
 	return nil
 }
 
-func liftFlatListShapesShape(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) ([]shapes.Shape, error) {
+func liftFlatListShapesShape(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *canvasWrapper, ty wacogo.Type, stack []uint64) ([]shapes.Shape, error) {
 	lstT_ := ty.(wacogo.TypeList)
 	_ = lstT_
 	ptr_ := uint32(stack[0])
 	ln_ := uint32(stack[1])
 	out_ := make([]shapes.Shape, ln_)
 	for i_ := uint32(0); i_ < ln_; i_++ {
-		if tmp_, err_ := liftMemShapesShape(ctx, caller, callee, h, lstT_.Elem, ptr_+i_*8); err_ != nil {
+		if tmp_, err_ := liftMemShapesShape(ctx, caller, callee, h, w_, lstT_.Elem, ptr_+i_*8); err_ != nil {
 			return nil, err_
 		} else {
 			out_[i_] = tmp_
@@ -177,7 +177,7 @@ func liftFlatListShapesShape(ctx context.Context, caller, callee *host.CallConte
 	return out_, nil
 }
 
-func liftMemListShapesShape(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) ([]shapes.Shape, error) {
+func liftMemListShapesShape(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *canvasWrapper, ty wacogo.Type, ptr uint32) ([]shapes.Shape, error) {
 	lstT_ := ty.(wacogo.TypeList)
 	_ = lstT_
 	var lptr_ uint32
@@ -194,7 +194,7 @@ func liftMemListShapesShape(ctx context.Context, caller, callee *host.CallContex
 	}
 	out_ := make([]shapes.Shape, ln_)
 	for i_ := uint32(0); i_ < ln_; i_++ {
-		if tmp_, err_ := liftMemShapesShape(ctx, caller, callee, h, lstT_.Elem, lptr_+i_*8); err_ != nil {
+		if tmp_, err_ := liftMemShapesShape(ctx, caller, callee, h, w_, lstT_.Elem, lptr_+i_*8); err_ != nil {
 			return nil, err_
 		} else {
 			out_[i_] = tmp_
@@ -281,11 +281,11 @@ func fromGoMemShapesDrawing(ctx context.Context, cc *host.CallContext, h *host.C
 	return nil
 }
 
-func liftFlatShapesDrawing(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (shapes.Drawing, error) {
+func liftFlatShapesDrawing(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *canvasWrapper, ty wacogo.Type, stack []uint64) (shapes.Drawing, error) {
 	var v_ shapes.Drawing
 	recT_ := ty.(wacogo.TypeRecord)
 	_ = recT_
-	if tmp_, err_ := liftFlatListShapesShape(ctx, caller, callee, h, recT_.Fields[0].Type, stack[0:2]); err_ != nil {
+	if tmp_, err_ := liftFlatListShapesShape(ctx, caller, callee, h, w_, recT_.Fields[0].Type, stack[0:2]); err_ != nil {
 		return shapes.Drawing{}, err_
 	} else {
 		v_.Shapes = tmp_
@@ -293,11 +293,11 @@ func liftFlatShapesDrawing(ctx context.Context, caller, callee *host.CallContext
 	return v_, nil
 }
 
-func liftMemShapesDrawing(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (shapes.Drawing, error) {
+func liftMemShapesDrawing(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *canvasWrapper, ty wacogo.Type, ptr uint32) (shapes.Drawing, error) {
 	var v_ shapes.Drawing
 	recT_ := ty.(wacogo.TypeRecord)
 	_ = recT_
-	if tmp_, err_ := liftMemListShapesShape(ctx, caller, callee, h, recT_.Fields[0].Type, ptr); err_ != nil {
+	if tmp_, err_ := liftMemListShapesShape(ctx, caller, callee, h, w_, recT_.Fields[0].Type, ptr); err_ != nil {
 		return shapes.Drawing{}, err_
 	} else {
 		v_.Shapes = tmp_
@@ -406,7 +406,7 @@ func fromGoMemShapesShape(ctx context.Context, cc *host.CallContext, h *host.Com
 	return nil
 }
 
-func liftFlatShapesShape(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (shapes.Shape, error) {
+func liftFlatShapesShape(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *canvasWrapper, ty wacogo.Type, stack []uint64) (shapes.Shape, error) {
 	varT_ := ty.(wacogo.TypeVariant)
 	_ = varT_
 	disc_ := uint32(stack[0])
@@ -423,7 +423,7 @@ func liftFlatShapesShape(ctx context.Context, caller, callee *host.CallContext, 
 	return nil, fmt.Errorf("wacogo/witgen: liftFlatShapesShape: invalid discriminant %d", disc_)
 }
 
-func liftMemShapesShape(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (shapes.Shape, error) {
+func liftMemShapesShape(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *canvasWrapper, ty wacogo.Type, ptr uint32) (shapes.Shape, error) {
 	varT_ := ty.(wacogo.TypeVariant)
 	_ = varT_
 	var disc_ uint8

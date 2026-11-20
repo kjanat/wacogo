@@ -4,6 +4,9 @@
 package wioerror
 
 import (
+	"context"
+	"fmt"
+
 	"github.com/kjanat/wacogo"
 	"github.com/kjanat/wacogo/host"
 )
@@ -23,4 +26,48 @@ func WrapInstance(caller *host.ComponentInstance, callee *wacogo.ComponentInstan
 	w_ := &errorWrapper{callerInst: caller}
 	w_.fnErrorResourceToDebugString = host.WrapExportedFunc(callee.ExportedFunc("[method]error.to-debug-string"))
 	return w_
+}
+
+type errorResourceRemote struct {
+	w *errorWrapper
+	h *ErrorResourceHandle
+}
+
+func (d_ *errorResourceRemote) ToDebugString(ctx context.Context) (string, error) {
+	var resVal_ string
+	{
+		callErr_ := d_.w.fnErrorResourceToDebugString.CallRaw(ctx, d_.w.callerInst,
+			func(caller, callee *host.CallContext, stack []uint64) error {
+				{
+					tr_ := d_.w.fnErrorResourceToDebugString.ParamType(0).(wacogo.TypeBorrow).ResourceType
+					callerH_, err_ := d_.h.bind(caller, d_.w.callerInst)
+					if err_ != nil {
+						return err_
+					}
+					srcH_, err_ := caller.LookupBorrowable(tr_, callerH_)
+					if err_ != nil {
+						return err_
+					}
+					dstH_, err_ := srcH_.LendTo(callee.TransferTarget(), callee.Task())
+					if err_ != nil {
+						return err_
+					}
+					stack[0] = uint64(dstH_.HandleID())
+				}
+				return nil
+			},
+			func(caller, callee *host.CallContext, stack []uint64) error {
+				if v_, err_ := liftMemString(ctx, caller, callee, d_.w.callerInst, d_.w, d_.w.fnErrorResourceToDebugString.ResultType(0), uint32(stack[0])); err_ != nil {
+					return err_
+				} else {
+					resVal_ = v_
+				}
+				return nil
+			},
+		)
+		if callErr_ != nil {
+			return "", fmt.Errorf("wacogo/witgen: CallRaw failed: %w", callErr_)
+		}
+	}
+	return resVal_, nil
 }

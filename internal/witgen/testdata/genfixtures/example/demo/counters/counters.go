@@ -30,6 +30,7 @@ type Counters interface {
 // satisfying Counter can be wrapped with NewCounterHandle to
 // produce a handle that crosses component boundaries.
 type Counter interface {
+	Add(ctx context.Context, n uint32) (uint32, error)
 	Get(ctx context.Context) (uint32, error)
 }
 

@@ -132,7 +132,7 @@ func (w *typesWrapper) FilesystemErrorCode(ctx context.Context, err *wioerror.Er
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemOptionErrorCode(ctx, caller, callee, w.callerInst, w.fnFilesystemErrorCode.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemOptionErrorCode(ctx, caller, callee, w.callerInst, w, w.fnFilesystemErrorCode.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_
@@ -142,6 +142,1263 @@ func (w *typesWrapper) FilesystemErrorCode(ctx context.Context, err *wioerror.Er
 		)
 		if callErr_ != nil {
 			return OptionErrorCode{}, fmt.Errorf("wacogo/witgen: CallRaw failed: %w", callErr_)
+		}
+	}
+	return resVal_, nil
+}
+
+type descriptorRemote struct {
+	w *typesWrapper
+	h *DescriptorHandle
+}
+
+func (d_ *descriptorRemote) Advise(ctx context.Context, offset uint64, length uint64, advice Advice) (Result_ErrorCode, error) {
+	var resVal_ Result_ErrorCode
+	arg0_ := offset
+	arg1_ := length
+	arg2_ := advice
+	{
+		callErr_ := d_.w.fnDescriptorAdvise.CallRaw(ctx, d_.w.callerInst,
+			func(caller, callee *host.CallContext, stack []uint64) error {
+				{
+					tr_ := d_.w.fnDescriptorAdvise.ParamType(0).(wacogo.TypeBorrow).ResourceType
+					callerH_, err_ := d_.h.bind(caller, d_.w.callerInst)
+					if err_ != nil {
+						return err_
+					}
+					srcH_, err_ := caller.LookupBorrowable(tr_, callerH_)
+					if err_ != nil {
+						return err_
+					}
+					dstH_, err_ := srcH_.LendTo(callee.TransferTarget(), callee.Task())
+					if err_ != nil {
+						return err_
+					}
+					stack[0] = uint64(dstH_.HandleID())
+				}
+				stack[1] = arg0_
+				stack[2] = arg1_
+				stack[3] = uint64(arg2_)
+				return nil
+			},
+			func(caller, callee *host.CallContext, stack []uint64) error {
+				if v_, err_ := liftMemResult_ErrorCode(ctx, caller, callee, d_.w.callerInst, d_.w, d_.w.fnDescriptorAdvise.ResultType(0), uint32(stack[0])); err_ != nil {
+					return err_
+				} else {
+					resVal_ = v_
+				}
+				return nil
+			},
+		)
+		if callErr_ != nil {
+			return nil, fmt.Errorf("wacogo/witgen: CallRaw failed: %w", callErr_)
+		}
+	}
+	return resVal_, nil
+}
+
+func (d_ *descriptorRemote) AppendViaStream(ctx context.Context) (ResultOutputStreamErrorCode, error) {
+	var resVal_ ResultOutputStreamErrorCode
+	{
+		callErr_ := d_.w.fnDescriptorAppendViaStream.CallRaw(ctx, d_.w.callerInst,
+			func(caller, callee *host.CallContext, stack []uint64) error {
+				{
+					tr_ := d_.w.fnDescriptorAppendViaStream.ParamType(0).(wacogo.TypeBorrow).ResourceType
+					callerH_, err_ := d_.h.bind(caller, d_.w.callerInst)
+					if err_ != nil {
+						return err_
+					}
+					srcH_, err_ := caller.LookupBorrowable(tr_, callerH_)
+					if err_ != nil {
+						return err_
+					}
+					dstH_, err_ := srcH_.LendTo(callee.TransferTarget(), callee.Task())
+					if err_ != nil {
+						return err_
+					}
+					stack[0] = uint64(dstH_.HandleID())
+				}
+				return nil
+			},
+			func(caller, callee *host.CallContext, stack []uint64) error {
+				if v_, err_ := liftMemResultOutputStreamErrorCode(ctx, caller, callee, d_.w.callerInst, d_.w, d_.w.fnDescriptorAppendViaStream.ResultType(0), uint32(stack[0])); err_ != nil {
+					return err_
+				} else {
+					resVal_ = v_
+				}
+				return nil
+			},
+		)
+		if callErr_ != nil {
+			return nil, fmt.Errorf("wacogo/witgen: CallRaw failed: %w", callErr_)
+		}
+	}
+	return resVal_, nil
+}
+
+func (d_ *descriptorRemote) CreateDirectoryAt(ctx context.Context, path string) (Result_ErrorCode, error) {
+	var resVal_ Result_ErrorCode
+	arg0_ := path
+	{
+		callErr_ := d_.w.fnDescriptorCreateDirectoryAt.CallRaw(ctx, d_.w.callerInst,
+			func(caller, callee *host.CallContext, stack []uint64) error {
+				{
+					tr_ := d_.w.fnDescriptorCreateDirectoryAt.ParamType(0).(wacogo.TypeBorrow).ResourceType
+					callerH_, err_ := d_.h.bind(caller, d_.w.callerInst)
+					if err_ != nil {
+						return err_
+					}
+					srcH_, err_ := caller.LookupBorrowable(tr_, callerH_)
+					if err_ != nil {
+						return err_
+					}
+					dstH_, err_ := srcH_.LendTo(callee.TransferTarget(), callee.Task())
+					if err_ != nil {
+						return err_
+					}
+					stack[0] = uint64(dstH_.HandleID())
+				}
+				if err_ := lowerFlatString(ctx, caller, callee, d_.w.callerInst, d_.w.fnDescriptorCreateDirectoryAt.ParamType(1), stack[1:3], arg0_); err_ != nil {
+					return err_
+				}
+				return nil
+			},
+			func(caller, callee *host.CallContext, stack []uint64) error {
+				if v_, err_ := liftMemResult_ErrorCode(ctx, caller, callee, d_.w.callerInst, d_.w, d_.w.fnDescriptorCreateDirectoryAt.ResultType(0), uint32(stack[0])); err_ != nil {
+					return err_
+				} else {
+					resVal_ = v_
+				}
+				return nil
+			},
+		)
+		if callErr_ != nil {
+			return nil, fmt.Errorf("wacogo/witgen: CallRaw failed: %w", callErr_)
+		}
+	}
+	return resVal_, nil
+}
+
+func (d_ *descriptorRemote) GetFlags(ctx context.Context) (ResultDescriptorFlagsErrorCode, error) {
+	var resVal_ ResultDescriptorFlagsErrorCode
+	{
+		callErr_ := d_.w.fnDescriptorGetFlags.CallRaw(ctx, d_.w.callerInst,
+			func(caller, callee *host.CallContext, stack []uint64) error {
+				{
+					tr_ := d_.w.fnDescriptorGetFlags.ParamType(0).(wacogo.TypeBorrow).ResourceType
+					callerH_, err_ := d_.h.bind(caller, d_.w.callerInst)
+					if err_ != nil {
+						return err_
+					}
+					srcH_, err_ := caller.LookupBorrowable(tr_, callerH_)
+					if err_ != nil {
+						return err_
+					}
+					dstH_, err_ := srcH_.LendTo(callee.TransferTarget(), callee.Task())
+					if err_ != nil {
+						return err_
+					}
+					stack[0] = uint64(dstH_.HandleID())
+				}
+				return nil
+			},
+			func(caller, callee *host.CallContext, stack []uint64) error {
+				if v_, err_ := liftMemResultDescriptorFlagsErrorCode(ctx, caller, callee, d_.w.callerInst, d_.w, d_.w.fnDescriptorGetFlags.ResultType(0), uint32(stack[0])); err_ != nil {
+					return err_
+				} else {
+					resVal_ = v_
+				}
+				return nil
+			},
+		)
+		if callErr_ != nil {
+			return nil, fmt.Errorf("wacogo/witgen: CallRaw failed: %w", callErr_)
+		}
+	}
+	return resVal_, nil
+}
+
+func (d_ *descriptorRemote) GetType(ctx context.Context) (ResultDescriptorTypeErrorCode, error) {
+	var resVal_ ResultDescriptorTypeErrorCode
+	{
+		callErr_ := d_.w.fnDescriptorGetType.CallRaw(ctx, d_.w.callerInst,
+			func(caller, callee *host.CallContext, stack []uint64) error {
+				{
+					tr_ := d_.w.fnDescriptorGetType.ParamType(0).(wacogo.TypeBorrow).ResourceType
+					callerH_, err_ := d_.h.bind(caller, d_.w.callerInst)
+					if err_ != nil {
+						return err_
+					}
+					srcH_, err_ := caller.LookupBorrowable(tr_, callerH_)
+					if err_ != nil {
+						return err_
+					}
+					dstH_, err_ := srcH_.LendTo(callee.TransferTarget(), callee.Task())
+					if err_ != nil {
+						return err_
+					}
+					stack[0] = uint64(dstH_.HandleID())
+				}
+				return nil
+			},
+			func(caller, callee *host.CallContext, stack []uint64) error {
+				if v_, err_ := liftMemResultDescriptorTypeErrorCode(ctx, caller, callee, d_.w.callerInst, d_.w, d_.w.fnDescriptorGetType.ResultType(0), uint32(stack[0])); err_ != nil {
+					return err_
+				} else {
+					resVal_ = v_
+				}
+				return nil
+			},
+		)
+		if callErr_ != nil {
+			return nil, fmt.Errorf("wacogo/witgen: CallRaw failed: %w", callErr_)
+		}
+	}
+	return resVal_, nil
+}
+
+func (d_ *descriptorRemote) IsSameObject(ctx context.Context, other *DescriptorHandle) (bool, error) {
+	var resVal_ bool
+	arg0_ := other
+	{
+		callErr_ := d_.w.fnDescriptorIsSameObject.CallRaw(ctx, d_.w.callerInst,
+			func(caller, callee *host.CallContext, stack []uint64) error {
+				{
+					tr_ := d_.w.fnDescriptorIsSameObject.ParamType(0).(wacogo.TypeBorrow).ResourceType
+					callerH_, err_ := d_.h.bind(caller, d_.w.callerInst)
+					if err_ != nil {
+						return err_
+					}
+					srcH_, err_ := caller.LookupBorrowable(tr_, callerH_)
+					if err_ != nil {
+						return err_
+					}
+					dstH_, err_ := srcH_.LendTo(callee.TransferTarget(), callee.Task())
+					if err_ != nil {
+						return err_
+					}
+					stack[0] = uint64(dstH_.HandleID())
+				}
+				{
+					tr_ := d_.w.fnDescriptorIsSameObject.ParamType(1).(wacogo.TypeBorrow).ResourceType
+					callerH_, err_ := arg0_.bind(caller, d_.w.callerInst)
+					if err_ != nil {
+						return err_
+					}
+					srcH_, err_ := caller.LookupBorrowable(tr_, callerH_)
+					if err_ != nil {
+						return err_
+					}
+					dstH_, err_ := srcH_.LendTo(callee.TransferTarget(), callee.Task())
+					if err_ != nil {
+						return err_
+					}
+					stack[1] = uint64(dstH_.HandleID())
+				}
+				return nil
+			},
+			func(caller, callee *host.CallContext, stack []uint64) error {
+				resVal_ = stack[0] != 0
+				return nil
+			},
+		)
+		if callErr_ != nil {
+			return false, fmt.Errorf("wacogo/witgen: CallRaw failed: %w", callErr_)
+		}
+	}
+	return resVal_, nil
+}
+
+func (d_ *descriptorRemote) LinkAt(ctx context.Context, oldPathFlags PathFlags, oldPath string, newDescriptor *DescriptorHandle, newPath string) (Result_ErrorCode, error) {
+	var resVal_ Result_ErrorCode
+	arg0_ := oldPathFlags
+	arg1_ := oldPath
+	arg2_ := newDescriptor
+	arg3_ := newPath
+	{
+		callErr_ := d_.w.fnDescriptorLinkAt.CallRaw(ctx, d_.w.callerInst,
+			func(caller, callee *host.CallContext, stack []uint64) error {
+				{
+					tr_ := d_.w.fnDescriptorLinkAt.ParamType(0).(wacogo.TypeBorrow).ResourceType
+					callerH_, err_ := d_.h.bind(caller, d_.w.callerInst)
+					if err_ != nil {
+						return err_
+					}
+					srcH_, err_ := caller.LookupBorrowable(tr_, callerH_)
+					if err_ != nil {
+						return err_
+					}
+					dstH_, err_ := srcH_.LendTo(callee.TransferTarget(), callee.Task())
+					if err_ != nil {
+						return err_
+					}
+					stack[0] = uint64(dstH_.HandleID())
+				}
+				stack[1] = uint64(arg0_)
+				if err_ := lowerFlatString(ctx, caller, callee, d_.w.callerInst, d_.w.fnDescriptorLinkAt.ParamType(2), stack[2:4], arg1_); err_ != nil {
+					return err_
+				}
+				{
+					tr_ := d_.w.fnDescriptorLinkAt.ParamType(3).(wacogo.TypeBorrow).ResourceType
+					callerH_, err_ := arg2_.bind(caller, d_.w.callerInst)
+					if err_ != nil {
+						return err_
+					}
+					srcH_, err_ := caller.LookupBorrowable(tr_, callerH_)
+					if err_ != nil {
+						return err_
+					}
+					dstH_, err_ := srcH_.LendTo(callee.TransferTarget(), callee.Task())
+					if err_ != nil {
+						return err_
+					}
+					stack[4] = uint64(dstH_.HandleID())
+				}
+				if err_ := lowerFlatString(ctx, caller, callee, d_.w.callerInst, d_.w.fnDescriptorLinkAt.ParamType(4), stack[5:7], arg3_); err_ != nil {
+					return err_
+				}
+				return nil
+			},
+			func(caller, callee *host.CallContext, stack []uint64) error {
+				if v_, err_ := liftMemResult_ErrorCode(ctx, caller, callee, d_.w.callerInst, d_.w, d_.w.fnDescriptorLinkAt.ResultType(0), uint32(stack[0])); err_ != nil {
+					return err_
+				} else {
+					resVal_ = v_
+				}
+				return nil
+			},
+		)
+		if callErr_ != nil {
+			return nil, fmt.Errorf("wacogo/witgen: CallRaw failed: %w", callErr_)
+		}
+	}
+	return resVal_, nil
+}
+
+func (d_ *descriptorRemote) MetadataHash(ctx context.Context) (ResultMetadataHashValueErrorCode, error) {
+	var resVal_ ResultMetadataHashValueErrorCode
+	{
+		callErr_ := d_.w.fnDescriptorMetadataHash.CallRaw(ctx, d_.w.callerInst,
+			func(caller, callee *host.CallContext, stack []uint64) error {
+				{
+					tr_ := d_.w.fnDescriptorMetadataHash.ParamType(0).(wacogo.TypeBorrow).ResourceType
+					callerH_, err_ := d_.h.bind(caller, d_.w.callerInst)
+					if err_ != nil {
+						return err_
+					}
+					srcH_, err_ := caller.LookupBorrowable(tr_, callerH_)
+					if err_ != nil {
+						return err_
+					}
+					dstH_, err_ := srcH_.LendTo(callee.TransferTarget(), callee.Task())
+					if err_ != nil {
+						return err_
+					}
+					stack[0] = uint64(dstH_.HandleID())
+				}
+				return nil
+			},
+			func(caller, callee *host.CallContext, stack []uint64) error {
+				if v_, err_ := liftMemResultMetadataHashValueErrorCode(ctx, caller, callee, d_.w.callerInst, d_.w, d_.w.fnDescriptorMetadataHash.ResultType(0), uint32(stack[0])); err_ != nil {
+					return err_
+				} else {
+					resVal_ = v_
+				}
+				return nil
+			},
+		)
+		if callErr_ != nil {
+			return nil, fmt.Errorf("wacogo/witgen: CallRaw failed: %w", callErr_)
+		}
+	}
+	return resVal_, nil
+}
+
+func (d_ *descriptorRemote) MetadataHashAt(ctx context.Context, pathFlags PathFlags, path string) (ResultMetadataHashValueErrorCode, error) {
+	var resVal_ ResultMetadataHashValueErrorCode
+	arg0_ := pathFlags
+	arg1_ := path
+	{
+		callErr_ := d_.w.fnDescriptorMetadataHashAt.CallRaw(ctx, d_.w.callerInst,
+			func(caller, callee *host.CallContext, stack []uint64) error {
+				{
+					tr_ := d_.w.fnDescriptorMetadataHashAt.ParamType(0).(wacogo.TypeBorrow).ResourceType
+					callerH_, err_ := d_.h.bind(caller, d_.w.callerInst)
+					if err_ != nil {
+						return err_
+					}
+					srcH_, err_ := caller.LookupBorrowable(tr_, callerH_)
+					if err_ != nil {
+						return err_
+					}
+					dstH_, err_ := srcH_.LendTo(callee.TransferTarget(), callee.Task())
+					if err_ != nil {
+						return err_
+					}
+					stack[0] = uint64(dstH_.HandleID())
+				}
+				stack[1] = uint64(arg0_)
+				if err_ := lowerFlatString(ctx, caller, callee, d_.w.callerInst, d_.w.fnDescriptorMetadataHashAt.ParamType(2), stack[2:4], arg1_); err_ != nil {
+					return err_
+				}
+				return nil
+			},
+			func(caller, callee *host.CallContext, stack []uint64) error {
+				if v_, err_ := liftMemResultMetadataHashValueErrorCode(ctx, caller, callee, d_.w.callerInst, d_.w, d_.w.fnDescriptorMetadataHashAt.ResultType(0), uint32(stack[0])); err_ != nil {
+					return err_
+				} else {
+					resVal_ = v_
+				}
+				return nil
+			},
+		)
+		if callErr_ != nil {
+			return nil, fmt.Errorf("wacogo/witgen: CallRaw failed: %w", callErr_)
+		}
+	}
+	return resVal_, nil
+}
+
+func (d_ *descriptorRemote) OpenAt(ctx context.Context, pathFlags PathFlags, path string, openFlags OpenFlags, flags DescriptorFlags) (ResultDescriptorErrorCode, error) {
+	var resVal_ ResultDescriptorErrorCode
+	arg0_ := pathFlags
+	arg1_ := path
+	arg2_ := openFlags
+	arg3_ := flags
+	{
+		callErr_ := d_.w.fnDescriptorOpenAt.CallRaw(ctx, d_.w.callerInst,
+			func(caller, callee *host.CallContext, stack []uint64) error {
+				{
+					tr_ := d_.w.fnDescriptorOpenAt.ParamType(0).(wacogo.TypeBorrow).ResourceType
+					callerH_, err_ := d_.h.bind(caller, d_.w.callerInst)
+					if err_ != nil {
+						return err_
+					}
+					srcH_, err_ := caller.LookupBorrowable(tr_, callerH_)
+					if err_ != nil {
+						return err_
+					}
+					dstH_, err_ := srcH_.LendTo(callee.TransferTarget(), callee.Task())
+					if err_ != nil {
+						return err_
+					}
+					stack[0] = uint64(dstH_.HandleID())
+				}
+				stack[1] = uint64(arg0_)
+				if err_ := lowerFlatString(ctx, caller, callee, d_.w.callerInst, d_.w.fnDescriptorOpenAt.ParamType(2), stack[2:4], arg1_); err_ != nil {
+					return err_
+				}
+				stack[4] = uint64(arg2_)
+				stack[5] = uint64(arg3_)
+				return nil
+			},
+			func(caller, callee *host.CallContext, stack []uint64) error {
+				if v_, err_ := liftMemResultDescriptorErrorCode(ctx, caller, callee, d_.w.callerInst, d_.w, d_.w.fnDescriptorOpenAt.ResultType(0), uint32(stack[0])); err_ != nil {
+					return err_
+				} else {
+					resVal_ = v_
+				}
+				return nil
+			},
+		)
+		if callErr_ != nil {
+			return nil, fmt.Errorf("wacogo/witgen: CallRaw failed: %w", callErr_)
+		}
+	}
+	return resVal_, nil
+}
+
+func (d_ *descriptorRemote) Read(ctx context.Context, length uint64, offset uint64) (ResultTupleListU8BoolErrorCode, error) {
+	var resVal_ ResultTupleListU8BoolErrorCode
+	arg0_ := length
+	arg1_ := offset
+	{
+		callErr_ := d_.w.fnDescriptorRead.CallRaw(ctx, d_.w.callerInst,
+			func(caller, callee *host.CallContext, stack []uint64) error {
+				{
+					tr_ := d_.w.fnDescriptorRead.ParamType(0).(wacogo.TypeBorrow).ResourceType
+					callerH_, err_ := d_.h.bind(caller, d_.w.callerInst)
+					if err_ != nil {
+						return err_
+					}
+					srcH_, err_ := caller.LookupBorrowable(tr_, callerH_)
+					if err_ != nil {
+						return err_
+					}
+					dstH_, err_ := srcH_.LendTo(callee.TransferTarget(), callee.Task())
+					if err_ != nil {
+						return err_
+					}
+					stack[0] = uint64(dstH_.HandleID())
+				}
+				stack[1] = arg0_
+				stack[2] = arg1_
+				return nil
+			},
+			func(caller, callee *host.CallContext, stack []uint64) error {
+				if v_, err_ := liftMemResultTupleListU8BoolErrorCode(ctx, caller, callee, d_.w.callerInst, d_.w, d_.w.fnDescriptorRead.ResultType(0), uint32(stack[0])); err_ != nil {
+					return err_
+				} else {
+					resVal_ = v_
+				}
+				return nil
+			},
+		)
+		if callErr_ != nil {
+			return nil, fmt.Errorf("wacogo/witgen: CallRaw failed: %w", callErr_)
+		}
+	}
+	return resVal_, nil
+}
+
+func (d_ *descriptorRemote) ReadDirectory(ctx context.Context) (ResultDirectoryEntryStreamErrorCode, error) {
+	var resVal_ ResultDirectoryEntryStreamErrorCode
+	{
+		callErr_ := d_.w.fnDescriptorReadDirectory.CallRaw(ctx, d_.w.callerInst,
+			func(caller, callee *host.CallContext, stack []uint64) error {
+				{
+					tr_ := d_.w.fnDescriptorReadDirectory.ParamType(0).(wacogo.TypeBorrow).ResourceType
+					callerH_, err_ := d_.h.bind(caller, d_.w.callerInst)
+					if err_ != nil {
+						return err_
+					}
+					srcH_, err_ := caller.LookupBorrowable(tr_, callerH_)
+					if err_ != nil {
+						return err_
+					}
+					dstH_, err_ := srcH_.LendTo(callee.TransferTarget(), callee.Task())
+					if err_ != nil {
+						return err_
+					}
+					stack[0] = uint64(dstH_.HandleID())
+				}
+				return nil
+			},
+			func(caller, callee *host.CallContext, stack []uint64) error {
+				if v_, err_ := liftMemResultDirectoryEntryStreamErrorCode(ctx, caller, callee, d_.w.callerInst, d_.w, d_.w.fnDescriptorReadDirectory.ResultType(0), uint32(stack[0])); err_ != nil {
+					return err_
+				} else {
+					resVal_ = v_
+				}
+				return nil
+			},
+		)
+		if callErr_ != nil {
+			return nil, fmt.Errorf("wacogo/witgen: CallRaw failed: %w", callErr_)
+		}
+	}
+	return resVal_, nil
+}
+
+func (d_ *descriptorRemote) ReadViaStream(ctx context.Context, offset uint64) (ResultInputStreamErrorCode, error) {
+	var resVal_ ResultInputStreamErrorCode
+	arg0_ := offset
+	{
+		callErr_ := d_.w.fnDescriptorReadViaStream.CallRaw(ctx, d_.w.callerInst,
+			func(caller, callee *host.CallContext, stack []uint64) error {
+				{
+					tr_ := d_.w.fnDescriptorReadViaStream.ParamType(0).(wacogo.TypeBorrow).ResourceType
+					callerH_, err_ := d_.h.bind(caller, d_.w.callerInst)
+					if err_ != nil {
+						return err_
+					}
+					srcH_, err_ := caller.LookupBorrowable(tr_, callerH_)
+					if err_ != nil {
+						return err_
+					}
+					dstH_, err_ := srcH_.LendTo(callee.TransferTarget(), callee.Task())
+					if err_ != nil {
+						return err_
+					}
+					stack[0] = uint64(dstH_.HandleID())
+				}
+				stack[1] = arg0_
+				return nil
+			},
+			func(caller, callee *host.CallContext, stack []uint64) error {
+				if v_, err_ := liftMemResultInputStreamErrorCode(ctx, caller, callee, d_.w.callerInst, d_.w, d_.w.fnDescriptorReadViaStream.ResultType(0), uint32(stack[0])); err_ != nil {
+					return err_
+				} else {
+					resVal_ = v_
+				}
+				return nil
+			},
+		)
+		if callErr_ != nil {
+			return nil, fmt.Errorf("wacogo/witgen: CallRaw failed: %w", callErr_)
+		}
+	}
+	return resVal_, nil
+}
+
+func (d_ *descriptorRemote) ReadlinkAt(ctx context.Context, path string) (ResultStringErrorCode, error) {
+	var resVal_ ResultStringErrorCode
+	arg0_ := path
+	{
+		callErr_ := d_.w.fnDescriptorReadlinkAt.CallRaw(ctx, d_.w.callerInst,
+			func(caller, callee *host.CallContext, stack []uint64) error {
+				{
+					tr_ := d_.w.fnDescriptorReadlinkAt.ParamType(0).(wacogo.TypeBorrow).ResourceType
+					callerH_, err_ := d_.h.bind(caller, d_.w.callerInst)
+					if err_ != nil {
+						return err_
+					}
+					srcH_, err_ := caller.LookupBorrowable(tr_, callerH_)
+					if err_ != nil {
+						return err_
+					}
+					dstH_, err_ := srcH_.LendTo(callee.TransferTarget(), callee.Task())
+					if err_ != nil {
+						return err_
+					}
+					stack[0] = uint64(dstH_.HandleID())
+				}
+				if err_ := lowerFlatString(ctx, caller, callee, d_.w.callerInst, d_.w.fnDescriptorReadlinkAt.ParamType(1), stack[1:3], arg0_); err_ != nil {
+					return err_
+				}
+				return nil
+			},
+			func(caller, callee *host.CallContext, stack []uint64) error {
+				if v_, err_ := liftMemResultStringErrorCode(ctx, caller, callee, d_.w.callerInst, d_.w, d_.w.fnDescriptorReadlinkAt.ResultType(0), uint32(stack[0])); err_ != nil {
+					return err_
+				} else {
+					resVal_ = v_
+				}
+				return nil
+			},
+		)
+		if callErr_ != nil {
+			return nil, fmt.Errorf("wacogo/witgen: CallRaw failed: %w", callErr_)
+		}
+	}
+	return resVal_, nil
+}
+
+func (d_ *descriptorRemote) RemoveDirectoryAt(ctx context.Context, path string) (Result_ErrorCode, error) {
+	var resVal_ Result_ErrorCode
+	arg0_ := path
+	{
+		callErr_ := d_.w.fnDescriptorRemoveDirectoryAt.CallRaw(ctx, d_.w.callerInst,
+			func(caller, callee *host.CallContext, stack []uint64) error {
+				{
+					tr_ := d_.w.fnDescriptorRemoveDirectoryAt.ParamType(0).(wacogo.TypeBorrow).ResourceType
+					callerH_, err_ := d_.h.bind(caller, d_.w.callerInst)
+					if err_ != nil {
+						return err_
+					}
+					srcH_, err_ := caller.LookupBorrowable(tr_, callerH_)
+					if err_ != nil {
+						return err_
+					}
+					dstH_, err_ := srcH_.LendTo(callee.TransferTarget(), callee.Task())
+					if err_ != nil {
+						return err_
+					}
+					stack[0] = uint64(dstH_.HandleID())
+				}
+				if err_ := lowerFlatString(ctx, caller, callee, d_.w.callerInst, d_.w.fnDescriptorRemoveDirectoryAt.ParamType(1), stack[1:3], arg0_); err_ != nil {
+					return err_
+				}
+				return nil
+			},
+			func(caller, callee *host.CallContext, stack []uint64) error {
+				if v_, err_ := liftMemResult_ErrorCode(ctx, caller, callee, d_.w.callerInst, d_.w, d_.w.fnDescriptorRemoveDirectoryAt.ResultType(0), uint32(stack[0])); err_ != nil {
+					return err_
+				} else {
+					resVal_ = v_
+				}
+				return nil
+			},
+		)
+		if callErr_ != nil {
+			return nil, fmt.Errorf("wacogo/witgen: CallRaw failed: %w", callErr_)
+		}
+	}
+	return resVal_, nil
+}
+
+func (d_ *descriptorRemote) RenameAt(ctx context.Context, oldPath string, newDescriptor *DescriptorHandle, newPath string) (Result_ErrorCode, error) {
+	var resVal_ Result_ErrorCode
+	arg0_ := oldPath
+	arg1_ := newDescriptor
+	arg2_ := newPath
+	{
+		callErr_ := d_.w.fnDescriptorRenameAt.CallRaw(ctx, d_.w.callerInst,
+			func(caller, callee *host.CallContext, stack []uint64) error {
+				{
+					tr_ := d_.w.fnDescriptorRenameAt.ParamType(0).(wacogo.TypeBorrow).ResourceType
+					callerH_, err_ := d_.h.bind(caller, d_.w.callerInst)
+					if err_ != nil {
+						return err_
+					}
+					srcH_, err_ := caller.LookupBorrowable(tr_, callerH_)
+					if err_ != nil {
+						return err_
+					}
+					dstH_, err_ := srcH_.LendTo(callee.TransferTarget(), callee.Task())
+					if err_ != nil {
+						return err_
+					}
+					stack[0] = uint64(dstH_.HandleID())
+				}
+				if err_ := lowerFlatString(ctx, caller, callee, d_.w.callerInst, d_.w.fnDescriptorRenameAt.ParamType(1), stack[1:3], arg0_); err_ != nil {
+					return err_
+				}
+				{
+					tr_ := d_.w.fnDescriptorRenameAt.ParamType(2).(wacogo.TypeBorrow).ResourceType
+					callerH_, err_ := arg1_.bind(caller, d_.w.callerInst)
+					if err_ != nil {
+						return err_
+					}
+					srcH_, err_ := caller.LookupBorrowable(tr_, callerH_)
+					if err_ != nil {
+						return err_
+					}
+					dstH_, err_ := srcH_.LendTo(callee.TransferTarget(), callee.Task())
+					if err_ != nil {
+						return err_
+					}
+					stack[3] = uint64(dstH_.HandleID())
+				}
+				if err_ := lowerFlatString(ctx, caller, callee, d_.w.callerInst, d_.w.fnDescriptorRenameAt.ParamType(3), stack[4:6], arg2_); err_ != nil {
+					return err_
+				}
+				return nil
+			},
+			func(caller, callee *host.CallContext, stack []uint64) error {
+				if v_, err_ := liftMemResult_ErrorCode(ctx, caller, callee, d_.w.callerInst, d_.w, d_.w.fnDescriptorRenameAt.ResultType(0), uint32(stack[0])); err_ != nil {
+					return err_
+				} else {
+					resVal_ = v_
+				}
+				return nil
+			},
+		)
+		if callErr_ != nil {
+			return nil, fmt.Errorf("wacogo/witgen: CallRaw failed: %w", callErr_)
+		}
+	}
+	return resVal_, nil
+}
+
+func (d_ *descriptorRemote) SetSize(ctx context.Context, size uint64) (Result_ErrorCode, error) {
+	var resVal_ Result_ErrorCode
+	arg0_ := size
+	{
+		callErr_ := d_.w.fnDescriptorSetSize.CallRaw(ctx, d_.w.callerInst,
+			func(caller, callee *host.CallContext, stack []uint64) error {
+				{
+					tr_ := d_.w.fnDescriptorSetSize.ParamType(0).(wacogo.TypeBorrow).ResourceType
+					callerH_, err_ := d_.h.bind(caller, d_.w.callerInst)
+					if err_ != nil {
+						return err_
+					}
+					srcH_, err_ := caller.LookupBorrowable(tr_, callerH_)
+					if err_ != nil {
+						return err_
+					}
+					dstH_, err_ := srcH_.LendTo(callee.TransferTarget(), callee.Task())
+					if err_ != nil {
+						return err_
+					}
+					stack[0] = uint64(dstH_.HandleID())
+				}
+				stack[1] = arg0_
+				return nil
+			},
+			func(caller, callee *host.CallContext, stack []uint64) error {
+				if v_, err_ := liftMemResult_ErrorCode(ctx, caller, callee, d_.w.callerInst, d_.w, d_.w.fnDescriptorSetSize.ResultType(0), uint32(stack[0])); err_ != nil {
+					return err_
+				} else {
+					resVal_ = v_
+				}
+				return nil
+			},
+		)
+		if callErr_ != nil {
+			return nil, fmt.Errorf("wacogo/witgen: CallRaw failed: %w", callErr_)
+		}
+	}
+	return resVal_, nil
+}
+
+func (d_ *descriptorRemote) SetTimes(ctx context.Context, dataAccessTimestamp NewTimestamp, dataModificationTimestamp NewTimestamp) (Result_ErrorCode, error) {
+	var resVal_ Result_ErrorCode
+	arg0_ := dataAccessTimestamp
+	arg1_ := dataModificationTimestamp
+	{
+		callErr_ := d_.w.fnDescriptorSetTimes.CallRaw(ctx, d_.w.callerInst,
+			func(caller, callee *host.CallContext, stack []uint64) error {
+				{
+					tr_ := d_.w.fnDescriptorSetTimes.ParamType(0).(wacogo.TypeBorrow).ResourceType
+					callerH_, err_ := d_.h.bind(caller, d_.w.callerInst)
+					if err_ != nil {
+						return err_
+					}
+					srcH_, err_ := caller.LookupBorrowable(tr_, callerH_)
+					if err_ != nil {
+						return err_
+					}
+					dstH_, err_ := srcH_.LendTo(callee.TransferTarget(), callee.Task())
+					if err_ != nil {
+						return err_
+					}
+					stack[0] = uint64(dstH_.HandleID())
+				}
+				if err_ := lowerFlatNewTimestamp(ctx, caller, callee, d_.w.callerInst, d_.w.fnDescriptorSetTimes.ParamType(1), stack[1:4], arg0_); err_ != nil {
+					return err_
+				}
+				if err_ := lowerFlatNewTimestamp(ctx, caller, callee, d_.w.callerInst, d_.w.fnDescriptorSetTimes.ParamType(2), stack[4:7], arg1_); err_ != nil {
+					return err_
+				}
+				return nil
+			},
+			func(caller, callee *host.CallContext, stack []uint64) error {
+				if v_, err_ := liftMemResult_ErrorCode(ctx, caller, callee, d_.w.callerInst, d_.w, d_.w.fnDescriptorSetTimes.ResultType(0), uint32(stack[0])); err_ != nil {
+					return err_
+				} else {
+					resVal_ = v_
+				}
+				return nil
+			},
+		)
+		if callErr_ != nil {
+			return nil, fmt.Errorf("wacogo/witgen: CallRaw failed: %w", callErr_)
+		}
+	}
+	return resVal_, nil
+}
+
+func (d_ *descriptorRemote) SetTimesAt(ctx context.Context, pathFlags PathFlags, path string, dataAccessTimestamp NewTimestamp, dataModificationTimestamp NewTimestamp) (Result_ErrorCode, error) {
+	var resVal_ Result_ErrorCode
+	arg0_ := pathFlags
+	arg1_ := path
+	arg2_ := dataAccessTimestamp
+	arg3_ := dataModificationTimestamp
+	{
+		callErr_ := d_.w.fnDescriptorSetTimesAt.CallRaw(ctx, d_.w.callerInst,
+			func(caller, callee *host.CallContext, stack []uint64) error {
+				{
+					tr_ := d_.w.fnDescriptorSetTimesAt.ParamType(0).(wacogo.TypeBorrow).ResourceType
+					callerH_, err_ := d_.h.bind(caller, d_.w.callerInst)
+					if err_ != nil {
+						return err_
+					}
+					srcH_, err_ := caller.LookupBorrowable(tr_, callerH_)
+					if err_ != nil {
+						return err_
+					}
+					dstH_, err_ := srcH_.LendTo(callee.TransferTarget(), callee.Task())
+					if err_ != nil {
+						return err_
+					}
+					stack[0] = uint64(dstH_.HandleID())
+				}
+				stack[1] = uint64(arg0_)
+				if err_ := lowerFlatString(ctx, caller, callee, d_.w.callerInst, d_.w.fnDescriptorSetTimesAt.ParamType(2), stack[2:4], arg1_); err_ != nil {
+					return err_
+				}
+				if err_ := lowerFlatNewTimestamp(ctx, caller, callee, d_.w.callerInst, d_.w.fnDescriptorSetTimesAt.ParamType(3), stack[4:7], arg2_); err_ != nil {
+					return err_
+				}
+				if err_ := lowerFlatNewTimestamp(ctx, caller, callee, d_.w.callerInst, d_.w.fnDescriptorSetTimesAt.ParamType(4), stack[7:10], arg3_); err_ != nil {
+					return err_
+				}
+				return nil
+			},
+			func(caller, callee *host.CallContext, stack []uint64) error {
+				if v_, err_ := liftMemResult_ErrorCode(ctx, caller, callee, d_.w.callerInst, d_.w, d_.w.fnDescriptorSetTimesAt.ResultType(0), uint32(stack[0])); err_ != nil {
+					return err_
+				} else {
+					resVal_ = v_
+				}
+				return nil
+			},
+		)
+		if callErr_ != nil {
+			return nil, fmt.Errorf("wacogo/witgen: CallRaw failed: %w", callErr_)
+		}
+	}
+	return resVal_, nil
+}
+
+func (d_ *descriptorRemote) Stat(ctx context.Context) (ResultDescriptorStatErrorCode, error) {
+	var resVal_ ResultDescriptorStatErrorCode
+	{
+		callErr_ := d_.w.fnDescriptorStat.CallRaw(ctx, d_.w.callerInst,
+			func(caller, callee *host.CallContext, stack []uint64) error {
+				{
+					tr_ := d_.w.fnDescriptorStat.ParamType(0).(wacogo.TypeBorrow).ResourceType
+					callerH_, err_ := d_.h.bind(caller, d_.w.callerInst)
+					if err_ != nil {
+						return err_
+					}
+					srcH_, err_ := caller.LookupBorrowable(tr_, callerH_)
+					if err_ != nil {
+						return err_
+					}
+					dstH_, err_ := srcH_.LendTo(callee.TransferTarget(), callee.Task())
+					if err_ != nil {
+						return err_
+					}
+					stack[0] = uint64(dstH_.HandleID())
+				}
+				return nil
+			},
+			func(caller, callee *host.CallContext, stack []uint64) error {
+				if v_, err_ := liftMemResultDescriptorStatErrorCode(ctx, caller, callee, d_.w.callerInst, d_.w, d_.w.fnDescriptorStat.ResultType(0), uint32(stack[0])); err_ != nil {
+					return err_
+				} else {
+					resVal_ = v_
+				}
+				return nil
+			},
+		)
+		if callErr_ != nil {
+			return nil, fmt.Errorf("wacogo/witgen: CallRaw failed: %w", callErr_)
+		}
+	}
+	return resVal_, nil
+}
+
+func (d_ *descriptorRemote) StatAt(ctx context.Context, pathFlags PathFlags, path string) (ResultDescriptorStatErrorCode, error) {
+	var resVal_ ResultDescriptorStatErrorCode
+	arg0_ := pathFlags
+	arg1_ := path
+	{
+		callErr_ := d_.w.fnDescriptorStatAt.CallRaw(ctx, d_.w.callerInst,
+			func(caller, callee *host.CallContext, stack []uint64) error {
+				{
+					tr_ := d_.w.fnDescriptorStatAt.ParamType(0).(wacogo.TypeBorrow).ResourceType
+					callerH_, err_ := d_.h.bind(caller, d_.w.callerInst)
+					if err_ != nil {
+						return err_
+					}
+					srcH_, err_ := caller.LookupBorrowable(tr_, callerH_)
+					if err_ != nil {
+						return err_
+					}
+					dstH_, err_ := srcH_.LendTo(callee.TransferTarget(), callee.Task())
+					if err_ != nil {
+						return err_
+					}
+					stack[0] = uint64(dstH_.HandleID())
+				}
+				stack[1] = uint64(arg0_)
+				if err_ := lowerFlatString(ctx, caller, callee, d_.w.callerInst, d_.w.fnDescriptorStatAt.ParamType(2), stack[2:4], arg1_); err_ != nil {
+					return err_
+				}
+				return nil
+			},
+			func(caller, callee *host.CallContext, stack []uint64) error {
+				if v_, err_ := liftMemResultDescriptorStatErrorCode(ctx, caller, callee, d_.w.callerInst, d_.w, d_.w.fnDescriptorStatAt.ResultType(0), uint32(stack[0])); err_ != nil {
+					return err_
+				} else {
+					resVal_ = v_
+				}
+				return nil
+			},
+		)
+		if callErr_ != nil {
+			return nil, fmt.Errorf("wacogo/witgen: CallRaw failed: %w", callErr_)
+		}
+	}
+	return resVal_, nil
+}
+
+func (d_ *descriptorRemote) SymlinkAt(ctx context.Context, oldPath string, newPath string) (Result_ErrorCode, error) {
+	var resVal_ Result_ErrorCode
+	arg0_ := oldPath
+	arg1_ := newPath
+	{
+		callErr_ := d_.w.fnDescriptorSymlinkAt.CallRaw(ctx, d_.w.callerInst,
+			func(caller, callee *host.CallContext, stack []uint64) error {
+				{
+					tr_ := d_.w.fnDescriptorSymlinkAt.ParamType(0).(wacogo.TypeBorrow).ResourceType
+					callerH_, err_ := d_.h.bind(caller, d_.w.callerInst)
+					if err_ != nil {
+						return err_
+					}
+					srcH_, err_ := caller.LookupBorrowable(tr_, callerH_)
+					if err_ != nil {
+						return err_
+					}
+					dstH_, err_ := srcH_.LendTo(callee.TransferTarget(), callee.Task())
+					if err_ != nil {
+						return err_
+					}
+					stack[0] = uint64(dstH_.HandleID())
+				}
+				if err_ := lowerFlatString(ctx, caller, callee, d_.w.callerInst, d_.w.fnDescriptorSymlinkAt.ParamType(1), stack[1:3], arg0_); err_ != nil {
+					return err_
+				}
+				if err_ := lowerFlatString(ctx, caller, callee, d_.w.callerInst, d_.w.fnDescriptorSymlinkAt.ParamType(2), stack[3:5], arg1_); err_ != nil {
+					return err_
+				}
+				return nil
+			},
+			func(caller, callee *host.CallContext, stack []uint64) error {
+				if v_, err_ := liftMemResult_ErrorCode(ctx, caller, callee, d_.w.callerInst, d_.w, d_.w.fnDescriptorSymlinkAt.ResultType(0), uint32(stack[0])); err_ != nil {
+					return err_
+				} else {
+					resVal_ = v_
+				}
+				return nil
+			},
+		)
+		if callErr_ != nil {
+			return nil, fmt.Errorf("wacogo/witgen: CallRaw failed: %w", callErr_)
+		}
+	}
+	return resVal_, nil
+}
+
+func (d_ *descriptorRemote) Sync(ctx context.Context) (Result_ErrorCode, error) {
+	var resVal_ Result_ErrorCode
+	{
+		callErr_ := d_.w.fnDescriptorSync.CallRaw(ctx, d_.w.callerInst,
+			func(caller, callee *host.CallContext, stack []uint64) error {
+				{
+					tr_ := d_.w.fnDescriptorSync.ParamType(0).(wacogo.TypeBorrow).ResourceType
+					callerH_, err_ := d_.h.bind(caller, d_.w.callerInst)
+					if err_ != nil {
+						return err_
+					}
+					srcH_, err_ := caller.LookupBorrowable(tr_, callerH_)
+					if err_ != nil {
+						return err_
+					}
+					dstH_, err_ := srcH_.LendTo(callee.TransferTarget(), callee.Task())
+					if err_ != nil {
+						return err_
+					}
+					stack[0] = uint64(dstH_.HandleID())
+				}
+				return nil
+			},
+			func(caller, callee *host.CallContext, stack []uint64) error {
+				if v_, err_ := liftMemResult_ErrorCode(ctx, caller, callee, d_.w.callerInst, d_.w, d_.w.fnDescriptorSync.ResultType(0), uint32(stack[0])); err_ != nil {
+					return err_
+				} else {
+					resVal_ = v_
+				}
+				return nil
+			},
+		)
+		if callErr_ != nil {
+			return nil, fmt.Errorf("wacogo/witgen: CallRaw failed: %w", callErr_)
+		}
+	}
+	return resVal_, nil
+}
+
+func (d_ *descriptorRemote) SyncData(ctx context.Context) (Result_ErrorCode, error) {
+	var resVal_ Result_ErrorCode
+	{
+		callErr_ := d_.w.fnDescriptorSyncData.CallRaw(ctx, d_.w.callerInst,
+			func(caller, callee *host.CallContext, stack []uint64) error {
+				{
+					tr_ := d_.w.fnDescriptorSyncData.ParamType(0).(wacogo.TypeBorrow).ResourceType
+					callerH_, err_ := d_.h.bind(caller, d_.w.callerInst)
+					if err_ != nil {
+						return err_
+					}
+					srcH_, err_ := caller.LookupBorrowable(tr_, callerH_)
+					if err_ != nil {
+						return err_
+					}
+					dstH_, err_ := srcH_.LendTo(callee.TransferTarget(), callee.Task())
+					if err_ != nil {
+						return err_
+					}
+					stack[0] = uint64(dstH_.HandleID())
+				}
+				return nil
+			},
+			func(caller, callee *host.CallContext, stack []uint64) error {
+				if v_, err_ := liftMemResult_ErrorCode(ctx, caller, callee, d_.w.callerInst, d_.w, d_.w.fnDescriptorSyncData.ResultType(0), uint32(stack[0])); err_ != nil {
+					return err_
+				} else {
+					resVal_ = v_
+				}
+				return nil
+			},
+		)
+		if callErr_ != nil {
+			return nil, fmt.Errorf("wacogo/witgen: CallRaw failed: %w", callErr_)
+		}
+	}
+	return resVal_, nil
+}
+
+func (d_ *descriptorRemote) UnlinkFileAt(ctx context.Context, path string) (Result_ErrorCode, error) {
+	var resVal_ Result_ErrorCode
+	arg0_ := path
+	{
+		callErr_ := d_.w.fnDescriptorUnlinkFileAt.CallRaw(ctx, d_.w.callerInst,
+			func(caller, callee *host.CallContext, stack []uint64) error {
+				{
+					tr_ := d_.w.fnDescriptorUnlinkFileAt.ParamType(0).(wacogo.TypeBorrow).ResourceType
+					callerH_, err_ := d_.h.bind(caller, d_.w.callerInst)
+					if err_ != nil {
+						return err_
+					}
+					srcH_, err_ := caller.LookupBorrowable(tr_, callerH_)
+					if err_ != nil {
+						return err_
+					}
+					dstH_, err_ := srcH_.LendTo(callee.TransferTarget(), callee.Task())
+					if err_ != nil {
+						return err_
+					}
+					stack[0] = uint64(dstH_.HandleID())
+				}
+				if err_ := lowerFlatString(ctx, caller, callee, d_.w.callerInst, d_.w.fnDescriptorUnlinkFileAt.ParamType(1), stack[1:3], arg0_); err_ != nil {
+					return err_
+				}
+				return nil
+			},
+			func(caller, callee *host.CallContext, stack []uint64) error {
+				if v_, err_ := liftMemResult_ErrorCode(ctx, caller, callee, d_.w.callerInst, d_.w, d_.w.fnDescriptorUnlinkFileAt.ResultType(0), uint32(stack[0])); err_ != nil {
+					return err_
+				} else {
+					resVal_ = v_
+				}
+				return nil
+			},
+		)
+		if callErr_ != nil {
+			return nil, fmt.Errorf("wacogo/witgen: CallRaw failed: %w", callErr_)
+		}
+	}
+	return resVal_, nil
+}
+
+func (d_ *descriptorRemote) Write(ctx context.Context, buffer []uint8, offset uint64) (ResultU64ErrorCode, error) {
+	var resVal_ ResultU64ErrorCode
+	arg0_ := buffer
+	arg1_ := offset
+	{
+		callErr_ := d_.w.fnDescriptorWrite.CallRaw(ctx, d_.w.callerInst,
+			func(caller, callee *host.CallContext, stack []uint64) error {
+				{
+					tr_ := d_.w.fnDescriptorWrite.ParamType(0).(wacogo.TypeBorrow).ResourceType
+					callerH_, err_ := d_.h.bind(caller, d_.w.callerInst)
+					if err_ != nil {
+						return err_
+					}
+					srcH_, err_ := caller.LookupBorrowable(tr_, callerH_)
+					if err_ != nil {
+						return err_
+					}
+					dstH_, err_ := srcH_.LendTo(callee.TransferTarget(), callee.Task())
+					if err_ != nil {
+						return err_
+					}
+					stack[0] = uint64(dstH_.HandleID())
+				}
+				if err_ := lowerFlatListU8(ctx, caller, callee, d_.w.callerInst, d_.w.fnDescriptorWrite.ParamType(1), stack[1:3], arg0_); err_ != nil {
+					return err_
+				}
+				stack[3] = arg1_
+				return nil
+			},
+			func(caller, callee *host.CallContext, stack []uint64) error {
+				if v_, err_ := liftMemResultU64ErrorCode(ctx, caller, callee, d_.w.callerInst, d_.w, d_.w.fnDescriptorWrite.ResultType(0), uint32(stack[0])); err_ != nil {
+					return err_
+				} else {
+					resVal_ = v_
+				}
+				return nil
+			},
+		)
+		if callErr_ != nil {
+			return nil, fmt.Errorf("wacogo/witgen: CallRaw failed: %w", callErr_)
+		}
+	}
+	return resVal_, nil
+}
+
+func (d_ *descriptorRemote) WriteViaStream(ctx context.Context, offset uint64) (ResultOutputStreamErrorCode, error) {
+	var resVal_ ResultOutputStreamErrorCode
+	arg0_ := offset
+	{
+		callErr_ := d_.w.fnDescriptorWriteViaStream.CallRaw(ctx, d_.w.callerInst,
+			func(caller, callee *host.CallContext, stack []uint64) error {
+				{
+					tr_ := d_.w.fnDescriptorWriteViaStream.ParamType(0).(wacogo.TypeBorrow).ResourceType
+					callerH_, err_ := d_.h.bind(caller, d_.w.callerInst)
+					if err_ != nil {
+						return err_
+					}
+					srcH_, err_ := caller.LookupBorrowable(tr_, callerH_)
+					if err_ != nil {
+						return err_
+					}
+					dstH_, err_ := srcH_.LendTo(callee.TransferTarget(), callee.Task())
+					if err_ != nil {
+						return err_
+					}
+					stack[0] = uint64(dstH_.HandleID())
+				}
+				stack[1] = arg0_
+				return nil
+			},
+			func(caller, callee *host.CallContext, stack []uint64) error {
+				if v_, err_ := liftMemResultOutputStreamErrorCode(ctx, caller, callee, d_.w.callerInst, d_.w, d_.w.fnDescriptorWriteViaStream.ResultType(0), uint32(stack[0])); err_ != nil {
+					return err_
+				} else {
+					resVal_ = v_
+				}
+				return nil
+			},
+		)
+		if callErr_ != nil {
+			return nil, fmt.Errorf("wacogo/witgen: CallRaw failed: %w", callErr_)
+		}
+	}
+	return resVal_, nil
+}
+
+type directoryEntryStreamRemote struct {
+	w *typesWrapper
+	h *DirectoryEntryStreamHandle
+}
+
+func (d_ *directoryEntryStreamRemote) ReadDirectoryEntry(ctx context.Context) (ResultOptionDirectoryEntryErrorCode, error) {
+	var resVal_ ResultOptionDirectoryEntryErrorCode
+	{
+		callErr_ := d_.w.fnDirectoryEntryStreamReadDirectoryEntry.CallRaw(ctx, d_.w.callerInst,
+			func(caller, callee *host.CallContext, stack []uint64) error {
+				{
+					tr_ := d_.w.fnDirectoryEntryStreamReadDirectoryEntry.ParamType(0).(wacogo.TypeBorrow).ResourceType
+					callerH_, err_ := d_.h.bind(caller, d_.w.callerInst)
+					if err_ != nil {
+						return err_
+					}
+					srcH_, err_ := caller.LookupBorrowable(tr_, callerH_)
+					if err_ != nil {
+						return err_
+					}
+					dstH_, err_ := srcH_.LendTo(callee.TransferTarget(), callee.Task())
+					if err_ != nil {
+						return err_
+					}
+					stack[0] = uint64(dstH_.HandleID())
+				}
+				return nil
+			},
+			func(caller, callee *host.CallContext, stack []uint64) error {
+				if v_, err_ := liftMemResultOptionDirectoryEntryErrorCode(ctx, caller, callee, d_.w.callerInst, d_.w, d_.w.fnDirectoryEntryStreamReadDirectoryEntry.ResultType(0), uint32(stack[0])); err_ != nil {
+					return err_
+				} else {
+					resVal_ = v_
+				}
+				return nil
+			},
+		)
+		if callErr_ != nil {
+			return nil, fmt.Errorf("wacogo/witgen: CallRaw failed: %w", callErr_)
 		}
 	}
 	return resVal_, nil

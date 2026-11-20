@@ -117,11 +117,11 @@ func fromGoMemDrawing(ctx context.Context, cc *host.CallContext, h *host.Compone
 	return nil
 }
 
-func liftFlatDrawing(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (Drawing, error) {
+func liftFlatDrawing(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *shapesWrapper, ty wacogo.Type, stack []uint64) (Drawing, error) {
 	var v_ Drawing
 	recT_ := ty.(wacogo.TypeRecord)
 	_ = recT_
-	if tmp_, err_ := liftFlatListShape(ctx, caller, callee, h, recT_.Fields[0].Type, stack[0:2]); err_ != nil {
+	if tmp_, err_ := liftFlatListShape(ctx, caller, callee, h, w_, recT_.Fields[0].Type, stack[0:2]); err_ != nil {
 		return Drawing{}, err_
 	} else {
 		v_.Shapes = tmp_
@@ -129,11 +129,11 @@ func liftFlatDrawing(ctx context.Context, caller, callee *host.CallContext, h *h
 	return v_, nil
 }
 
-func liftMemDrawing(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (Drawing, error) {
+func liftMemDrawing(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *shapesWrapper, ty wacogo.Type, ptr uint32) (Drawing, error) {
 	var v_ Drawing
 	recT_ := ty.(wacogo.TypeRecord)
 	_ = recT_
-	if tmp_, err_ := liftMemListShape(ctx, caller, callee, h, recT_.Fields[0].Type, ptr); err_ != nil {
+	if tmp_, err_ := liftMemListShape(ctx, caller, callee, h, w_, recT_.Fields[0].Type, ptr); err_ != nil {
 		return Drawing{}, err_
 	} else {
 		v_.Shapes = tmp_
@@ -240,14 +240,14 @@ func fromGoMemLayer(ctx context.Context, cc *host.CallContext, h *host.Component
 	return nil
 }
 
-func liftFlatLayer(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (Layer, error) {
+func liftFlatLayer(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *shapesWrapper, ty wacogo.Type, stack []uint64) (Layer, error) {
 	varT_ := ty.(wacogo.TypeVariant)
 	_ = varT_
 	disc_ := uint32(stack[0])
 	switch disc_ {
 	case 0:
 		var val Drawing
-		if tmp_, err_ := liftFlatDrawing(ctx, caller, callee, h, varT_.Cases[0].Payload, stack[1:3]); err_ != nil {
+		if tmp_, err_ := liftFlatDrawing(ctx, caller, callee, h, w_, varT_.Cases[0].Payload, stack[1:3]); err_ != nil {
 			return nil, err_
 		} else {
 			val = tmp_
@@ -259,7 +259,7 @@ func liftFlatLayer(ctx context.Context, caller, callee *host.CallContext, h *hos
 	return nil, fmt.Errorf("wacogo/witgen: liftFlatLayer: invalid discriminant %d", disc_)
 }
 
-func liftMemLayer(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (Layer, error) {
+func liftMemLayer(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *shapesWrapper, ty wacogo.Type, ptr uint32) (Layer, error) {
 	varT_ := ty.(wacogo.TypeVariant)
 	_ = varT_
 	var disc_ uint8
@@ -271,7 +271,7 @@ func liftMemLayer(ctx context.Context, caller, callee *host.CallContext, h *host
 	switch disc_ {
 	case 0:
 		var val Drawing
-		if tmp_, err_ := liftMemDrawing(ctx, caller, callee, h, varT_.Cases[0].Payload, ptr+4); err_ != nil {
+		if tmp_, err_ := liftMemDrawing(ctx, caller, callee, h, w_, varT_.Cases[0].Payload, ptr+4); err_ != nil {
 			return nil, err_
 		} else {
 			val = tmp_
@@ -403,14 +403,14 @@ func fromGoMemListLayer(ctx context.Context, cc *host.CallContext, h *host.Compo
 	return nil
 }
 
-func liftFlatListLayer(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) ([]Layer, error) {
+func liftFlatListLayer(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *shapesWrapper, ty wacogo.Type, stack []uint64) ([]Layer, error) {
 	lstT_ := ty.(wacogo.TypeList)
 	_ = lstT_
 	ptr_ := uint32(stack[0])
 	ln_ := uint32(stack[1])
 	out_ := make([]Layer, ln_)
 	for i_ := uint32(0); i_ < ln_; i_++ {
-		if tmp_, err_ := liftMemLayer(ctx, caller, callee, h, lstT_.Elem, ptr_+i_*12); err_ != nil {
+		if tmp_, err_ := liftMemLayer(ctx, caller, callee, h, w_, lstT_.Elem, ptr_+i_*12); err_ != nil {
 			return nil, err_
 		} else {
 			out_[i_] = tmp_
@@ -419,7 +419,7 @@ func liftFlatListLayer(ctx context.Context, caller, callee *host.CallContext, h 
 	return out_, nil
 }
 
-func liftMemListLayer(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) ([]Layer, error) {
+func liftMemListLayer(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *shapesWrapper, ty wacogo.Type, ptr uint32) ([]Layer, error) {
 	lstT_ := ty.(wacogo.TypeList)
 	_ = lstT_
 	var lptr_ uint32
@@ -436,7 +436,7 @@ func liftMemListLayer(ctx context.Context, caller, callee *host.CallContext, h *
 	}
 	out_ := make([]Layer, ln_)
 	for i_ := uint32(0); i_ < ln_; i_++ {
-		if tmp_, err_ := liftMemLayer(ctx, caller, callee, h, lstT_.Elem, lptr_+i_*12); err_ != nil {
+		if tmp_, err_ := liftMemLayer(ctx, caller, callee, h, w_, lstT_.Elem, lptr_+i_*12); err_ != nil {
 			return nil, err_
 		} else {
 			out_[i_] = tmp_
@@ -563,14 +563,14 @@ func fromGoMemListShape(ctx context.Context, cc *host.CallContext, h *host.Compo
 	return nil
 }
 
-func liftFlatListShape(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) ([]Shape, error) {
+func liftFlatListShape(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *shapesWrapper, ty wacogo.Type, stack []uint64) ([]Shape, error) {
 	lstT_ := ty.(wacogo.TypeList)
 	_ = lstT_
 	ptr_ := uint32(stack[0])
 	ln_ := uint32(stack[1])
 	out_ := make([]Shape, ln_)
 	for i_ := uint32(0); i_ < ln_; i_++ {
-		if tmp_, err_ := liftMemShape(ctx, caller, callee, h, lstT_.Elem, ptr_+i_*8); err_ != nil {
+		if tmp_, err_ := liftMemShape(ctx, caller, callee, h, w_, lstT_.Elem, ptr_+i_*8); err_ != nil {
 			return nil, err_
 		} else {
 			out_[i_] = tmp_
@@ -579,7 +579,7 @@ func liftFlatListShape(ctx context.Context, caller, callee *host.CallContext, h 
 	return out_, nil
 }
 
-func liftMemListShape(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) ([]Shape, error) {
+func liftMemListShape(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *shapesWrapper, ty wacogo.Type, ptr uint32) ([]Shape, error) {
 	lstT_ := ty.(wacogo.TypeList)
 	_ = lstT_
 	var lptr_ uint32
@@ -596,7 +596,7 @@ func liftMemListShape(ctx context.Context, caller, callee *host.CallContext, h *
 	}
 	out_ := make([]Shape, ln_)
 	for i_ := uint32(0); i_ < ln_; i_++ {
-		if tmp_, err_ := liftMemShape(ctx, caller, callee, h, lstT_.Elem, lptr_+i_*8); err_ != nil {
+		if tmp_, err_ := liftMemShape(ctx, caller, callee, h, w_, lstT_.Elem, lptr_+i_*8); err_ != nil {
 			return nil, err_
 		} else {
 			out_[i_] = tmp_
@@ -712,14 +712,14 @@ func fromGoMemOptionShape(ctx context.Context, cc *host.CallContext, h *host.Com
 	return nil
 }
 
-func liftFlatOptionShape(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (OptionShape, error) {
+func liftFlatOptionShape(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *shapesWrapper, ty wacogo.Type, stack []uint64) (OptionShape, error) {
 	optT_ := ty.(wacogo.TypeOption)
 	_ = optT_
 	disc_ := uint32(stack[0])
 	var out_ OptionShape
 	if disc_ != 0 {
 		out_.IsSome = true
-		if tmp_, err_ := liftFlatShape(ctx, caller, callee, h, optT_.Inner, stack[1:3]); err_ != nil {
+		if tmp_, err_ := liftFlatShape(ctx, caller, callee, h, w_, optT_.Inner, stack[1:3]); err_ != nil {
 			return OptionShape{}, err_
 		} else {
 			out_.Value = tmp_
@@ -728,7 +728,7 @@ func liftFlatOptionShape(ctx context.Context, caller, callee *host.CallContext, 
 	return out_, nil
 }
 
-func liftMemOptionShape(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (OptionShape, error) {
+func liftMemOptionShape(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *shapesWrapper, ty wacogo.Type, ptr uint32) (OptionShape, error) {
 	optT_ := ty.(wacogo.TypeOption)
 	_ = optT_
 	var disc_ uint8
@@ -740,7 +740,7 @@ func liftMemOptionShape(ctx context.Context, caller, callee *host.CallContext, h
 	var out_ OptionShape
 	if disc_ != 0 {
 		out_.IsSome = true
-		if tmp_, err_ := liftMemShape(ctx, caller, callee, h, optT_.Inner, ptr+4); err_ != nil {
+		if tmp_, err_ := liftMemShape(ctx, caller, callee, h, w_, optT_.Inner, ptr+4); err_ != nil {
 			return OptionShape{}, err_
 		} else {
 			out_.Value = tmp_
@@ -874,13 +874,13 @@ func fromGoMemResultDrawingShape(ctx context.Context, cc *host.CallContext, h *h
 	return nil
 }
 
-func liftFlatResultDrawingShape(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (ResultDrawingShape, error) {
+func liftFlatResultDrawingShape(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *shapesWrapper, ty wacogo.Type, stack []uint64) (ResultDrawingShape, error) {
 	resT_ := ty.(wacogo.TypeResult)
 	_ = resT_
 	disc_ := uint32(stack[0])
 	if disc_ == 0 {
 		var okVal_ Drawing
-		if tmp_, err_ := liftFlatDrawing(ctx, caller, callee, h, resT_.Ok, stack[1:3]); err_ != nil {
+		if tmp_, err_ := liftFlatDrawing(ctx, caller, callee, h, w_, resT_.Ok, stack[1:3]); err_ != nil {
 			return nil, err_
 		} else {
 			okVal_ = tmp_
@@ -888,7 +888,7 @@ func liftFlatResultDrawingShape(ctx context.Context, caller, callee *host.CallCo
 		return ResultDrawingShapeOk{Value: okVal_}, nil
 	}
 	var errVal_ Shape
-	if tmp_, err_ := liftFlatShape(ctx, caller, callee, h, resT_.Err, stack[1:3]); err_ != nil {
+	if tmp_, err_ := liftFlatShape(ctx, caller, callee, h, w_, resT_.Err, stack[1:3]); err_ != nil {
 		return nil, err_
 	} else {
 		errVal_ = tmp_
@@ -896,7 +896,7 @@ func liftFlatResultDrawingShape(ctx context.Context, caller, callee *host.CallCo
 	return ResultDrawingShapeErr{Value: errVal_}, nil
 }
 
-func liftMemResultDrawingShape(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (ResultDrawingShape, error) {
+func liftMemResultDrawingShape(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *shapesWrapper, ty wacogo.Type, ptr uint32) (ResultDrawingShape, error) {
 	resT_ := ty.(wacogo.TypeResult)
 	_ = resT_
 	var disc_ uint8
@@ -907,7 +907,7 @@ func liftMemResultDrawingShape(ctx context.Context, caller, callee *host.CallCon
 	}
 	if disc_ == 0 {
 		var okVal_ Drawing
-		if tmp_, err_ := liftMemDrawing(ctx, caller, callee, h, resT_.Ok, ptr+4); err_ != nil {
+		if tmp_, err_ := liftMemDrawing(ctx, caller, callee, h, w_, resT_.Ok, ptr+4); err_ != nil {
 			return nil, err_
 		} else {
 			okVal_ = tmp_
@@ -915,7 +915,7 @@ func liftMemResultDrawingShape(ctx context.Context, caller, callee *host.CallCon
 		return ResultDrawingShapeOk{Value: okVal_}, nil
 	}
 	var errVal_ Shape
-	if tmp_, err_ := liftMemShape(ctx, caller, callee, h, resT_.Err, ptr+4); err_ != nil {
+	if tmp_, err_ := liftMemShape(ctx, caller, callee, h, w_, resT_.Err, ptr+4); err_ != nil {
 		return nil, err_
 	} else {
 		errVal_ = tmp_
@@ -1053,26 +1053,26 @@ func fromGoMemScene(ctx context.Context, cc *host.CallContext, h *host.Component
 	return nil
 }
 
-func liftFlatScene(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (Scene, error) {
+func liftFlatScene(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *shapesWrapper, ty wacogo.Type, stack []uint64) (Scene, error) {
 	var v_ Scene
 	recT_ := ty.(wacogo.TypeRecord)
 	_ = recT_
-	if tmp_, err_ := liftFlatListLayer(ctx, caller, callee, h, recT_.Fields[0].Type, stack[0:2]); err_ != nil {
+	if tmp_, err_ := liftFlatListLayer(ctx, caller, callee, h, w_, recT_.Fields[0].Type, stack[0:2]); err_ != nil {
 		return Scene{}, err_
 	} else {
 		v_.Layers = tmp_
 	}
-	if tmp_, err_ := liftFlatOptionShape(ctx, caller, callee, h, recT_.Fields[1].Type, stack[2:5]); err_ != nil {
+	if tmp_, err_ := liftFlatOptionShape(ctx, caller, callee, h, w_, recT_.Fields[1].Type, stack[2:5]); err_ != nil {
 		return Scene{}, err_
 	} else {
 		v_.Focus = tmp_
 	}
-	if tmp_, err_ := liftFlatTupleShapeU32(ctx, caller, callee, h, recT_.Fields[2].Type, stack[5:8]); err_ != nil {
+	if tmp_, err_ := liftFlatTupleShapeU32(ctx, caller, callee, h, w_, recT_.Fields[2].Type, stack[5:8]); err_ != nil {
 		return Scene{}, err_
 	} else {
 		v_.Origin = tmp_
 	}
-	if tmp_, err_ := liftFlatResultDrawingShape(ctx, caller, callee, h, recT_.Fields[3].Type, stack[8:11]); err_ != nil {
+	if tmp_, err_ := liftFlatResultDrawingShape(ctx, caller, callee, h, w_, recT_.Fields[3].Type, stack[8:11]); err_ != nil {
 		return Scene{}, err_
 	} else {
 		v_.Last = tmp_
@@ -1080,26 +1080,26 @@ func liftFlatScene(ctx context.Context, caller, callee *host.CallContext, h *hos
 	return v_, nil
 }
 
-func liftMemScene(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (Scene, error) {
+func liftMemScene(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *shapesWrapper, ty wacogo.Type, ptr uint32) (Scene, error) {
 	var v_ Scene
 	recT_ := ty.(wacogo.TypeRecord)
 	_ = recT_
-	if tmp_, err_ := liftMemListLayer(ctx, caller, callee, h, recT_.Fields[0].Type, ptr); err_ != nil {
+	if tmp_, err_ := liftMemListLayer(ctx, caller, callee, h, w_, recT_.Fields[0].Type, ptr); err_ != nil {
 		return Scene{}, err_
 	} else {
 		v_.Layers = tmp_
 	}
-	if tmp_, err_ := liftMemOptionShape(ctx, caller, callee, h, recT_.Fields[1].Type, ptr+8); err_ != nil {
+	if tmp_, err_ := liftMemOptionShape(ctx, caller, callee, h, w_, recT_.Fields[1].Type, ptr+8); err_ != nil {
 		return Scene{}, err_
 	} else {
 		v_.Focus = tmp_
 	}
-	if tmp_, err_ := liftMemTupleShapeU32(ctx, caller, callee, h, recT_.Fields[2].Type, ptr+20); err_ != nil {
+	if tmp_, err_ := liftMemTupleShapeU32(ctx, caller, callee, h, w_, recT_.Fields[2].Type, ptr+20); err_ != nil {
 		return Scene{}, err_
 	} else {
 		v_.Origin = tmp_
 	}
-	if tmp_, err_ := liftMemResultDrawingShape(ctx, caller, callee, h, recT_.Fields[3].Type, ptr+32); err_ != nil {
+	if tmp_, err_ := liftMemResultDrawingShape(ctx, caller, callee, h, w_, recT_.Fields[3].Type, ptr+32); err_ != nil {
 		return Scene{}, err_
 	} else {
 		v_.Last = tmp_
@@ -1226,7 +1226,7 @@ func fromGoMemShape(ctx context.Context, cc *host.CallContext, h *host.Component
 	return nil
 }
 
-func liftFlatShape(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (Shape, error) {
+func liftFlatShape(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *shapesWrapper, ty wacogo.Type, stack []uint64) (Shape, error) {
 	varT_ := ty.(wacogo.TypeVariant)
 	_ = varT_
 	disc_ := uint32(stack[0])
@@ -1243,7 +1243,7 @@ func liftFlatShape(ctx context.Context, caller, callee *host.CallContext, h *hos
 	return nil, fmt.Errorf("wacogo/witgen: liftFlatShape: invalid discriminant %d", disc_)
 }
 
-func liftMemShape(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (Shape, error) {
+func liftMemShape(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *shapesWrapper, ty wacogo.Type, ptr uint32) (Shape, error) {
 	varT_ := ty.(wacogo.TypeVariant)
 	_ = varT_
 	var disc_ uint8
@@ -1361,11 +1361,11 @@ func fromGoMemTupleShapeU32(ctx context.Context, cc *host.CallContext, h *host.C
 	return nil
 }
 
-func liftFlatTupleShapeU32(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (TupleShapeU32, error) {
+func liftFlatTupleShapeU32(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *shapesWrapper, ty wacogo.Type, stack []uint64) (TupleShapeU32, error) {
 	var v_ TupleShapeU32
 	tupT_ := ty.(wacogo.TypeTuple)
 	_ = tupT_
-	if tmp_, err_ := liftFlatShape(ctx, caller, callee, h, tupT_.Types[0], stack[0:2]); err_ != nil {
+	if tmp_, err_ := liftFlatShape(ctx, caller, callee, h, w_, tupT_.Types[0], stack[0:2]); err_ != nil {
 		return TupleShapeU32{}, err_
 	} else {
 		v_.F0 = tmp_
@@ -1374,11 +1374,11 @@ func liftFlatTupleShapeU32(ctx context.Context, caller, callee *host.CallContext
 	return v_, nil
 }
 
-func liftMemTupleShapeU32(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (TupleShapeU32, error) {
+func liftMemTupleShapeU32(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *shapesWrapper, ty wacogo.Type, ptr uint32) (TupleShapeU32, error) {
 	var v_ TupleShapeU32
 	tupT_ := ty.(wacogo.TypeTuple)
 	_ = tupT_
-	if tmp_, err_ := liftMemShape(ctx, caller, callee, h, tupT_.Types[0], ptr); err_ != nil {
+	if tmp_, err_ := liftMemShape(ctx, caller, callee, h, w_, tupT_.Types[0], ptr); err_ != nil {
 		return TupleShapeU32{}, err_
 	} else {
 		v_.F0 = tmp_

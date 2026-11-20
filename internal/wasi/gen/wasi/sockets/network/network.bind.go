@@ -48,12 +48,10 @@ func NewFactory(ctx context.Context, e *wacogo.Engine) (*Factory, error) {
 	_ = typErrorCode_
 	typIpAddressFamily_ := b_.AddType("ip-address-family", host.Enum{Cases: []string{"ipv4", "ipv6"}})
 	_ = typIpAddressFamily_
-
 	typIpv4SocketAddress_ := b_.AddType("ipv4-socket-address", host.Record{Fields: []host.Field{{Name: "port", Type: host.U16}, {Name: "address", Type: host.Tuple{Types: []host.TypeExpr{host.U8, host.U8, host.U8, host.U8}}}}})
 	_ = typIpv4SocketAddress_
 	typIpv6SocketAddress_ := b_.AddType("ipv6-socket-address", host.Record{Fields: []host.Field{{Name: "port", Type: host.U16}, {Name: "flow-info", Type: host.U32}, {Name: "address", Type: host.Tuple{Types: []host.TypeExpr{host.U16, host.U16, host.U16, host.U16, host.U16, host.U16, host.U16, host.U16}}}, {Name: "scope-id", Type: host.U32}}})
 	_ = typIpv6SocketAddress_
-
 	typIpAddress_ := b_.AddType("ip-address", host.Variant{Cases: []host.Case{{Name: "ipv4", Payload: host.Tuple{Types: []host.TypeExpr{host.U8, host.U8, host.U8, host.U8}}}, {Name: "ipv6", Payload: host.Tuple{Types: []host.TypeExpr{host.U16, host.U16, host.U16, host.U16, host.U16, host.U16, host.U16, host.U16}}}}})
 	_ = typIpAddress_
 	typIpSocketAddress_ := b_.AddType("ip-socket-address", host.Variant{Cases: []host.Case{{Name: "ipv4", Payload: typIpv4SocketAddress_}, {Name: "ipv6", Payload: typIpv6SocketAddress_}}})
@@ -165,12 +163,12 @@ func fromGoMemIpv4SocketAddress(ctx context.Context, cc *host.CallContext, h *ho
 	return nil
 }
 
-func liftFlatIpv4SocketAddress(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (Ipv4SocketAddress, error) {
+func liftFlatIpv4SocketAddress(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *networkWrapper, ty wacogo.Type, stack []uint64) (Ipv4SocketAddress, error) {
 	var v_ Ipv4SocketAddress
 	recT_ := ty.(wacogo.TypeRecord)
 	_ = recT_
 	v_.Port = uint16(stack[0])
-	if tmp_, err_ := liftFlatTupleU8U8U8U8(ctx, caller, callee, h, recT_.Fields[1].Type, stack[1:5]); err_ != nil {
+	if tmp_, err_ := liftFlatTupleU8U8U8U8(ctx, caller, callee, h, w_, recT_.Fields[1].Type, stack[1:5]); err_ != nil {
 		return Ipv4SocketAddress{}, err_
 	} else {
 		v_.Address = tmp_
@@ -178,7 +176,7 @@ func liftFlatIpv4SocketAddress(ctx context.Context, caller, callee *host.CallCon
 	return v_, nil
 }
 
-func liftMemIpv4SocketAddress(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (Ipv4SocketAddress, error) {
+func liftMemIpv4SocketAddress(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *networkWrapper, ty wacogo.Type, ptr uint32) (Ipv4SocketAddress, error) {
 	var v_ Ipv4SocketAddress
 	recT_ := ty.(wacogo.TypeRecord)
 	_ = recT_
@@ -187,7 +185,7 @@ func liftMemIpv4SocketAddress(ctx context.Context, caller, callee *host.CallCont
 	} else {
 		v_.Port = tmp_
 	}
-	if tmp_, err_ := liftMemTupleU8U8U8U8(ctx, caller, callee, h, recT_.Fields[1].Type, ptr+2); err_ != nil {
+	if tmp_, err_ := liftMemTupleU8U8U8U8(ctx, caller, callee, h, w_, recT_.Fields[1].Type, ptr+2); err_ != nil {
 		return Ipv4SocketAddress{}, err_
 	} else {
 		v_.Address = tmp_
@@ -285,13 +283,13 @@ func fromGoMemIpv6SocketAddress(ctx context.Context, cc *host.CallContext, h *ho
 	return nil
 }
 
-func liftFlatIpv6SocketAddress(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (Ipv6SocketAddress, error) {
+func liftFlatIpv6SocketAddress(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *networkWrapper, ty wacogo.Type, stack []uint64) (Ipv6SocketAddress, error) {
 	var v_ Ipv6SocketAddress
 	recT_ := ty.(wacogo.TypeRecord)
 	_ = recT_
 	v_.Port = uint16(stack[0])
 	v_.FlowInfo = uint32(stack[1])
-	if tmp_, err_ := liftFlatTupleU16U16U16U16U16U16U16U16(ctx, caller, callee, h, recT_.Fields[2].Type, stack[2:10]); err_ != nil {
+	if tmp_, err_ := liftFlatTupleU16U16U16U16U16U16U16U16(ctx, caller, callee, h, w_, recT_.Fields[2].Type, stack[2:10]); err_ != nil {
 		return Ipv6SocketAddress{}, err_
 	} else {
 		v_.Address = tmp_
@@ -300,7 +298,7 @@ func liftFlatIpv6SocketAddress(ctx context.Context, caller, callee *host.CallCon
 	return v_, nil
 }
 
-func liftMemIpv6SocketAddress(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (Ipv6SocketAddress, error) {
+func liftMemIpv6SocketAddress(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *networkWrapper, ty wacogo.Type, ptr uint32) (Ipv6SocketAddress, error) {
 	var v_ Ipv6SocketAddress
 	recT_ := ty.(wacogo.TypeRecord)
 	_ = recT_
@@ -314,7 +312,7 @@ func liftMemIpv6SocketAddress(ctx context.Context, caller, callee *host.CallCont
 	} else {
 		v_.FlowInfo = tmp_
 	}
-	if tmp_, err_ := liftMemTupleU16U16U16U16U16U16U16U16(ctx, caller, callee, h, recT_.Fields[2].Type, ptr+8); err_ != nil {
+	if tmp_, err_ := liftMemTupleU16U16U16U16U16U16U16U16(ctx, caller, callee, h, w_, recT_.Fields[2].Type, ptr+8); err_ != nil {
 		return Ipv6SocketAddress{}, err_
 	} else {
 		v_.Address = tmp_
@@ -417,7 +415,7 @@ func fromGoMemOptionErrorCode(ctx context.Context, cc *host.CallContext, h *host
 	return nil
 }
 
-func liftFlatOptionErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (OptionErrorCode, error) {
+func liftFlatOptionErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *networkWrapper, ty wacogo.Type, stack []uint64) (OptionErrorCode, error) {
 	optT_ := ty.(wacogo.TypeOption)
 	_ = optT_
 	disc_ := uint32(stack[0])
@@ -429,7 +427,7 @@ func liftFlatOptionErrorCode(ctx context.Context, caller, callee *host.CallConte
 	return out_, nil
 }
 
-func liftMemOptionErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (OptionErrorCode, error) {
+func liftMemOptionErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *networkWrapper, ty wacogo.Type, ptr uint32) (OptionErrorCode, error) {
 	optT_ := ty.(wacogo.TypeOption)
 	_ = optT_
 	var disc_ uint8
@@ -547,7 +545,7 @@ func fromGoMemString(ctx context.Context, cc *host.CallContext, h *host.Componen
 	return nil
 }
 
-func liftFlatString(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (string, error) {
+func liftFlatString(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *networkWrapper, ty wacogo.Type, stack []uint64) (string, error) {
 	ptr_ := uint32(stack[0])
 	ln_ := uint32(stack[1])
 	bs_, ok_ := callee.Memory().Read(ptr_, ln_)
@@ -557,7 +555,7 @@ func liftFlatString(ctx context.Context, caller, callee *host.CallContext, h *ho
 	return string(bs_), nil
 }
 
-func liftMemString(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (string, error) {
+func liftMemString(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *networkWrapper, ty wacogo.Type, ptr uint32) (string, error) {
 	var sptr_ uint32
 	if tmp_, ok_ := callee.Memory().ReadUint32Le(ptr); !ok_ {
 		return "", fmt.Errorf("wacogo/witgen: liftMemString: string ptr: bad memory read")
@@ -711,7 +709,7 @@ func fromGoMemTupleU16U16U16U16U16U16U16U16(ctx context.Context, cc *host.CallCo
 	return nil
 }
 
-func liftFlatTupleU16U16U16U16U16U16U16U16(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (TupleU16U16U16U16U16U16U16U16, error) {
+func liftFlatTupleU16U16U16U16U16U16U16U16(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *networkWrapper, ty wacogo.Type, stack []uint64) (TupleU16U16U16U16U16U16U16U16, error) {
 	var v_ TupleU16U16U16U16U16U16U16U16
 	tupT_ := ty.(wacogo.TypeTuple)
 	_ = tupT_
@@ -726,7 +724,7 @@ func liftFlatTupleU16U16U16U16U16U16U16U16(ctx context.Context, caller, callee *
 	return v_, nil
 }
 
-func liftMemTupleU16U16U16U16U16U16U16U16(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (TupleU16U16U16U16U16U16U16U16, error) {
+func liftMemTupleU16U16U16U16U16U16U16U16(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *networkWrapper, ty wacogo.Type, ptr uint32) (TupleU16U16U16U16U16U16U16U16, error) {
 	var v_ TupleU16U16U16U16U16U16U16U16
 	tupT_ := ty.(wacogo.TypeTuple)
 	_ = tupT_
@@ -879,7 +877,7 @@ func fromGoMemTupleU8U8U8U8(ctx context.Context, cc *host.CallContext, h *host.C
 	return nil
 }
 
-func liftFlatTupleU8U8U8U8(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (TupleU8U8U8U8, error) {
+func liftFlatTupleU8U8U8U8(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *networkWrapper, ty wacogo.Type, stack []uint64) (TupleU8U8U8U8, error) {
 	var v_ TupleU8U8U8U8
 	tupT_ := ty.(wacogo.TypeTuple)
 	_ = tupT_
@@ -890,7 +888,7 @@ func liftFlatTupleU8U8U8U8(ctx context.Context, caller, callee *host.CallContext
 	return v_, nil
 }
 
-func liftMemTupleU8U8U8U8(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (TupleU8U8U8U8, error) {
+func liftMemTupleU8U8U8U8(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *networkWrapper, ty wacogo.Type, ptr uint32) (TupleU8U8U8U8, error) {
 	var v_ TupleU8U8U8U8
 	tupT_ := ty.(wacogo.TypeTuple)
 	_ = tupT_
@@ -1001,7 +999,7 @@ func (f *wioerrorErrorResourceForwarder) ToDebugString(ctx context.Context) (str
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemString(ctx, caller, callee, f.caller, f.fns.fnToDebugString.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemString(ctx, caller, callee, f.caller, nil, f.fns.fnToDebugString.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_

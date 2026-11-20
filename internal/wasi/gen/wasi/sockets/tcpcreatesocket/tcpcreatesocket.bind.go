@@ -280,7 +280,7 @@ func fromGoMemListU8(ctx context.Context, cc *host.CallContext, h *host.Componen
 	return nil
 }
 
-func liftFlatListU8(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) ([]uint8, error) {
+func liftFlatListU8(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *tcpCreateSocketWrapper, ty wacogo.Type, stack []uint64) ([]uint8, error) {
 	lstT_ := ty.(wacogo.TypeList)
 	_ = lstT_
 	ptr_ := uint32(stack[0])
@@ -298,7 +298,7 @@ func liftFlatListU8(ctx context.Context, caller, callee *host.CallContext, h *ho
 	return out_, nil
 }
 
-func liftMemListU8(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) ([]uint8, error) {
+func liftMemListU8(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *tcpCreateSocketWrapper, ty wacogo.Type, ptr uint32) ([]uint8, error) {
 	lstT_ := ty.(wacogo.TypeList)
 	_ = lstT_
 	var lptr_ uint32
@@ -475,14 +475,14 @@ func fromGoMemNetworkIpSocketAddress(ctx context.Context, cc *host.CallContext, 
 	return nil
 }
 
-func liftFlatNetworkIpSocketAddress(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (network.IpSocketAddress, error) {
+func liftFlatNetworkIpSocketAddress(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *tcpCreateSocketWrapper, ty wacogo.Type, stack []uint64) (network.IpSocketAddress, error) {
 	varT_ := ty.(wacogo.TypeVariant)
 	_ = varT_
 	disc_ := uint32(stack[0])
 	switch disc_ {
 	case 0:
 		var val network.Ipv4SocketAddress
-		if tmp_, err_ := liftFlatNetworkIpv4SocketAddress(ctx, caller, callee, h, varT_.Cases[0].Payload, stack[1:6]); err_ != nil {
+		if tmp_, err_ := liftFlatNetworkIpv4SocketAddress(ctx, caller, callee, h, w_, varT_.Cases[0].Payload, stack[1:6]); err_ != nil {
 			return nil, err_
 		} else {
 			val = tmp_
@@ -490,7 +490,7 @@ func liftFlatNetworkIpSocketAddress(ctx context.Context, caller, callee *host.Ca
 		return network.IpSocketAddressIpv4{Value: val}, nil
 	case 1:
 		var val network.Ipv6SocketAddress
-		if tmp_, err_ := liftFlatNetworkIpv6SocketAddress(ctx, caller, callee, h, varT_.Cases[1].Payload, stack[1:12]); err_ != nil {
+		if tmp_, err_ := liftFlatNetworkIpv6SocketAddress(ctx, caller, callee, h, w_, varT_.Cases[1].Payload, stack[1:12]); err_ != nil {
 			return nil, err_
 		} else {
 			val = tmp_
@@ -500,7 +500,7 @@ func liftFlatNetworkIpSocketAddress(ctx context.Context, caller, callee *host.Ca
 	return nil, fmt.Errorf("wacogo/witgen: liftFlatNetworkIpSocketAddress: invalid discriminant %d", disc_)
 }
 
-func liftMemNetworkIpSocketAddress(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (network.IpSocketAddress, error) {
+func liftMemNetworkIpSocketAddress(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *tcpCreateSocketWrapper, ty wacogo.Type, ptr uint32) (network.IpSocketAddress, error) {
 	varT_ := ty.(wacogo.TypeVariant)
 	_ = varT_
 	var disc_ uint8
@@ -512,7 +512,7 @@ func liftMemNetworkIpSocketAddress(ctx context.Context, caller, callee *host.Cal
 	switch disc_ {
 	case 0:
 		var val network.Ipv4SocketAddress
-		if tmp_, err_ := liftMemNetworkIpv4SocketAddress(ctx, caller, callee, h, varT_.Cases[0].Payload, ptr+4); err_ != nil {
+		if tmp_, err_ := liftMemNetworkIpv4SocketAddress(ctx, caller, callee, h, w_, varT_.Cases[0].Payload, ptr+4); err_ != nil {
 			return nil, err_
 		} else {
 			val = tmp_
@@ -520,7 +520,7 @@ func liftMemNetworkIpSocketAddress(ctx context.Context, caller, callee *host.Cal
 		return network.IpSocketAddressIpv4{Value: val}, nil
 	case 1:
 		var val network.Ipv6SocketAddress
-		if tmp_, err_ := liftMemNetworkIpv6SocketAddress(ctx, caller, callee, h, varT_.Cases[1].Payload, ptr+4); err_ != nil {
+		if tmp_, err_ := liftMemNetworkIpv6SocketAddress(ctx, caller, callee, h, w_, varT_.Cases[1].Payload, ptr+4); err_ != nil {
 			return nil, err_
 		} else {
 			val = tmp_
@@ -628,12 +628,12 @@ func fromGoMemNetworkIpv4SocketAddress(ctx context.Context, cc *host.CallContext
 	return nil
 }
 
-func liftFlatNetworkIpv4SocketAddress(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (network.Ipv4SocketAddress, error) {
+func liftFlatNetworkIpv4SocketAddress(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *tcpCreateSocketWrapper, ty wacogo.Type, stack []uint64) (network.Ipv4SocketAddress, error) {
 	var v_ network.Ipv4SocketAddress
 	recT_ := ty.(wacogo.TypeRecord)
 	_ = recT_
 	v_.Port = uint16(stack[0])
-	if tmp_, err_ := liftFlatNetworkTupleU8U8U8U8(ctx, caller, callee, h, recT_.Fields[1].Type, stack[1:5]); err_ != nil {
+	if tmp_, err_ := liftFlatNetworkTupleU8U8U8U8(ctx, caller, callee, h, w_, recT_.Fields[1].Type, stack[1:5]); err_ != nil {
 		return network.Ipv4SocketAddress{}, err_
 	} else {
 		v_.Address = tmp_
@@ -641,7 +641,7 @@ func liftFlatNetworkIpv4SocketAddress(ctx context.Context, caller, callee *host.
 	return v_, nil
 }
 
-func liftMemNetworkIpv4SocketAddress(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (network.Ipv4SocketAddress, error) {
+func liftMemNetworkIpv4SocketAddress(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *tcpCreateSocketWrapper, ty wacogo.Type, ptr uint32) (network.Ipv4SocketAddress, error) {
 	var v_ network.Ipv4SocketAddress
 	recT_ := ty.(wacogo.TypeRecord)
 	_ = recT_
@@ -650,7 +650,7 @@ func liftMemNetworkIpv4SocketAddress(ctx context.Context, caller, callee *host.C
 	} else {
 		v_.Port = tmp_
 	}
-	if tmp_, err_ := liftMemNetworkTupleU8U8U8U8(ctx, caller, callee, h, recT_.Fields[1].Type, ptr+2); err_ != nil {
+	if tmp_, err_ := liftMemNetworkTupleU8U8U8U8(ctx, caller, callee, h, w_, recT_.Fields[1].Type, ptr+2); err_ != nil {
 		return network.Ipv4SocketAddress{}, err_
 	} else {
 		v_.Address = tmp_
@@ -748,13 +748,13 @@ func fromGoMemNetworkIpv6SocketAddress(ctx context.Context, cc *host.CallContext
 	return nil
 }
 
-func liftFlatNetworkIpv6SocketAddress(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (network.Ipv6SocketAddress, error) {
+func liftFlatNetworkIpv6SocketAddress(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *tcpCreateSocketWrapper, ty wacogo.Type, stack []uint64) (network.Ipv6SocketAddress, error) {
 	var v_ network.Ipv6SocketAddress
 	recT_ := ty.(wacogo.TypeRecord)
 	_ = recT_
 	v_.Port = uint16(stack[0])
 	v_.FlowInfo = uint32(stack[1])
-	if tmp_, err_ := liftFlatNetworkTupleU16U16U16U16U16U16U16U16(ctx, caller, callee, h, recT_.Fields[2].Type, stack[2:10]); err_ != nil {
+	if tmp_, err_ := liftFlatNetworkTupleU16U16U16U16U16U16U16U16(ctx, caller, callee, h, w_, recT_.Fields[2].Type, stack[2:10]); err_ != nil {
 		return network.Ipv6SocketAddress{}, err_
 	} else {
 		v_.Address = tmp_
@@ -763,7 +763,7 @@ func liftFlatNetworkIpv6SocketAddress(ctx context.Context, caller, callee *host.
 	return v_, nil
 }
 
-func liftMemNetworkIpv6SocketAddress(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (network.Ipv6SocketAddress, error) {
+func liftMemNetworkIpv6SocketAddress(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *tcpCreateSocketWrapper, ty wacogo.Type, ptr uint32) (network.Ipv6SocketAddress, error) {
 	var v_ network.Ipv6SocketAddress
 	recT_ := ty.(wacogo.TypeRecord)
 	_ = recT_
@@ -777,7 +777,7 @@ func liftMemNetworkIpv6SocketAddress(ctx context.Context, caller, callee *host.C
 	} else {
 		v_.FlowInfo = tmp_
 	}
-	if tmp_, err_ := liftMemNetworkTupleU16U16U16U16U16U16U16U16(ctx, caller, callee, h, recT_.Fields[2].Type, ptr+8); err_ != nil {
+	if tmp_, err_ := liftMemNetworkTupleU16U16U16U16U16U16U16U16(ctx, caller, callee, h, w_, recT_.Fields[2].Type, ptr+8); err_ != nil {
 		return network.Ipv6SocketAddress{}, err_
 	} else {
 		v_.Address = tmp_
@@ -922,7 +922,7 @@ func fromGoMemNetworkTupleU16U16U16U16U16U16U16U16(ctx context.Context, cc *host
 	return nil
 }
 
-func liftFlatNetworkTupleU16U16U16U16U16U16U16U16(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (network.TupleU16U16U16U16U16U16U16U16, error) {
+func liftFlatNetworkTupleU16U16U16U16U16U16U16U16(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *tcpCreateSocketWrapper, ty wacogo.Type, stack []uint64) (network.TupleU16U16U16U16U16U16U16U16, error) {
 	var v_ network.TupleU16U16U16U16U16U16U16U16
 	tupT_ := ty.(wacogo.TypeTuple)
 	_ = tupT_
@@ -937,7 +937,7 @@ func liftFlatNetworkTupleU16U16U16U16U16U16U16U16(ctx context.Context, caller, c
 	return v_, nil
 }
 
-func liftMemNetworkTupleU16U16U16U16U16U16U16U16(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (network.TupleU16U16U16U16U16U16U16U16, error) {
+func liftMemNetworkTupleU16U16U16U16U16U16U16U16(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *tcpCreateSocketWrapper, ty wacogo.Type, ptr uint32) (network.TupleU16U16U16U16U16U16U16U16, error) {
 	var v_ network.TupleU16U16U16U16U16U16U16U16
 	tupT_ := ty.(wacogo.TypeTuple)
 	_ = tupT_
@@ -1090,7 +1090,7 @@ func fromGoMemNetworkTupleU8U8U8U8(ctx context.Context, cc *host.CallContext, h 
 	return nil
 }
 
-func liftFlatNetworkTupleU8U8U8U8(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (network.TupleU8U8U8U8, error) {
+func liftFlatNetworkTupleU8U8U8U8(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *tcpCreateSocketWrapper, ty wacogo.Type, stack []uint64) (network.TupleU8U8U8U8, error) {
 	var v_ network.TupleU8U8U8U8
 	tupT_ := ty.(wacogo.TypeTuple)
 	_ = tupT_
@@ -1101,7 +1101,7 @@ func liftFlatNetworkTupleU8U8U8U8(ctx context.Context, caller, callee *host.Call
 	return v_, nil
 }
 
-func liftMemNetworkTupleU8U8U8U8(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (network.TupleU8U8U8U8, error) {
+func liftMemNetworkTupleU8U8U8U8(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *tcpCreateSocketWrapper, ty wacogo.Type, ptr uint32) (network.TupleU8U8U8U8, error) {
 	var v_ network.TupleU8U8U8U8
 	tupT_ := ty.(wacogo.TypeTuple)
 	_ = tupT_
@@ -1268,7 +1268,7 @@ func fromGoMemResultTcpSocketNetworkErrorCode(ctx context.Context, cc *host.Call
 	return nil
 }
 
-func liftFlatResultTcpSocketNetworkErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (ResultTcpSocketNetworkErrorCode, error) {
+func liftFlatResultTcpSocketNetworkErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *tcpCreateSocketWrapper, ty wacogo.Type, stack []uint64) (ResultTcpSocketNetworkErrorCode, error) {
 	resT_ := ty.(wacogo.TypeResult)
 	_ = resT_
 	disc_ := uint32(stack[0])
@@ -1296,7 +1296,7 @@ func liftFlatResultTcpSocketNetworkErrorCode(ctx context.Context, caller, callee
 	return ResultTcpSocketNetworkErrorCodeErr{Value: errVal_}, nil
 }
 
-func liftMemResultTcpSocketNetworkErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (ResultTcpSocketNetworkErrorCode, error) {
+func liftMemResultTcpSocketNetworkErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *tcpCreateSocketWrapper, ty wacogo.Type, ptr uint32) (ResultTcpSocketNetworkErrorCode, error) {
 	resT_ := ty.(wacogo.TypeResult)
 	_ = resT_
 	var disc_ uint8
@@ -1499,13 +1499,13 @@ func fromGoMemStreamsResultListU8StreamsStreamError(ctx context.Context, cc *hos
 	return nil
 }
 
-func liftFlatStreamsResultListU8StreamsStreamError(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (streams.ResultListU8StreamError, error) {
+func liftFlatStreamsResultListU8StreamsStreamError(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *tcpCreateSocketWrapper, ty wacogo.Type, stack []uint64) (streams.ResultListU8StreamError, error) {
 	resT_ := ty.(wacogo.TypeResult)
 	_ = resT_
 	disc_ := uint32(stack[0])
 	if disc_ == 0 {
 		var okVal_ []uint8
-		if tmp_, err_ := liftFlatListU8(ctx, caller, callee, h, resT_.Ok, stack[1:3]); err_ != nil {
+		if tmp_, err_ := liftFlatListU8(ctx, caller, callee, h, w_, resT_.Ok, stack[1:3]); err_ != nil {
 			return nil, err_
 		} else {
 			okVal_ = tmp_
@@ -1513,7 +1513,7 @@ func liftFlatStreamsResultListU8StreamsStreamError(ctx context.Context, caller, 
 		return streams.ResultListU8StreamErrorOk{Value: okVal_}, nil
 	}
 	var errVal_ streams.StreamError
-	if tmp_, err_ := liftFlatStreamsStreamError(ctx, caller, callee, h, resT_.Err, stack[1:3]); err_ != nil {
+	if tmp_, err_ := liftFlatStreamsStreamError(ctx, caller, callee, h, w_, resT_.Err, stack[1:3]); err_ != nil {
 		return nil, err_
 	} else {
 		errVal_ = tmp_
@@ -1521,7 +1521,7 @@ func liftFlatStreamsResultListU8StreamsStreamError(ctx context.Context, caller, 
 	return streams.ResultListU8StreamErrorErr{Value: errVal_}, nil
 }
 
-func liftMemStreamsResultListU8StreamsStreamError(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (streams.ResultListU8StreamError, error) {
+func liftMemStreamsResultListU8StreamsStreamError(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *tcpCreateSocketWrapper, ty wacogo.Type, ptr uint32) (streams.ResultListU8StreamError, error) {
 	resT_ := ty.(wacogo.TypeResult)
 	_ = resT_
 	var disc_ uint8
@@ -1532,7 +1532,7 @@ func liftMemStreamsResultListU8StreamsStreamError(ctx context.Context, caller, c
 	}
 	if disc_ == 0 {
 		var okVal_ []uint8
-		if tmp_, err_ := liftMemListU8(ctx, caller, callee, h, resT_.Ok, ptr+4); err_ != nil {
+		if tmp_, err_ := liftMemListU8(ctx, caller, callee, h, w_, resT_.Ok, ptr+4); err_ != nil {
 			return nil, err_
 		} else {
 			okVal_ = tmp_
@@ -1540,7 +1540,7 @@ func liftMemStreamsResultListU8StreamsStreamError(ctx context.Context, caller, c
 		return streams.ResultListU8StreamErrorOk{Value: okVal_}, nil
 	}
 	var errVal_ streams.StreamError
-	if tmp_, err_ := liftMemStreamsStreamError(ctx, caller, callee, h, resT_.Err, ptr+4); err_ != nil {
+	if tmp_, err_ := liftMemStreamsStreamError(ctx, caller, callee, h, w_, resT_.Err, ptr+4); err_ != nil {
 		return nil, err_
 	} else {
 		errVal_ = tmp_
@@ -1676,7 +1676,7 @@ func fromGoMemStreamsResultU64StreamsStreamError(ctx context.Context, cc *host.C
 	return nil
 }
 
-func liftFlatStreamsResultU64StreamsStreamError(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (streams.ResultU64StreamError, error) {
+func liftFlatStreamsResultU64StreamsStreamError(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *tcpCreateSocketWrapper, ty wacogo.Type, stack []uint64) (streams.ResultU64StreamError, error) {
 	resT_ := ty.(wacogo.TypeResult)
 	_ = resT_
 	disc_ := uint32(stack[0])
@@ -1686,7 +1686,7 @@ func liftFlatStreamsResultU64StreamsStreamError(ctx context.Context, caller, cal
 		return streams.ResultU64StreamErrorOk{Value: okVal_}, nil
 	}
 	var errVal_ streams.StreamError
-	if tmp_, err_ := liftFlatStreamsStreamError(ctx, caller, callee, h, resT_.Err, stack[1:3]); err_ != nil {
+	if tmp_, err_ := liftFlatStreamsStreamError(ctx, caller, callee, h, w_, resT_.Err, stack[1:3]); err_ != nil {
 		return nil, err_
 	} else {
 		errVal_ = tmp_
@@ -1694,7 +1694,7 @@ func liftFlatStreamsResultU64StreamsStreamError(ctx context.Context, caller, cal
 	return streams.ResultU64StreamErrorErr{Value: errVal_}, nil
 }
 
-func liftMemStreamsResultU64StreamsStreamError(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (streams.ResultU64StreamError, error) {
+func liftMemStreamsResultU64StreamsStreamError(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *tcpCreateSocketWrapper, ty wacogo.Type, ptr uint32) (streams.ResultU64StreamError, error) {
 	resT_ := ty.(wacogo.TypeResult)
 	_ = resT_
 	var disc_ uint8
@@ -1713,7 +1713,7 @@ func liftMemStreamsResultU64StreamsStreamError(ctx context.Context, caller, call
 		return streams.ResultU64StreamErrorOk{Value: okVal_}, nil
 	}
 	var errVal_ streams.StreamError
-	if tmp_, err_ := liftMemStreamsStreamError(ctx, caller, callee, h, resT_.Err, ptr+8); err_ != nil {
+	if tmp_, err_ := liftMemStreamsStreamError(ctx, caller, callee, h, w_, resT_.Err, ptr+8); err_ != nil {
 		return nil, err_
 	} else {
 		errVal_ = tmp_
@@ -1839,7 +1839,7 @@ func fromGoMemStreamsResult_StreamsStreamError(ctx context.Context, cc *host.Cal
 	return nil
 }
 
-func liftFlatStreamsResult_StreamsStreamError(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (streams.Result_StreamError, error) {
+func liftFlatStreamsResult_StreamsStreamError(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *tcpCreateSocketWrapper, ty wacogo.Type, stack []uint64) (streams.Result_StreamError, error) {
 	resT_ := ty.(wacogo.TypeResult)
 	_ = resT_
 	disc_ := uint32(stack[0])
@@ -1847,7 +1847,7 @@ func liftFlatStreamsResult_StreamsStreamError(ctx context.Context, caller, calle
 		return streams.Result_StreamErrorOk{}, nil
 	}
 	var errVal_ streams.StreamError
-	if tmp_, err_ := liftFlatStreamsStreamError(ctx, caller, callee, h, resT_.Err, stack[1:3]); err_ != nil {
+	if tmp_, err_ := liftFlatStreamsStreamError(ctx, caller, callee, h, w_, resT_.Err, stack[1:3]); err_ != nil {
 		return nil, err_
 	} else {
 		errVal_ = tmp_
@@ -1855,7 +1855,7 @@ func liftFlatStreamsResult_StreamsStreamError(ctx context.Context, caller, calle
 	return streams.Result_StreamErrorErr{Value: errVal_}, nil
 }
 
-func liftMemStreamsResult_StreamsStreamError(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (streams.Result_StreamError, error) {
+func liftMemStreamsResult_StreamsStreamError(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *tcpCreateSocketWrapper, ty wacogo.Type, ptr uint32) (streams.Result_StreamError, error) {
 	resT_ := ty.(wacogo.TypeResult)
 	_ = resT_
 	var disc_ uint8
@@ -1868,7 +1868,7 @@ func liftMemStreamsResult_StreamsStreamError(ctx context.Context, caller, callee
 		return streams.Result_StreamErrorOk{}, nil
 	}
 	var errVal_ streams.StreamError
-	if tmp_, err_ := liftMemStreamsStreamError(ctx, caller, callee, h, resT_.Err, ptr+4); err_ != nil {
+	if tmp_, err_ := liftMemStreamsStreamError(ctx, caller, callee, h, w_, resT_.Err, ptr+4); err_ != nil {
 		return nil, err_
 	} else {
 		errVal_ = tmp_
@@ -2027,7 +2027,7 @@ func fromGoMemStreamsStreamError(ctx context.Context, cc *host.CallContext, h *h
 	return nil
 }
 
-func liftFlatStreamsStreamError(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (streams.StreamError, error) {
+func liftFlatStreamsStreamError(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *tcpCreateSocketWrapper, ty wacogo.Type, stack []uint64) (streams.StreamError, error) {
 	varT_ := ty.(wacogo.TypeVariant)
 	_ = varT_
 	disc_ := uint32(stack[0])
@@ -2056,7 +2056,7 @@ func liftFlatStreamsStreamError(ctx context.Context, caller, callee *host.CallCo
 	return nil, fmt.Errorf("wacogo/witgen: liftFlatStreamsStreamError: invalid discriminant %d", disc_)
 }
 
-func liftMemStreamsStreamError(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (streams.StreamError, error) {
+func liftMemStreamsStreamError(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *tcpCreateSocketWrapper, ty wacogo.Type, ptr uint32) (streams.StreamError, error) {
 	varT_ := ty.(wacogo.TypeVariant)
 	_ = varT_
 	var disc_ uint8
@@ -2230,7 +2230,7 @@ func fromGoMemString(ctx context.Context, cc *host.CallContext, h *host.Componen
 	return nil
 }
 
-func liftFlatString(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (string, error) {
+func liftFlatString(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *tcpCreateSocketWrapper, ty wacogo.Type, stack []uint64) (string, error) {
 	ptr_ := uint32(stack[0])
 	ln_ := uint32(stack[1])
 	bs_, ok_ := callee.Memory().Read(ptr_, ln_)
@@ -2240,7 +2240,7 @@ func liftFlatString(ctx context.Context, caller, callee *host.CallContext, h *ho
 	return string(bs_), nil
 }
 
-func liftMemString(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (string, error) {
+func liftMemString(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *tcpCreateSocketWrapper, ty wacogo.Type, ptr uint32) (string, error) {
 	var sptr_ uint32
 	if tmp_, ok_ := callee.Memory().ReadUint32Le(ptr); !ok_ {
 		return "", fmt.Errorf("wacogo/witgen: liftMemString: string ptr: bad memory read")
@@ -2379,7 +2379,7 @@ func fromGoMemTcpResultBoolNetworkErrorCode(ctx context.Context, cc *host.CallCo
 	return nil
 }
 
-func liftFlatTcpResultBoolNetworkErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (tcp.ResultBoolNetworkErrorCode, error) {
+func liftFlatTcpResultBoolNetworkErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *tcpCreateSocketWrapper, ty wacogo.Type, stack []uint64) (tcp.ResultBoolNetworkErrorCode, error) {
 	resT_ := ty.(wacogo.TypeResult)
 	_ = resT_
 	disc_ := uint32(stack[0])
@@ -2393,7 +2393,7 @@ func liftFlatTcpResultBoolNetworkErrorCode(ctx context.Context, caller, callee *
 	return tcp.ResultBoolNetworkErrorCodeErr{Value: errVal_}, nil
 }
 
-func liftMemTcpResultBoolNetworkErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (tcp.ResultBoolNetworkErrorCode, error) {
+func liftMemTcpResultBoolNetworkErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *tcpCreateSocketWrapper, ty wacogo.Type, ptr uint32) (tcp.ResultBoolNetworkErrorCode, error) {
 	resT_ := ty.(wacogo.TypeResult)
 	_ = resT_
 	var disc_ uint8
@@ -2564,13 +2564,13 @@ func fromGoMemTcpResultNetworkIpSocketAddressNetworkErrorCode(ctx context.Contex
 	return nil
 }
 
-func liftFlatTcpResultNetworkIpSocketAddressNetworkErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (tcp.ResultNetworkIpSocketAddressNetworkErrorCode, error) {
+func liftFlatTcpResultNetworkIpSocketAddressNetworkErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *tcpCreateSocketWrapper, ty wacogo.Type, stack []uint64) (tcp.ResultNetworkIpSocketAddressNetworkErrorCode, error) {
 	resT_ := ty.(wacogo.TypeResult)
 	_ = resT_
 	disc_ := uint32(stack[0])
 	if disc_ == 0 {
 		var okVal_ network.IpSocketAddress
-		if tmp_, err_ := liftFlatNetworkIpSocketAddress(ctx, caller, callee, h, resT_.Ok, stack[1:13]); err_ != nil {
+		if tmp_, err_ := liftFlatNetworkIpSocketAddress(ctx, caller, callee, h, w_, resT_.Ok, stack[1:13]); err_ != nil {
 			return nil, err_
 		} else {
 			okVal_ = tmp_
@@ -2582,7 +2582,7 @@ func liftFlatTcpResultNetworkIpSocketAddressNetworkErrorCode(ctx context.Context
 	return tcp.ResultNetworkIpSocketAddressNetworkErrorCodeErr{Value: errVal_}, nil
 }
 
-func liftMemTcpResultNetworkIpSocketAddressNetworkErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (tcp.ResultNetworkIpSocketAddressNetworkErrorCode, error) {
+func liftMemTcpResultNetworkIpSocketAddressNetworkErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *tcpCreateSocketWrapper, ty wacogo.Type, ptr uint32) (tcp.ResultNetworkIpSocketAddressNetworkErrorCode, error) {
 	resT_ := ty.(wacogo.TypeResult)
 	_ = resT_
 	var disc_ uint8
@@ -2593,7 +2593,7 @@ func liftMemTcpResultNetworkIpSocketAddressNetworkErrorCode(ctx context.Context,
 	}
 	if disc_ == 0 {
 		var okVal_ network.IpSocketAddress
-		if tmp_, err_ := liftMemNetworkIpSocketAddress(ctx, caller, callee, h, resT_.Ok, ptr+4); err_ != nil {
+		if tmp_, err_ := liftMemNetworkIpSocketAddress(ctx, caller, callee, h, w_, resT_.Ok, ptr+4); err_ != nil {
 			return nil, err_
 		} else {
 			okVal_ = tmp_
@@ -2746,13 +2746,13 @@ func fromGoMemTcpResultTcpTupleInputStreamOutputStreamNetworkErrorCode(ctx conte
 	return nil
 }
 
-func liftFlatTcpResultTcpTupleInputStreamOutputStreamNetworkErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (tcp.ResultTupleInputStreamOutputStreamNetworkErrorCode, error) {
+func liftFlatTcpResultTcpTupleInputStreamOutputStreamNetworkErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *tcpCreateSocketWrapper, ty wacogo.Type, stack []uint64) (tcp.ResultTupleInputStreamOutputStreamNetworkErrorCode, error) {
 	resT_ := ty.(wacogo.TypeResult)
 	_ = resT_
 	disc_ := uint32(stack[0])
 	if disc_ == 0 {
 		var okVal_ tcp.TupleInputStreamOutputStream
-		if tmp_, err_ := liftFlatTcpTupleInputStreamOutputStream(ctx, caller, callee, h, resT_.Ok, stack[1:3]); err_ != nil {
+		if tmp_, err_ := liftFlatTcpTupleInputStreamOutputStream(ctx, caller, callee, h, w_, resT_.Ok, stack[1:3]); err_ != nil {
 			return nil, err_
 		} else {
 			okVal_ = tmp_
@@ -2764,7 +2764,7 @@ func liftFlatTcpResultTcpTupleInputStreamOutputStreamNetworkErrorCode(ctx contex
 	return tcp.ResultTupleInputStreamOutputStreamNetworkErrorCodeErr{Value: errVal_}, nil
 }
 
-func liftMemTcpResultTcpTupleInputStreamOutputStreamNetworkErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (tcp.ResultTupleInputStreamOutputStreamNetworkErrorCode, error) {
+func liftMemTcpResultTcpTupleInputStreamOutputStreamNetworkErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *tcpCreateSocketWrapper, ty wacogo.Type, ptr uint32) (tcp.ResultTupleInputStreamOutputStreamNetworkErrorCode, error) {
 	resT_ := ty.(wacogo.TypeResult)
 	_ = resT_
 	var disc_ uint8
@@ -2775,7 +2775,7 @@ func liftMemTcpResultTcpTupleInputStreamOutputStreamNetworkErrorCode(ctx context
 	}
 	if disc_ == 0 {
 		var okVal_ tcp.TupleInputStreamOutputStream
-		if tmp_, err_ := liftMemTcpTupleInputStreamOutputStream(ctx, caller, callee, h, resT_.Ok, ptr+4); err_ != nil {
+		if tmp_, err_ := liftMemTcpTupleInputStreamOutputStream(ctx, caller, callee, h, w_, resT_.Ok, ptr+4); err_ != nil {
 			return nil, err_
 		} else {
 			okVal_ = tmp_
@@ -2919,13 +2919,13 @@ func fromGoMemTcpResultTcpTupleTcpSocketInputStreamOutputStreamNetworkErrorCode(
 	return nil
 }
 
-func liftFlatTcpResultTcpTupleTcpSocketInputStreamOutputStreamNetworkErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (tcp.ResultTupleTcpSocketInputStreamOutputStreamNetworkErrorCode, error) {
+func liftFlatTcpResultTcpTupleTcpSocketInputStreamOutputStreamNetworkErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *tcpCreateSocketWrapper, ty wacogo.Type, stack []uint64) (tcp.ResultTupleTcpSocketInputStreamOutputStreamNetworkErrorCode, error) {
 	resT_ := ty.(wacogo.TypeResult)
 	_ = resT_
 	disc_ := uint32(stack[0])
 	if disc_ == 0 {
 		var okVal_ tcp.TupleTcpSocketInputStreamOutputStream
-		if tmp_, err_ := liftFlatTcpTupleTcpSocketInputStreamOutputStream(ctx, caller, callee, h, resT_.Ok, stack[1:4]); err_ != nil {
+		if tmp_, err_ := liftFlatTcpTupleTcpSocketInputStreamOutputStream(ctx, caller, callee, h, w_, resT_.Ok, stack[1:4]); err_ != nil {
 			return nil, err_
 		} else {
 			okVal_ = tmp_
@@ -2937,7 +2937,7 @@ func liftFlatTcpResultTcpTupleTcpSocketInputStreamOutputStreamNetworkErrorCode(c
 	return tcp.ResultTupleTcpSocketInputStreamOutputStreamNetworkErrorCodeErr{Value: errVal_}, nil
 }
 
-func liftMemTcpResultTcpTupleTcpSocketInputStreamOutputStreamNetworkErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (tcp.ResultTupleTcpSocketInputStreamOutputStreamNetworkErrorCode, error) {
+func liftMemTcpResultTcpTupleTcpSocketInputStreamOutputStreamNetworkErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *tcpCreateSocketWrapper, ty wacogo.Type, ptr uint32) (tcp.ResultTupleTcpSocketInputStreamOutputStreamNetworkErrorCode, error) {
 	resT_ := ty.(wacogo.TypeResult)
 	_ = resT_
 	var disc_ uint8
@@ -2948,7 +2948,7 @@ func liftMemTcpResultTcpTupleTcpSocketInputStreamOutputStreamNetworkErrorCode(ct
 	}
 	if disc_ == 0 {
 		var okVal_ tcp.TupleTcpSocketInputStreamOutputStream
-		if tmp_, err_ := liftMemTcpTupleTcpSocketInputStreamOutputStream(ctx, caller, callee, h, resT_.Ok, ptr+4); err_ != nil {
+		if tmp_, err_ := liftMemTcpTupleTcpSocketInputStreamOutputStream(ctx, caller, callee, h, w_, resT_.Ok, ptr+4); err_ != nil {
 			return nil, err_
 		} else {
 			okVal_ = tmp_
@@ -3085,7 +3085,7 @@ func fromGoMemTcpResultU32NetworkErrorCode(ctx context.Context, cc *host.CallCon
 	return nil
 }
 
-func liftFlatTcpResultU32NetworkErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (tcp.ResultU32NetworkErrorCode, error) {
+func liftFlatTcpResultU32NetworkErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *tcpCreateSocketWrapper, ty wacogo.Type, stack []uint64) (tcp.ResultU32NetworkErrorCode, error) {
 	resT_ := ty.(wacogo.TypeResult)
 	_ = resT_
 	disc_ := uint32(stack[0])
@@ -3099,7 +3099,7 @@ func liftFlatTcpResultU32NetworkErrorCode(ctx context.Context, caller, callee *h
 	return tcp.ResultU32NetworkErrorCodeErr{Value: errVal_}, nil
 }
 
-func liftMemTcpResultU32NetworkErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (tcp.ResultU32NetworkErrorCode, error) {
+func liftMemTcpResultU32NetworkErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *tcpCreateSocketWrapper, ty wacogo.Type, ptr uint32) (tcp.ResultU32NetworkErrorCode, error) {
 	resT_ := ty.(wacogo.TypeResult)
 	_ = resT_
 	var disc_ uint8
@@ -3243,7 +3243,7 @@ func fromGoMemTcpResultU64NetworkErrorCode(ctx context.Context, cc *host.CallCon
 	return nil
 }
 
-func liftFlatTcpResultU64NetworkErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (tcp.ResultU64NetworkErrorCode, error) {
+func liftFlatTcpResultU64NetworkErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *tcpCreateSocketWrapper, ty wacogo.Type, stack []uint64) (tcp.ResultU64NetworkErrorCode, error) {
 	resT_ := ty.(wacogo.TypeResult)
 	_ = resT_
 	disc_ := uint32(stack[0])
@@ -3257,7 +3257,7 @@ func liftFlatTcpResultU64NetworkErrorCode(ctx context.Context, caller, callee *h
 	return tcp.ResultU64NetworkErrorCodeErr{Value: errVal_}, nil
 }
 
-func liftMemTcpResultU64NetworkErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (tcp.ResultU64NetworkErrorCode, error) {
+func liftMemTcpResultU64NetworkErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *tcpCreateSocketWrapper, ty wacogo.Type, ptr uint32) (tcp.ResultU64NetworkErrorCode, error) {
 	resT_ := ty.(wacogo.TypeResult)
 	_ = resT_
 	var disc_ uint8
@@ -3401,7 +3401,7 @@ func fromGoMemTcpResultU8NetworkErrorCode(ctx context.Context, cc *host.CallCont
 	return nil
 }
 
-func liftFlatTcpResultU8NetworkErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (tcp.ResultU8NetworkErrorCode, error) {
+func liftFlatTcpResultU8NetworkErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *tcpCreateSocketWrapper, ty wacogo.Type, stack []uint64) (tcp.ResultU8NetworkErrorCode, error) {
 	resT_ := ty.(wacogo.TypeResult)
 	_ = resT_
 	disc_ := uint32(stack[0])
@@ -3415,7 +3415,7 @@ func liftFlatTcpResultU8NetworkErrorCode(ctx context.Context, caller, callee *ho
 	return tcp.ResultU8NetworkErrorCodeErr{Value: errVal_}, nil
 }
 
-func liftMemTcpResultU8NetworkErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (tcp.ResultU8NetworkErrorCode, error) {
+func liftMemTcpResultU8NetworkErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *tcpCreateSocketWrapper, ty wacogo.Type, ptr uint32) (tcp.ResultU8NetworkErrorCode, error) {
 	resT_ := ty.(wacogo.TypeResult)
 	_ = resT_
 	var disc_ uint8
@@ -3550,7 +3550,7 @@ func fromGoMemTcpResult_NetworkErrorCode(ctx context.Context, cc *host.CallConte
 	return nil
 }
 
-func liftFlatTcpResult_NetworkErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (tcp.Result_NetworkErrorCode, error) {
+func liftFlatTcpResult_NetworkErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *tcpCreateSocketWrapper, ty wacogo.Type, stack []uint64) (tcp.Result_NetworkErrorCode, error) {
 	resT_ := ty.(wacogo.TypeResult)
 	_ = resT_
 	disc_ := uint32(stack[0])
@@ -3562,7 +3562,7 @@ func liftFlatTcpResult_NetworkErrorCode(ctx context.Context, caller, callee *hos
 	return tcp.Result_NetworkErrorCodeErr{Value: errVal_}, nil
 }
 
-func liftMemTcpResult_NetworkErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (tcp.Result_NetworkErrorCode, error) {
+func liftMemTcpResult_NetworkErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *tcpCreateSocketWrapper, ty wacogo.Type, ptr uint32) (tcp.Result_NetworkErrorCode, error) {
 	resT_ := ty.(wacogo.TypeResult)
 	_ = resT_
 	var disc_ uint8
@@ -3734,7 +3734,7 @@ func fromGoMemTcpTupleInputStreamOutputStream(ctx context.Context, cc *host.Call
 	return nil
 }
 
-func liftFlatTcpTupleInputStreamOutputStream(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (tcp.TupleInputStreamOutputStream, error) {
+func liftFlatTcpTupleInputStreamOutputStream(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *tcpCreateSocketWrapper, ty wacogo.Type, stack []uint64) (tcp.TupleInputStreamOutputStream, error) {
 	var v_ tcp.TupleInputStreamOutputStream
 	tupT_ := ty.(wacogo.TypeTuple)
 	_ = tupT_
@@ -3771,7 +3771,7 @@ func liftFlatTcpTupleInputStreamOutputStream(ctx context.Context, caller, callee
 	return v_, nil
 }
 
-func liftMemTcpTupleInputStreamOutputStream(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (tcp.TupleInputStreamOutputStream, error) {
+func liftMemTcpTupleInputStreamOutputStream(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *tcpCreateSocketWrapper, ty wacogo.Type, ptr uint32) (tcp.TupleInputStreamOutputStream, error) {
 	var v_ tcp.TupleInputStreamOutputStream
 	tupT_ := ty.(wacogo.TypeTuple)
 	_ = tupT_
@@ -4059,7 +4059,7 @@ func fromGoMemTcpTupleTcpSocketInputStreamOutputStream(ctx context.Context, cc *
 	return nil
 }
 
-func liftFlatTcpTupleTcpSocketInputStreamOutputStream(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (tcp.TupleTcpSocketInputStreamOutputStream, error) {
+func liftFlatTcpTupleTcpSocketInputStreamOutputStream(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *tcpCreateSocketWrapper, ty wacogo.Type, stack []uint64) (tcp.TupleTcpSocketInputStreamOutputStream, error) {
 	var v_ tcp.TupleTcpSocketInputStreamOutputStream
 	tupT_ := ty.(wacogo.TypeTuple)
 	_ = tupT_
@@ -4111,7 +4111,7 @@ func liftFlatTcpTupleTcpSocketInputStreamOutputStream(ctx context.Context, calle
 	return v_, nil
 }
 
-func liftMemTcpTupleTcpSocketInputStreamOutputStream(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (tcp.TupleTcpSocketInputStreamOutputStream, error) {
+func liftMemTcpTupleTcpSocketInputStreamOutputStream(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *tcpCreateSocketWrapper, ty wacogo.Type, ptr uint32) (tcp.TupleTcpSocketInputStreamOutputStream, error) {
 	var v_ tcp.TupleTcpSocketInputStreamOutputStream
 	tupT_ := ty.(wacogo.TypeTuple)
 	_ = tupT_
@@ -4344,7 +4344,7 @@ func (f *wioerrorErrorResourceForwarder) ToDebugString(ctx context.Context) (str
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemString(ctx, caller, callee, f.caller, f.fns.fnToDebugString.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemString(ctx, caller, callee, f.caller, nil, f.fns.fnToDebugString.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_
@@ -4457,7 +4457,7 @@ func (f *streamsInputStreamForwarder) BlockingRead(ctx context.Context, len uint
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemStreamsResultListU8StreamsStreamError(ctx, caller, callee, f.caller, f.fns.fnBlockingRead.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemStreamsResultListU8StreamsStreamError(ctx, caller, callee, f.caller, nil, f.fns.fnBlockingRead.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_
@@ -4483,7 +4483,7 @@ func (f *streamsInputStreamForwarder) BlockingSkip(ctx context.Context, len uint
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemStreamsResultU64StreamsStreamError(ctx, caller, callee, f.caller, f.fns.fnBlockingSkip.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemStreamsResultU64StreamsStreamError(ctx, caller, callee, f.caller, nil, f.fns.fnBlockingSkip.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_
@@ -4509,7 +4509,7 @@ func (f *streamsInputStreamForwarder) Read(ctx context.Context, len uint64) (str
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemStreamsResultListU8StreamsStreamError(ctx, caller, callee, f.caller, f.fns.fnRead.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemStreamsResultListU8StreamsStreamError(ctx, caller, callee, f.caller, nil, f.fns.fnRead.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_
@@ -4535,7 +4535,7 @@ func (f *streamsInputStreamForwarder) Skip(ctx context.Context, len uint64) (str
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemStreamsResultU64StreamsStreamError(ctx, caller, callee, f.caller, f.fns.fnSkip.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemStreamsResultU64StreamsStreamError(ctx, caller, callee, f.caller, nil, f.fns.fnSkip.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_
@@ -4617,7 +4617,7 @@ func (f *streamsOutputStreamForwarder) BlockingFlush(ctx context.Context) (strea
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemStreamsResult_StreamsStreamError(ctx, caller, callee, f.caller, f.fns.fnBlockingFlush.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemStreamsResult_StreamsStreamError(ctx, caller, callee, f.caller, nil, f.fns.fnBlockingFlush.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_
@@ -4660,7 +4660,7 @@ func (f *streamsOutputStreamForwarder) BlockingSplice(ctx context.Context, src *
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemStreamsResultU64StreamsStreamError(ctx, caller, callee, f.caller, f.fns.fnBlockingSplice.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemStreamsResultU64StreamsStreamError(ctx, caller, callee, f.caller, nil, f.fns.fnBlockingSplice.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_
@@ -4688,7 +4688,7 @@ func (f *streamsOutputStreamForwarder) BlockingWriteAndFlush(ctx context.Context
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemStreamsResult_StreamsStreamError(ctx, caller, callee, f.caller, f.fns.fnBlockingWriteAndFlush.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemStreamsResult_StreamsStreamError(ctx, caller, callee, f.caller, nil, f.fns.fnBlockingWriteAndFlush.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_
@@ -4714,7 +4714,7 @@ func (f *streamsOutputStreamForwarder) BlockingWriteZeroesAndFlush(ctx context.C
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemStreamsResult_StreamsStreamError(ctx, caller, callee, f.caller, f.fns.fnBlockingWriteZeroesAndFlush.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemStreamsResult_StreamsStreamError(ctx, caller, callee, f.caller, nil, f.fns.fnBlockingWriteZeroesAndFlush.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_
@@ -4738,7 +4738,7 @@ func (f *streamsOutputStreamForwarder) CheckWrite(ctx context.Context) (streams.
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemStreamsResultU64StreamsStreamError(ctx, caller, callee, f.caller, f.fns.fnCheckWrite.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemStreamsResultU64StreamsStreamError(ctx, caller, callee, f.caller, nil, f.fns.fnCheckWrite.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_
@@ -4762,7 +4762,7 @@ func (f *streamsOutputStreamForwarder) Flush(ctx context.Context) (streams.Resul
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemStreamsResult_StreamsStreamError(ctx, caller, callee, f.caller, f.fns.fnFlush.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemStreamsResult_StreamsStreamError(ctx, caller, callee, f.caller, nil, f.fns.fnFlush.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_
@@ -4805,7 +4805,7 @@ func (f *streamsOutputStreamForwarder) Splice(ctx context.Context, src *streams.
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemStreamsResultU64StreamsStreamError(ctx, caller, callee, f.caller, f.fns.fnSplice.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemStreamsResultU64StreamsStreamError(ctx, caller, callee, f.caller, nil, f.fns.fnSplice.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_
@@ -4867,7 +4867,7 @@ func (f *streamsOutputStreamForwarder) Write(ctx context.Context, contents []uin
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemStreamsResult_StreamsStreamError(ctx, caller, callee, f.caller, f.fns.fnWrite.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemStreamsResult_StreamsStreamError(ctx, caller, callee, f.caller, nil, f.fns.fnWrite.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_
@@ -4893,7 +4893,7 @@ func (f *streamsOutputStreamForwarder) WriteZeroes(ctx context.Context, len uint
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemStreamsResult_StreamsStreamError(ctx, caller, callee, f.caller, f.fns.fnWriteZeroes.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemStreamsResult_StreamsStreamError(ctx, caller, callee, f.caller, nil, f.fns.fnWriteZeroes.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_
@@ -4959,7 +4959,7 @@ func (f *tcpTcpSocketForwarder) Accept(ctx context.Context) (tcp.ResultTupleTcpS
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemTcpResultTcpTupleTcpSocketInputStreamOutputStreamNetworkErrorCode(ctx, caller, callee, f.caller, f.fns.fnAccept.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemTcpResultTcpTupleTcpSocketInputStreamOutputStreamNetworkErrorCode(ctx, caller, callee, f.caller, nil, f.fns.fnAccept.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_
@@ -5003,7 +5003,7 @@ func (f *tcpTcpSocketForwarder) FinishBind(ctx context.Context) (tcp.Result_Netw
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemTcpResult_NetworkErrorCode(ctx, caller, callee, f.caller, f.fns.fnFinishBind.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemTcpResult_NetworkErrorCode(ctx, caller, callee, f.caller, nil, f.fns.fnFinishBind.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_
@@ -5027,7 +5027,7 @@ func (f *tcpTcpSocketForwarder) FinishConnect(ctx context.Context) (tcp.ResultTu
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemTcpResultTcpTupleInputStreamOutputStreamNetworkErrorCode(ctx, caller, callee, f.caller, f.fns.fnFinishConnect.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemTcpResultTcpTupleInputStreamOutputStreamNetworkErrorCode(ctx, caller, callee, f.caller, nil, f.fns.fnFinishConnect.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_
@@ -5051,7 +5051,7 @@ func (f *tcpTcpSocketForwarder) FinishListen(ctx context.Context) (tcp.Result_Ne
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemTcpResult_NetworkErrorCode(ctx, caller, callee, f.caller, f.fns.fnFinishListen.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemTcpResult_NetworkErrorCode(ctx, caller, callee, f.caller, nil, f.fns.fnFinishListen.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_
@@ -5075,7 +5075,7 @@ func (f *tcpTcpSocketForwarder) HopLimit(ctx context.Context) (tcp.ResultU8Netwo
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemTcpResultU8NetworkErrorCode(ctx, caller, callee, f.caller, f.fns.fnHopLimit.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemTcpResultU8NetworkErrorCode(ctx, caller, callee, f.caller, nil, f.fns.fnHopLimit.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_
@@ -5119,7 +5119,7 @@ func (f *tcpTcpSocketForwarder) KeepAliveCount(ctx context.Context) (tcp.ResultU
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemTcpResultU32NetworkErrorCode(ctx, caller, callee, f.caller, f.fns.fnKeepAliveCount.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemTcpResultU32NetworkErrorCode(ctx, caller, callee, f.caller, nil, f.fns.fnKeepAliveCount.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_
@@ -5143,7 +5143,7 @@ func (f *tcpTcpSocketForwarder) KeepAliveEnabled(ctx context.Context) (tcp.Resul
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemTcpResultBoolNetworkErrorCode(ctx, caller, callee, f.caller, f.fns.fnKeepAliveEnabled.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemTcpResultBoolNetworkErrorCode(ctx, caller, callee, f.caller, nil, f.fns.fnKeepAliveEnabled.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_
@@ -5167,7 +5167,7 @@ func (f *tcpTcpSocketForwarder) KeepAliveIdleTime(ctx context.Context) (tcp.Resu
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemTcpResultU64NetworkErrorCode(ctx, caller, callee, f.caller, f.fns.fnKeepAliveIdleTime.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemTcpResultU64NetworkErrorCode(ctx, caller, callee, f.caller, nil, f.fns.fnKeepAliveIdleTime.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_
@@ -5191,7 +5191,7 @@ func (f *tcpTcpSocketForwarder) KeepAliveInterval(ctx context.Context) (tcp.Resu
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemTcpResultU64NetworkErrorCode(ctx, caller, callee, f.caller, f.fns.fnKeepAliveInterval.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemTcpResultU64NetworkErrorCode(ctx, caller, callee, f.caller, nil, f.fns.fnKeepAliveInterval.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_
@@ -5215,7 +5215,7 @@ func (f *tcpTcpSocketForwarder) LocalAddress(ctx context.Context) (tcp.ResultNet
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemTcpResultNetworkIpSocketAddressNetworkErrorCode(ctx, caller, callee, f.caller, f.fns.fnLocalAddress.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemTcpResultNetworkIpSocketAddressNetworkErrorCode(ctx, caller, callee, f.caller, nil, f.fns.fnLocalAddress.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_
@@ -5239,7 +5239,7 @@ func (f *tcpTcpSocketForwarder) ReceiveBufferSize(ctx context.Context) (tcp.Resu
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemTcpResultU64NetworkErrorCode(ctx, caller, callee, f.caller, f.fns.fnReceiveBufferSize.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemTcpResultU64NetworkErrorCode(ctx, caller, callee, f.caller, nil, f.fns.fnReceiveBufferSize.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_
@@ -5263,7 +5263,7 @@ func (f *tcpTcpSocketForwarder) RemoteAddress(ctx context.Context) (tcp.ResultNe
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemTcpResultNetworkIpSocketAddressNetworkErrorCode(ctx, caller, callee, f.caller, f.fns.fnRemoteAddress.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemTcpResultNetworkIpSocketAddressNetworkErrorCode(ctx, caller, callee, f.caller, nil, f.fns.fnRemoteAddress.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_
@@ -5287,7 +5287,7 @@ func (f *tcpTcpSocketForwarder) SendBufferSize(ctx context.Context) (tcp.ResultU
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemTcpResultU64NetworkErrorCode(ctx, caller, callee, f.caller, f.fns.fnSendBufferSize.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemTcpResultU64NetworkErrorCode(ctx, caller, callee, f.caller, nil, f.fns.fnSendBufferSize.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_
@@ -5313,7 +5313,7 @@ func (f *tcpTcpSocketForwarder) SetHopLimit(ctx context.Context, value uint8) (t
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemTcpResult_NetworkErrorCode(ctx, caller, callee, f.caller, f.fns.fnSetHopLimit.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemTcpResult_NetworkErrorCode(ctx, caller, callee, f.caller, nil, f.fns.fnSetHopLimit.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_
@@ -5339,7 +5339,7 @@ func (f *tcpTcpSocketForwarder) SetKeepAliveCount(ctx context.Context, value uin
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemTcpResult_NetworkErrorCode(ctx, caller, callee, f.caller, f.fns.fnSetKeepAliveCount.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemTcpResult_NetworkErrorCode(ctx, caller, callee, f.caller, nil, f.fns.fnSetKeepAliveCount.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_
@@ -5370,7 +5370,7 @@ func (f *tcpTcpSocketForwarder) SetKeepAliveEnabled(ctx context.Context, value b
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemTcpResult_NetworkErrorCode(ctx, caller, callee, f.caller, f.fns.fnSetKeepAliveEnabled.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemTcpResult_NetworkErrorCode(ctx, caller, callee, f.caller, nil, f.fns.fnSetKeepAliveEnabled.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_
@@ -5396,7 +5396,7 @@ func (f *tcpTcpSocketForwarder) SetKeepAliveIdleTime(ctx context.Context, value 
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemTcpResult_NetworkErrorCode(ctx, caller, callee, f.caller, f.fns.fnSetKeepAliveIdleTime.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemTcpResult_NetworkErrorCode(ctx, caller, callee, f.caller, nil, f.fns.fnSetKeepAliveIdleTime.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_
@@ -5422,7 +5422,7 @@ func (f *tcpTcpSocketForwarder) SetKeepAliveInterval(ctx context.Context, value 
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemTcpResult_NetworkErrorCode(ctx, caller, callee, f.caller, f.fns.fnSetKeepAliveInterval.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemTcpResult_NetworkErrorCode(ctx, caller, callee, f.caller, nil, f.fns.fnSetKeepAliveInterval.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_
@@ -5448,7 +5448,7 @@ func (f *tcpTcpSocketForwarder) SetListenBacklogSize(ctx context.Context, value 
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemTcpResult_NetworkErrorCode(ctx, caller, callee, f.caller, f.fns.fnSetListenBacklogSize.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemTcpResult_NetworkErrorCode(ctx, caller, callee, f.caller, nil, f.fns.fnSetListenBacklogSize.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_
@@ -5474,7 +5474,7 @@ func (f *tcpTcpSocketForwarder) SetReceiveBufferSize(ctx context.Context, value 
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemTcpResult_NetworkErrorCode(ctx, caller, callee, f.caller, f.fns.fnSetReceiveBufferSize.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemTcpResult_NetworkErrorCode(ctx, caller, callee, f.caller, nil, f.fns.fnSetReceiveBufferSize.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_
@@ -5500,7 +5500,7 @@ func (f *tcpTcpSocketForwarder) SetSendBufferSize(ctx context.Context, value uin
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemTcpResult_NetworkErrorCode(ctx, caller, callee, f.caller, f.fns.fnSetSendBufferSize.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemTcpResult_NetworkErrorCode(ctx, caller, callee, f.caller, nil, f.fns.fnSetSendBufferSize.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_
@@ -5526,7 +5526,7 @@ func (f *tcpTcpSocketForwarder) Shutdown(ctx context.Context, shutdownType tcp.S
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemTcpResult_NetworkErrorCode(ctx, caller, callee, f.caller, f.fns.fnShutdown.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemTcpResult_NetworkErrorCode(ctx, caller, callee, f.caller, nil, f.fns.fnShutdown.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_
@@ -5571,7 +5571,7 @@ func (f *tcpTcpSocketForwarder) StartBind(ctx context.Context, p_network *networ
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemTcpResult_NetworkErrorCode(ctx, caller, callee, f.caller, f.fns.fnStartBind.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemTcpResult_NetworkErrorCode(ctx, caller, callee, f.caller, nil, f.fns.fnStartBind.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_
@@ -5616,7 +5616,7 @@ func (f *tcpTcpSocketForwarder) StartConnect(ctx context.Context, p_network *net
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemTcpResult_NetworkErrorCode(ctx, caller, callee, f.caller, f.fns.fnStartConnect.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemTcpResult_NetworkErrorCode(ctx, caller, callee, f.caller, nil, f.fns.fnStartConnect.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_
@@ -5640,7 +5640,7 @@ func (f *tcpTcpSocketForwarder) StartListen(ctx context.Context) (tcp.Result_Net
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemTcpResult_NetworkErrorCode(ctx, caller, callee, f.caller, f.fns.fnStartListen.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemTcpResult_NetworkErrorCode(ctx, caller, callee, f.caller, nil, f.fns.fnStartListen.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_

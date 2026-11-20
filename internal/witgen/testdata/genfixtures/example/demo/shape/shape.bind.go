@@ -112,7 +112,7 @@ func fromGoMemPoint(ctx context.Context, cc *host.CallContext, h *host.Component
 	return nil
 }
 
-func liftFlatPoint(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (Point, error) {
+func liftFlatPoint(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *shapeWrapper, ty wacogo.Type, stack []uint64) (Point, error) {
 	var v_ Point
 	recT_ := ty.(wacogo.TypeRecord)
 	_ = recT_
@@ -121,7 +121,7 @@ func liftFlatPoint(ctx context.Context, caller, callee *host.CallContext, h *hos
 	return v_, nil
 }
 
-func liftMemPoint(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (Point, error) {
+func liftMemPoint(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *shapeWrapper, ty wacogo.Type, ptr uint32) (Point, error) {
 	var v_ Point
 	recT_ := ty.(wacogo.TypeRecord)
 	_ = recT_
@@ -262,7 +262,7 @@ func fromGoMemShapeKind(ctx context.Context, cc *host.CallContext, h *host.Compo
 	return nil
 }
 
-func liftFlatShapeKind(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (ShapeKind, error) {
+func liftFlatShapeKind(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *shapeWrapper, ty wacogo.Type, stack []uint64) (ShapeKind, error) {
 	varT_ := ty.(wacogo.TypeVariant)
 	_ = varT_
 	disc_ := uint32(stack[0])
@@ -273,7 +273,7 @@ func liftFlatShapeKind(ctx context.Context, caller, callee *host.CallContext, h 
 		return ShapeKindCircle{Value: val}, nil
 	case 1:
 		var val Point
-		if tmp_, err_ := liftFlatPoint(ctx, caller, callee, h, varT_.Cases[1].Payload, stack[1:3]); err_ != nil {
+		if tmp_, err_ := liftFlatPoint(ctx, caller, callee, h, w_, varT_.Cases[1].Payload, stack[1:3]); err_ != nil {
 			return nil, err_
 		} else {
 			val = tmp_
@@ -285,7 +285,7 @@ func liftFlatShapeKind(ctx context.Context, caller, callee *host.CallContext, h 
 	return nil, fmt.Errorf("wacogo/witgen: liftFlatShapeKind: invalid discriminant %d", disc_)
 }
 
-func liftMemShapeKind(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (ShapeKind, error) {
+func liftMemShapeKind(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *shapeWrapper, ty wacogo.Type, ptr uint32) (ShapeKind, error) {
 	varT_ := ty.(wacogo.TypeVariant)
 	_ = varT_
 	var disc_ uint8
@@ -305,7 +305,7 @@ func liftMemShapeKind(ctx context.Context, caller, callee *host.CallContext, h *
 		return ShapeKindCircle{Value: val}, nil
 	case 1:
 		var val Point
-		if tmp_, err_ := liftMemPoint(ctx, caller, callee, h, varT_.Cases[1].Payload, ptr+4); err_ != nil {
+		if tmp_, err_ := liftMemPoint(ctx, caller, callee, h, w_, varT_.Cases[1].Payload, ptr+4); err_ != nil {
 			return nil, err_
 		} else {
 			val = tmp_
@@ -434,7 +434,7 @@ func fromGoMemString(ctx context.Context, cc *host.CallContext, h *host.Componen
 	return nil
 }
 
-func liftFlatString(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (string, error) {
+func liftFlatString(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *shapeWrapper, ty wacogo.Type, stack []uint64) (string, error) {
 	ptr_ := uint32(stack[0])
 	ln_ := uint32(stack[1])
 	bs_, ok_ := callee.Memory().Read(ptr_, ln_)
@@ -444,7 +444,7 @@ func liftFlatString(ctx context.Context, caller, callee *host.CallContext, h *ho
 	return string(bs_), nil
 }
 
-func liftMemString(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (string, error) {
+func liftMemString(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *shapeWrapper, ty wacogo.Type, ptr uint32) (string, error) {
 	var sptr_ uint32
 	if tmp_, ok_ := callee.Memory().ReadUint32Le(ptr); !ok_ {
 		return "", fmt.Errorf("wacogo/witgen: liftMemString: string ptr: bad memory read")

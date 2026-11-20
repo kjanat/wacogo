@@ -100,7 +100,7 @@ func TestEmitLiftMem_TupleU32String(t *testing.T) {
 	body := helperBody(tup, modeLiftMem)
 	for _, want := range []string{
 		"ReadUint32Le(ptr)", // u32 at offset 0
-		"liftMemString(ctx, caller, callee, h, tupT_.Types[1], ptr + 4)", // string at offset 4
+		"liftMemString(ctx, caller, callee, h, w_, tupT_.Types[1], ptr + 4)", // string at offset 4
 		"v_.F0",
 		"v_.F1",
 	} {
@@ -129,7 +129,7 @@ func TestEmitLiftFlat_TupleU32String(t *testing.T) {
 	body := helperBody(tup, modeLiftFlat)
 	for _, want := range []string{
 		"v_.F0 = uint32(stack[0])",
-		"liftFlatString(ctx, caller, callee, h, tupT_.Types[1], stack[1:3])",
+		"liftFlatString(ctx, caller, callee, h, w_, tupT_.Types[1], stack[1:3])",
 	} {
 		if !strings.Contains(body, want) {
 			t.Errorf("liftFlatTupleU32String body missing %q. Body:\n%s", want, body)
@@ -140,14 +140,14 @@ func TestEmitLiftFlat_TupleU32String(t *testing.T) {
 func TestEmitHelper_FunctionSignatures(t *testing.T) {
 	// Spot-check the wrapper signatures emitted by emitHelper.
 	var sb strings.Builder
-	emitHelper(&sb, TypeString{}, modeLiftFlat)
-	emitHelper(&sb, TypeString{}, modeLiftMem)
-	emitHelper(&sb, TypeString{}, modeLowerFlat)
-	emitHelper(&sb, TypeString{}, modeLowerMem)
+	emitHelper(&sb, TypeString{}, modeLiftFlat, "demoWrapper")
+	emitHelper(&sb, TypeString{}, modeLiftMem, "demoWrapper")
+	emitHelper(&sb, TypeString{}, modeLowerFlat, "demoWrapper")
+	emitHelper(&sb, TypeString{}, modeLowerMem, "demoWrapper")
 	out := sb.String()
 	for _, want := range []string{
-		"func liftFlatString(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (string, error) {",
-		"func liftMemString(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (string, error) {",
+		"func liftFlatString(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *demoWrapper, ty wacogo.Type, stack []uint64) (string, error) {",
+		"func liftMemString(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *demoWrapper, ty wacogo.Type, ptr uint32) (string, error) {",
 		"func lowerFlatString(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64, v string) error {",
 		"func lowerMemString(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32, v string) error {",
 	} {

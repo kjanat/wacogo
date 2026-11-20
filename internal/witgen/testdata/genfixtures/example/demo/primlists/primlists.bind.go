@@ -231,7 +231,7 @@ func fromGoMemListBool(ctx context.Context, cc *host.CallContext, h *host.Compon
 	return nil
 }
 
-func liftFlatListBool(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) ([]bool, error) {
+func liftFlatListBool(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *primlistsWrapper, ty wacogo.Type, stack []uint64) ([]bool, error) {
 	lstT_ := ty.(wacogo.TypeList)
 	_ = lstT_
 	ptr_ := uint32(stack[0])
@@ -252,7 +252,7 @@ func liftFlatListBool(ctx context.Context, caller, callee *host.CallContext, h *
 	return out_, nil
 }
 
-func liftMemListBool(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) ([]bool, error) {
+func liftMemListBool(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *primlistsWrapper, ty wacogo.Type, ptr uint32) ([]bool, error) {
 	lstT_ := ty.(wacogo.TypeList)
 	_ = lstT_
 	var lptr_ uint32
@@ -445,7 +445,7 @@ func fromGoMemListChar(ctx context.Context, cc *host.CallContext, h *host.Compon
 	return nil
 }
 
-func liftFlatListChar(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) ([]rune, error) {
+func liftFlatListChar(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *primlistsWrapper, ty wacogo.Type, stack []uint64) ([]rune, error) {
 	lstT_ := ty.(wacogo.TypeList)
 	_ = lstT_
 	ptr_ := uint32(stack[0])
@@ -466,7 +466,7 @@ func liftFlatListChar(ctx context.Context, caller, callee *host.CallContext, h *
 	return out_, nil
 }
 
-func liftMemListChar(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) ([]rune, error) {
+func liftMemListChar(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *primlistsWrapper, ty wacogo.Type, ptr uint32) ([]rune, error) {
 	lstT_ := ty.(wacogo.TypeList)
 	_ = lstT_
 	var lptr_ uint32
@@ -653,7 +653,7 @@ func fromGoMemListF32(ctx context.Context, cc *host.CallContext, h *host.Compone
 	return nil
 }
 
-func liftFlatListF32(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) ([]float32, error) {
+func liftFlatListF32(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *primlistsWrapper, ty wacogo.Type, stack []uint64) ([]float32, error) {
 	lstT_ := ty.(wacogo.TypeList)
 	_ = lstT_
 	ptr_ := uint32(stack[0])
@@ -674,7 +674,7 @@ func liftFlatListF32(ctx context.Context, caller, callee *host.CallContext, h *h
 	return out_, nil
 }
 
-func liftMemListF32(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) ([]float32, error) {
+func liftMemListF32(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *primlistsWrapper, ty wacogo.Type, ptr uint32) ([]float32, error) {
 	lstT_ := ty.(wacogo.TypeList)
 	_ = lstT_
 	var lptr_ uint32
@@ -861,7 +861,7 @@ func fromGoMemListF64(ctx context.Context, cc *host.CallContext, h *host.Compone
 	return nil
 }
 
-func liftFlatListF64(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) ([]float64, error) {
+func liftFlatListF64(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *primlistsWrapper, ty wacogo.Type, stack []uint64) ([]float64, error) {
 	lstT_ := ty.(wacogo.TypeList)
 	_ = lstT_
 	ptr_ := uint32(stack[0])
@@ -882,7 +882,7 @@ func liftFlatListF64(ctx context.Context, caller, callee *host.CallContext, h *h
 	return out_, nil
 }
 
-func liftMemListF64(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) ([]float64, error) {
+func liftMemListF64(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *primlistsWrapper, ty wacogo.Type, ptr uint32) ([]float64, error) {
 	lstT_ := ty.(wacogo.TypeList)
 	_ = lstT_
 	var lptr_ uint32
@@ -1069,7 +1069,7 @@ func fromGoMemListS16(ctx context.Context, cc *host.CallContext, h *host.Compone
 	return nil
 }
 
-func liftFlatListS16(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) ([]int16, error) {
+func liftFlatListS16(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *primlistsWrapper, ty wacogo.Type, stack []uint64) ([]int16, error) {
 	lstT_ := ty.(wacogo.TypeList)
 	_ = lstT_
 	ptr_ := uint32(stack[0])
@@ -1090,7 +1090,7 @@ func liftFlatListS16(ctx context.Context, caller, callee *host.CallContext, h *h
 	return out_, nil
 }
 
-func liftMemListS16(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) ([]int16, error) {
+func liftMemListS16(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *primlistsWrapper, ty wacogo.Type, ptr uint32) ([]int16, error) {
 	lstT_ := ty.(wacogo.TypeList)
 	_ = lstT_
 	var lptr_ uint32
@@ -1277,7 +1277,7 @@ func fromGoMemListS32(ctx context.Context, cc *host.CallContext, h *host.Compone
 	return nil
 }
 
-func liftFlatListS32(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) ([]int32, error) {
+func liftFlatListS32(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *primlistsWrapper, ty wacogo.Type, stack []uint64) ([]int32, error) {
 	lstT_ := ty.(wacogo.TypeList)
 	_ = lstT_
 	ptr_ := uint32(stack[0])
@@ -1298,7 +1298,7 @@ func liftFlatListS32(ctx context.Context, caller, callee *host.CallContext, h *h
 	return out_, nil
 }
 
-func liftMemListS32(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) ([]int32, error) {
+func liftMemListS32(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *primlistsWrapper, ty wacogo.Type, ptr uint32) ([]int32, error) {
 	lstT_ := ty.(wacogo.TypeList)
 	_ = lstT_
 	var lptr_ uint32
@@ -1485,7 +1485,7 @@ func fromGoMemListS64(ctx context.Context, cc *host.CallContext, h *host.Compone
 	return nil
 }
 
-func liftFlatListS64(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) ([]int64, error) {
+func liftFlatListS64(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *primlistsWrapper, ty wacogo.Type, stack []uint64) ([]int64, error) {
 	lstT_ := ty.(wacogo.TypeList)
 	_ = lstT_
 	ptr_ := uint32(stack[0])
@@ -1506,7 +1506,7 @@ func liftFlatListS64(ctx context.Context, caller, callee *host.CallContext, h *h
 	return out_, nil
 }
 
-func liftMemListS64(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) ([]int64, error) {
+func liftMemListS64(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *primlistsWrapper, ty wacogo.Type, ptr uint32) ([]int64, error) {
 	lstT_ := ty.(wacogo.TypeList)
 	_ = lstT_
 	var lptr_ uint32
@@ -1693,7 +1693,7 @@ func fromGoMemListS8(ctx context.Context, cc *host.CallContext, h *host.Componen
 	return nil
 }
 
-func liftFlatListS8(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) ([]int8, error) {
+func liftFlatListS8(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *primlistsWrapper, ty wacogo.Type, stack []uint64) ([]int8, error) {
 	lstT_ := ty.(wacogo.TypeList)
 	_ = lstT_
 	ptr_ := uint32(stack[0])
@@ -1714,7 +1714,7 @@ func liftFlatListS8(ctx context.Context, caller, callee *host.CallContext, h *ho
 	return out_, nil
 }
 
-func liftMemListS8(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) ([]int8, error) {
+func liftMemListS8(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *primlistsWrapper, ty wacogo.Type, ptr uint32) ([]int8, error) {
 	lstT_ := ty.(wacogo.TypeList)
 	_ = lstT_
 	var lptr_ uint32
@@ -1901,7 +1901,7 @@ func fromGoMemListU16(ctx context.Context, cc *host.CallContext, h *host.Compone
 	return nil
 }
 
-func liftFlatListU16(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) ([]uint16, error) {
+func liftFlatListU16(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *primlistsWrapper, ty wacogo.Type, stack []uint64) ([]uint16, error) {
 	lstT_ := ty.(wacogo.TypeList)
 	_ = lstT_
 	ptr_ := uint32(stack[0])
@@ -1922,7 +1922,7 @@ func liftFlatListU16(ctx context.Context, caller, callee *host.CallContext, h *h
 	return out_, nil
 }
 
-func liftMemListU16(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) ([]uint16, error) {
+func liftMemListU16(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *primlistsWrapper, ty wacogo.Type, ptr uint32) ([]uint16, error) {
 	lstT_ := ty.(wacogo.TypeList)
 	_ = lstT_
 	var lptr_ uint32
@@ -2109,7 +2109,7 @@ func fromGoMemListU32(ctx context.Context, cc *host.CallContext, h *host.Compone
 	return nil
 }
 
-func liftFlatListU32(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) ([]uint32, error) {
+func liftFlatListU32(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *primlistsWrapper, ty wacogo.Type, stack []uint64) ([]uint32, error) {
 	lstT_ := ty.(wacogo.TypeList)
 	_ = lstT_
 	ptr_ := uint32(stack[0])
@@ -2130,7 +2130,7 @@ func liftFlatListU32(ctx context.Context, caller, callee *host.CallContext, h *h
 	return out_, nil
 }
 
-func liftMemListU32(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) ([]uint32, error) {
+func liftMemListU32(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *primlistsWrapper, ty wacogo.Type, ptr uint32) ([]uint32, error) {
 	lstT_ := ty.(wacogo.TypeList)
 	_ = lstT_
 	var lptr_ uint32
@@ -2317,7 +2317,7 @@ func fromGoMemListU64(ctx context.Context, cc *host.CallContext, h *host.Compone
 	return nil
 }
 
-func liftFlatListU64(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) ([]uint64, error) {
+func liftFlatListU64(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *primlistsWrapper, ty wacogo.Type, stack []uint64) ([]uint64, error) {
 	lstT_ := ty.(wacogo.TypeList)
 	_ = lstT_
 	ptr_ := uint32(stack[0])
@@ -2338,7 +2338,7 @@ func liftFlatListU64(ctx context.Context, caller, callee *host.CallContext, h *h
 	return out_, nil
 }
 
-func liftMemListU64(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) ([]uint64, error) {
+func liftMemListU64(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *primlistsWrapper, ty wacogo.Type, ptr uint32) ([]uint64, error) {
 	lstT_ := ty.(wacogo.TypeList)
 	_ = lstT_
 	var lptr_ uint32
@@ -2513,7 +2513,7 @@ func fromGoMemListU8(ctx context.Context, cc *host.CallContext, h *host.Componen
 	return nil
 }
 
-func liftFlatListU8(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) ([]uint8, error) {
+func liftFlatListU8(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *primlistsWrapper, ty wacogo.Type, stack []uint64) ([]uint8, error) {
 	lstT_ := ty.(wacogo.TypeList)
 	_ = lstT_
 	ptr_ := uint32(stack[0])
@@ -2531,7 +2531,7 @@ func liftFlatListU8(ctx context.Context, caller, callee *host.CallContext, h *ho
 	return out_, nil
 }
 
-func liftMemListU8(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) ([]uint8, error) {
+func liftMemListU8(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *primlistsWrapper, ty wacogo.Type, ptr uint32) ([]uint8, error) {
 	lstT_ := ty.(wacogo.TypeList)
 	_ = lstT_
 	var lptr_ uint32

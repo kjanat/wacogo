@@ -51,6 +51,11 @@ func NewFactory(ctx context.Context, e *wacogo.Engine) (*Factory, error) {
 		Results: []host.ResultDecl{{Name: "", Type: host.Result{Ok: f_.counterRT.Own(), Err: host.String}}},
 	}, wrapNewCounter(f_))
 
+	b_.AddFunction("[method]counter.add", &host.FuncType{
+		Params:  []host.Param{{Name: "self", Type: f_.counterRT.Borrow()}, {Name: "n", Type: host.U32}},
+		Results: []host.ResultDecl{{Name: "", Type: host.U32}},
+	}, wrapCounterAdd(f_))
+
 	b_.AddFunction("[method]counter.get", &host.FuncType{
 		Params:  []host.Param{{Name: "self", Type: f_.counterRT.Borrow()}},
 		Results: []host.ResultDecl{{Name: "", Type: host.U32}},
@@ -190,7 +195,7 @@ func fromGoMemFailuresFailure(ctx context.Context, cc *host.CallContext, h *host
 	return nil
 }
 
-func liftFlatFailuresFailure(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (failures.Failure, error) {
+func liftFlatFailuresFailure(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *countersWrapper, ty wacogo.Type, stack []uint64) (failures.Failure, error) {
 	varT_ := ty.(wacogo.TypeVariant)
 	_ = varT_
 	disc_ := uint32(stack[0])
@@ -205,7 +210,7 @@ func liftFlatFailuresFailure(ctx context.Context, caller, callee *host.CallConte
 	return nil, fmt.Errorf("wacogo/witgen: liftFlatFailuresFailure: invalid discriminant %d", disc_)
 }
 
-func liftMemFailuresFailure(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (failures.Failure, error) {
+func liftMemFailuresFailure(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *countersWrapper, ty wacogo.Type, ptr uint32) (failures.Failure, error) {
 	varT_ := ty.(wacogo.TypeVariant)
 	_ = varT_
 	var disc_ uint8
@@ -395,7 +400,7 @@ func fromGoMemResultCounterString(ctx context.Context, cc *host.CallContext, h *
 	return nil
 }
 
-func liftFlatResultCounterString(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (ResultCounterString, error) {
+func liftFlatResultCounterString(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *countersWrapper, ty wacogo.Type, stack []uint64) (ResultCounterString, error) {
 	resT_ := ty.(wacogo.TypeResult)
 	_ = resT_
 	disc_ := uint32(stack[0])
@@ -419,11 +424,14 @@ func liftFlatResultCounterString(ctx context.Context, caller, callee *host.CallC
 				}
 			}
 			okVal_ = NewCounterHandleFrom(dstH_, impl_)
+			if impl_ == nil {
+				okVal_.Counter = &counterRemote{w: w_, h: okVal_}
+			}
 		}
 		return ResultCounterStringOk{Value: okVal_}, nil
 	}
 	var errVal_ string
-	if tmp_, err_ := liftFlatString(ctx, caller, callee, h, resT_.Err, stack[1:3]); err_ != nil {
+	if tmp_, err_ := liftFlatString(ctx, caller, callee, h, w_, resT_.Err, stack[1:3]); err_ != nil {
 		return nil, err_
 	} else {
 		errVal_ = tmp_
@@ -431,7 +439,7 @@ func liftFlatResultCounterString(ctx context.Context, caller, callee *host.CallC
 	return ResultCounterStringErr{Value: errVal_}, nil
 }
 
-func liftMemResultCounterString(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (ResultCounterString, error) {
+func liftMemResultCounterString(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *countersWrapper, ty wacogo.Type, ptr uint32) (ResultCounterString, error) {
 	resT_ := ty.(wacogo.TypeResult)
 	_ = resT_
 	var disc_ uint8
@@ -465,11 +473,14 @@ func liftMemResultCounterString(ctx context.Context, caller, callee *host.CallCo
 				}
 			}
 			okVal_ = NewCounterHandleFrom(dstH_, impl_)
+			if impl_ == nil {
+				okVal_.Counter = &counterRemote{w: w_, h: okVal_}
+			}
 		}
 		return ResultCounterStringOk{Value: okVal_}, nil
 	}
 	var errVal_ string
-	if tmp_, err_ := liftMemString(ctx, caller, callee, h, resT_.Err, ptr+4); err_ != nil {
+	if tmp_, err_ := liftMemString(ctx, caller, callee, h, w_, resT_.Err, ptr+4); err_ != nil {
 		return nil, err_
 	} else {
 		errVal_ = tmp_
@@ -679,7 +690,7 @@ func fromGoMemResultGaugeFailuresFailure(ctx context.Context, cc *host.CallConte
 	return nil
 }
 
-func liftFlatResultGaugeFailuresFailure(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (ResultGaugeFailuresFailure, error) {
+func liftFlatResultGaugeFailuresFailure(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *countersWrapper, ty wacogo.Type, stack []uint64) (ResultGaugeFailuresFailure, error) {
 	resT_ := ty.(wacogo.TypeResult)
 	_ = resT_
 	disc_ := uint32(stack[0])
@@ -703,11 +714,14 @@ func liftFlatResultGaugeFailuresFailure(ctx context.Context, caller, callee *hos
 				}
 			}
 			okVal_ = NewGaugeHandleFrom(dstH_, impl_)
+			if impl_ == nil {
+				okVal_.Gauge = &gaugeRemote{w: w_, h: okVal_}
+			}
 		}
 		return ResultGaugeFailuresFailureOk{Value: okVal_}, nil
 	}
 	var errVal_ failures.Failure
-	if tmp_, err_ := liftFlatFailuresFailure(ctx, caller, callee, h, resT_.Err, stack[1:3]); err_ != nil {
+	if tmp_, err_ := liftFlatFailuresFailure(ctx, caller, callee, h, w_, resT_.Err, stack[1:3]); err_ != nil {
 		return nil, err_
 	} else {
 		errVal_ = tmp_
@@ -715,7 +729,7 @@ func liftFlatResultGaugeFailuresFailure(ctx context.Context, caller, callee *hos
 	return ResultGaugeFailuresFailureErr{Value: errVal_}, nil
 }
 
-func liftMemResultGaugeFailuresFailure(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (ResultGaugeFailuresFailure, error) {
+func liftMemResultGaugeFailuresFailure(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *countersWrapper, ty wacogo.Type, ptr uint32) (ResultGaugeFailuresFailure, error) {
 	resT_ := ty.(wacogo.TypeResult)
 	_ = resT_
 	var disc_ uint8
@@ -749,11 +763,14 @@ func liftMemResultGaugeFailuresFailure(ctx context.Context, caller, callee *host
 				}
 			}
 			okVal_ = NewGaugeHandleFrom(dstH_, impl_)
+			if impl_ == nil {
+				okVal_.Gauge = &gaugeRemote{w: w_, h: okVal_}
+			}
 		}
 		return ResultGaugeFailuresFailureOk{Value: okVal_}, nil
 	}
 	var errVal_ failures.Failure
-	if tmp_, err_ := liftMemFailuresFailure(ctx, caller, callee, h, resT_.Err, ptr+4); err_ != nil {
+	if tmp_, err_ := liftMemFailuresFailure(ctx, caller, callee, h, w_, resT_.Err, ptr+4); err_ != nil {
 		return nil, err_
 	} else {
 		errVal_ = tmp_
@@ -900,7 +917,7 @@ func fromGoMemString(ctx context.Context, cc *host.CallContext, h *host.Componen
 	return nil
 }
 
-func liftFlatString(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (string, error) {
+func liftFlatString(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *countersWrapper, ty wacogo.Type, stack []uint64) (string, error) {
 	ptr_ := uint32(stack[0])
 	ln_ := uint32(stack[1])
 	bs_, ok_ := callee.Memory().Read(ptr_, ln_)
@@ -910,7 +927,7 @@ func liftFlatString(ctx context.Context, caller, callee *host.CallContext, h *ho
 	return string(bs_), nil
 }
 
-func liftMemString(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (string, error) {
+func liftMemString(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *countersWrapper, ty wacogo.Type, ptr uint32) (string, error) {
 	var sptr_ uint32
 	if tmp_, ok_ := callee.Memory().ReadUint32Le(ptr); !ok_ {
 		return "", fmt.Errorf("wacogo/witgen: liftMemString: string ptr: bad memory read")
@@ -980,6 +997,25 @@ func wrapNewCounter(f *Factory) host.Func {
 			return err_
 		}
 		stack[0] = uint64(outPtr_)
+		return nil
+	}
+}
+
+func wrapCounterAdd(f *Factory) host.Func {
+	return func(ctx context.Context, cc *host.CallContext, h *host.ComponentInstance, stack []uint64) error {
+		fnType_ := cc.Instance().ExportedFunc("[method]counter.add").Type()
+		_ = fnType_
+		selfObj_, ok_ := h.LookupResource(host.ExternHandle(uint32(stack[0])))
+		if !ok_ {
+			return fmt.Errorf("wacogo/witgen: [method]counter.add: missing rep")
+		}
+		self_ := selfObj_.(Counter)
+		n := uint32(stack[1])
+		result_, implErr_ := self_.Add(ctx, n)
+		if implErr_ != nil {
+			return fmt.Errorf("wacogo/witgen: [method]counter.add: impl returned error: %w", implErr_)
+		}
+		stack[0] = uint64(result_)
 		return nil
 	}
 }

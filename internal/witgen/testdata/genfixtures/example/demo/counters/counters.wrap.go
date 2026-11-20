@@ -17,6 +17,7 @@ import (
 type countersWrapper struct {
 	callerInst   *host.ComponentInstance
 	fnNewCounter *host.ExportedFunc
+	fnCounterAdd *host.ExportedFunc
 	fnCounterGet *host.ExportedFunc
 	fnNewGauge   *host.ExportedFunc
 	fnGaugeLevel *host.ExportedFunc
@@ -28,6 +29,7 @@ type countersWrapper struct {
 func WrapInstance(caller *host.ComponentInstance, callee *wacogo.ComponentInstance) Counters {
 	w_ := &countersWrapper{callerInst: caller}
 	w_.fnNewCounter = host.WrapExportedFunc(callee.ExportedFunc("[constructor]counter"))
+	w_.fnCounterAdd = host.WrapExportedFunc(callee.ExportedFunc("[method]counter.add"))
 	w_.fnCounterGet = host.WrapExportedFunc(callee.ExportedFunc("[method]counter.get"))
 	w_.fnNewGauge = host.WrapExportedFunc(callee.ExportedFunc("[constructor]gauge"))
 	w_.fnGaugeLevel = host.WrapExportedFunc(callee.ExportedFunc("[method]gauge.level"))
@@ -43,7 +45,7 @@ func (w *countersWrapper) NewCounter(ctx context.Context, start uint32) (ResultC
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemResultCounterString(ctx, caller, callee, w.callerInst, w.fnNewCounter.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemResultCounterString(ctx, caller, callee, w.callerInst, w, w.fnNewCounter.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_
@@ -53,6 +55,83 @@ func (w *countersWrapper) NewCounter(ctx context.Context, start uint32) (ResultC
 		)
 		if callErr_ != nil {
 			return nil, fmt.Errorf("wacogo/witgen: CallRaw failed: %w", callErr_)
+		}
+	}
+	return resVal_, nil
+}
+
+type counterRemote struct {
+	w *countersWrapper
+	h *CounterHandle
+}
+
+func (d_ *counterRemote) Add(ctx context.Context, n uint32) (uint32, error) {
+	var resVal_ uint32
+	arg0_ := n
+	{
+		callErr_ := d_.w.fnCounterAdd.CallRaw(ctx, d_.w.callerInst,
+			func(caller, callee *host.CallContext, stack []uint64) error {
+				{
+					tr_ := d_.w.fnCounterAdd.ParamType(0).(wacogo.TypeBorrow).ResourceType
+					callerH_, err_ := d_.h.bind(caller, d_.w.callerInst)
+					if err_ != nil {
+						return err_
+					}
+					srcH_, err_ := caller.LookupBorrowable(tr_, callerH_)
+					if err_ != nil {
+						return err_
+					}
+					dstH_, err_ := srcH_.LendTo(callee.TransferTarget(), callee.Task())
+					if err_ != nil {
+						return err_
+					}
+					stack[0] = uint64(dstH_.HandleID())
+				}
+				stack[1] = uint64(arg0_)
+				return nil
+			},
+			func(caller, callee *host.CallContext, stack []uint64) error {
+				resVal_ = uint32(stack[0])
+				return nil
+			},
+		)
+		if callErr_ != nil {
+			return 0, fmt.Errorf("wacogo/witgen: CallRaw failed: %w", callErr_)
+		}
+	}
+	return resVal_, nil
+}
+
+func (d_ *counterRemote) Get(ctx context.Context) (uint32, error) {
+	var resVal_ uint32
+	{
+		callErr_ := d_.w.fnCounterGet.CallRaw(ctx, d_.w.callerInst,
+			func(caller, callee *host.CallContext, stack []uint64) error {
+				{
+					tr_ := d_.w.fnCounterGet.ParamType(0).(wacogo.TypeBorrow).ResourceType
+					callerH_, err_ := d_.h.bind(caller, d_.w.callerInst)
+					if err_ != nil {
+						return err_
+					}
+					srcH_, err_ := caller.LookupBorrowable(tr_, callerH_)
+					if err_ != nil {
+						return err_
+					}
+					dstH_, err_ := srcH_.LendTo(callee.TransferTarget(), callee.Task())
+					if err_ != nil {
+						return err_
+					}
+					stack[0] = uint64(dstH_.HandleID())
+				}
+				return nil
+			},
+			func(caller, callee *host.CallContext, stack []uint64) error {
+				resVal_ = uint32(stack[0])
+				return nil
+			},
+		)
+		if callErr_ != nil {
+			return 0, fmt.Errorf("wacogo/witgen: CallRaw failed: %w", callErr_)
 		}
 	}
 	return resVal_, nil
@@ -68,7 +147,7 @@ func (w *countersWrapper) NewGauge(ctx context.Context, level int32) (ResultGaug
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemResultGaugeFailuresFailure(ctx, caller, callee, w.callerInst, w.fnNewGauge.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemResultGaugeFailuresFailure(ctx, caller, callee, w.callerInst, w, w.fnNewGauge.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_
@@ -78,6 +157,46 @@ func (w *countersWrapper) NewGauge(ctx context.Context, level int32) (ResultGaug
 		)
 		if callErr_ != nil {
 			return nil, fmt.Errorf("wacogo/witgen: CallRaw failed: %w", callErr_)
+		}
+	}
+	return resVal_, nil
+}
+
+type gaugeRemote struct {
+	w *countersWrapper
+	h *GaugeHandle
+}
+
+func (d_ *gaugeRemote) Level(ctx context.Context) (int32, error) {
+	var resVal_ int32
+	{
+		callErr_ := d_.w.fnGaugeLevel.CallRaw(ctx, d_.w.callerInst,
+			func(caller, callee *host.CallContext, stack []uint64) error {
+				{
+					tr_ := d_.w.fnGaugeLevel.ParamType(0).(wacogo.TypeBorrow).ResourceType
+					callerH_, err_ := d_.h.bind(caller, d_.w.callerInst)
+					if err_ != nil {
+						return err_
+					}
+					srcH_, err_ := caller.LookupBorrowable(tr_, callerH_)
+					if err_ != nil {
+						return err_
+					}
+					dstH_, err_ := srcH_.LendTo(callee.TransferTarget(), callee.Task())
+					if err_ != nil {
+						return err_
+					}
+					stack[0] = uint64(dstH_.HandleID())
+				}
+				return nil
+			},
+			func(caller, callee *host.CallContext, stack []uint64) error {
+				resVal_ = int32(int64(stack[0]))
+				return nil
+			},
+		)
+		if callErr_ != nil {
+			return 0, fmt.Errorf("wacogo/witgen: CallRaw failed: %w", callErr_)
 		}
 	}
 	return resVal_, nil

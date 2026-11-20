@@ -13,6 +13,7 @@ interface counters {
     resource counter {
         constructor(start: u32) -> result<counter, string>;
         get: func() -> u32;
+        add: func(n: u32) -> u32;
     }
 
     resource gauge {
