@@ -6,13 +6,6 @@ import (
 	"strings"
 )
 
-// bindView is the template input for file_header.tmpl when emitting
-// the .bind.go file. Embeds Interface to reuse header template fields.
-type bindView struct {
-	*Interface
-	SourceFile string
-}
-
 // liftFlatExpr returns a Go expression that decodes the primitive p
 // from the flat-stack slot expression src (e.g., "stack[0]").
 func liftFlatExpr(p Prim, src string) string {
@@ -1068,7 +1061,7 @@ func emitWrapStatic(w *strings.Builder, rt *TypeResource, s ResourceStatic) {
 func emitBindFile(iface *Interface, sourceFile string) ([]byte, error) {
 	var buf bytes.Buffer
 
-	headerView := bindView{
+	headerView := fileHeaderView{
 		Interface:  iface,
 		SourceFile: sourceFile,
 	}
