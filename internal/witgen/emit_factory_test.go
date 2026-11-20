@@ -434,3 +434,43 @@ func TestEmitWrapStatic(t *testing.T) {
 		}
 	}
 }
+
+func TestNominalAddTypeStmts_DependencyOrder(t *testing.T) {
+	wrappers := map[string]func(Type) Type{
+		"direct": func(v Type) Type { return v },
+		"list":   func(v Type) Type { return &TypeList{Elem: v} },
+		"option": func(v Type) Type { return &TypeOption{Elem: v} },
+		"tuple":  func(v Type) Type { return &TypeTuple{Fields: []Type{PrimU32, v}} },
+		"ok":     func(v Type) Type { return &TypeResult{OK: v} },
+		"err":    func(v Type) Type { return &TypeResult{OK: PrimU32, Err: v} },
+	}
+	for name, wrap := range wrappers {
+		t.Run(name, func(t *testing.T) {
+			leaf := &TypeVariant{Name: "leaf", GoName: "Leaf", Cases: []VariantCase{{Name: "a", GoName: "LeafA"}}}
+			box := &TypeRecord{Name: "box", GoName: "Box", Fields: []RecordField{{Name: "f", GoName: "F", Type: wrap(leaf)}}}
+			outer := &TypeVariant{Name: "outer", GoName: "Outer", Cases: []VariantCase{{Name: "b", GoName: "OuterB", Payload: box}}}
+			holder := &TypeRecord{Name: "holder", GoName: "Holder", Fields: []RecordField{{Name: "o", GoName: "O", Type: outer}}}
+
+			own := &Interface{Records: []*TypeRecord{holder, box}, Variants: []*TypeVariant{outer, leaf}}
+			assertNominalOrder(t, nominalAddTypeStmts(own), "typLeaf_", "typBox_", "typOuter_", "typHolder_")
+
+			imported := &Interface{Imports: []ImportRef{{
+				Records:  []ImportedNominal{{Name: "holder", GoName: "Holder", Source: holder}, {Name: "box", GoName: "Box", Source: box}},
+				Variants: []ImportedNominal{{Name: "outer", GoName: "Outer", Source: outer}, {Name: "leaf", GoName: "Leaf", Source: leaf}},
+			}}}
+			assertNominalOrder(t, nominalAddTypeStmts(imported), "typLeaf_", "typBox_", "typOuter_", "typHolder_")
+		})
+	}
+}
+
+func assertNominalOrder(t *testing.T, stmts []string, vars ...string) {
+	t.Helper()
+	if len(stmts) != len(vars) {
+		t.Fatalf("got %d statements, want %d:\n%s", len(stmts), len(vars), strings.Join(stmts, "\n"))
+	}
+	for i, v := range vars {
+		if !strings.HasPrefix(stmts[i], v+" := b_.AddType(") {
+			t.Errorf("statement %d: got %q, want %s declared", i, stmts[i], v)
+		}
+	}
+}

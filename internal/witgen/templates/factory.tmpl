@@ -42,26 +42,9 @@ func NewFactory(ctx context.Context, e *wacogo.Engine) (*Factory, error) {
 {{end}}
 {{range .Imports}}{{range .Resources}}	f_.{{.RefField | lcfirst}} = b_.AddResourceRef("{{.Name}}")
 {{end}}{{end}}
-{{/* Imported nominals must be declared before own-interface nominals that
-     might reference them in field/case types. */}}
-{{range .Imports}}{{range directNominals .Enums}}	{{importedNominalAddTypeStmt .}}
-{{end}}{{range directNominals .Flags}}	{{importedNominalAddTypeStmt .}}
-{{end}}{{range directNominals .Records}}	{{importedNominalAddTypeStmt .}}
-{{end}}{{range directNominals .Variants}}	{{importedNominalAddTypeStmt .}}
-{{end}}{{end}}
 {{range .PrimitiveAliases}}	b_.AddType({{printf "%q" .Name}}, {{.Type.HostTypeExpr}})
 {{end}}
-{{range .Enums}}	typ{{.GoName}}_ := b_.AddType("{{.Name}}", host.Enum{Cases: []string{ {{range $i, $c := .Cases}}{{if $i}}, {{end}}{{printf "%q" $c.Name}}{{end}} }})
-	_ = typ{{.GoName}}_
-{{end}}
-{{range .Flags}}	typ{{.GoName}}_ := b_.AddType("{{.Name}}", host.Flags{Names: []string{ {{range $i, $c := .Cases}}{{if $i}}, {{end}}{{printf "%q" $c.Name}}{{end}} }})
-	_ = typ{{.GoName}}_
-{{end}}
-{{range .Records}}	typ{{.GoName}}_ := b_.AddType("{{.Name}}", host.Record{Fields: []host.Field{ {{range $i, $f := .Fields}}{{if $i}}, {{end}}{Name: {{printf "%q" $f.Name}}, Type: {{$f.Type.HostTypeExpr}}}{{end}} }})
-	_ = typ{{.GoName}}_
-{{end}}
-{{range .Variants}}	typ{{.GoName}}_ := b_.AddType("{{.Name}}", host.Variant{Cases: []host.Case{ {{range $i, $c := .Cases}}{{if $i}}, {{end}}{Name: {{printf "%q" $c.Name}}, Payload: {{if $c.Payload}}{{$c.Payload.HostTypeExpr}}{{else}}nil{{end}}}{{end}} }})
-	_ = typ{{.GoName}}_
+{{range nominalAddTypeStmts .}}	{{.}}
 {{end}}
 {{range .Funcs}}	b_.AddFunction("{{.WitName}}", &host.FuncType{
 		Params:  []host.Param{ {{range $i, $p := .Params}}{{if $i}}, {{end}}{Name: {{printf "%q" $p.GoName}}, Type: {{$p.Type.HostTypeExpr}}}{{end}} },

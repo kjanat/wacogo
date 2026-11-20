@@ -1,0 +1,38 @@
+package example:demo;
+
+interface shapes {
+    record scene {
+        layers: list<layer>,
+        focus: option<shape>,
+        origin: tuple<shape, u32>,
+        last: result<drawing, shape>,
+    }
+
+    variant layer {
+        drawn(drawing),
+        empty,
+    }
+
+    record drawing {
+        shapes: list<shape>,
+    }
+
+    variant shape {
+        circle(u32),
+        square(u32),
+    }
+
+    count: func(d: drawing) -> u32;
+    depth: func(s: scene) -> u32;
+}
+
+interface canvas {
+    use shapes.{drawing};
+
+    area: func(d: drawing) -> u32;
+}
+
+world drawings {
+    import shapes;
+    import canvas;
+}

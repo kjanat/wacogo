@@ -35,7 +35,6 @@ func NewFactory(ctx context.Context, e *wacogo.Engine) (*Factory, error) {
 
 	typPoint_ := b_.AddType("point", host.Record{Fields: []host.Field{{Name: "x", Type: host.U32}, {Name: "y", Type: host.U32}}})
 	_ = typPoint_
-
 	typShapeKind_ := b_.AddType("shape-kind", host.Variant{Cases: []host.Case{{Name: "circle", Payload: host.U32}, {Name: "rect", Payload: typPoint_}, {Name: "none", Payload: nil}}})
 	_ = typShapeKind_
 

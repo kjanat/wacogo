@@ -2682,18 +2682,80 @@ func emitLowerMemResult(w *strings.Builder, v *TypeResult, helperName string, si
 	fmt.Fprintf(w, "}\n")
 }
 
-// importedNominalAddTypeStmt returns the full Go statement that registers a
-// cross-interface nominal type with the host.Builder. This is used by the
-// factory template to declare typXxx variables for imported records, variants,
-// enums, and flags that must be referenced in function signatures.
-//
-// The generated statement is of the form:
-//
-//	typ<GoName> := b.AddType("wit-name", host.Record{...})
-func importedNominalAddTypeStmt(n ImportedNominal) string {
-	var sb strings.Builder
-	fmt.Fprintf(&sb, "typ%s_ := b_.AddType(%q, %s)\n\t_ = typ%s_", n.GoName, n.Name, nominalHostTypeDefExpr(n.Source), n.GoName)
-	return sb.String()
+// nominalAddTypeStmts returns one `typ<GoName>_ := b_.AddType(...)`
+// statement per nominal type registered by iface's NewFactory: directly
+// imported nominals first, then iface's own enums, flags, records and
+// variants. A nominal's statement follows the statements of every
+// nominal its definition references.
+func nominalAddTypeStmts(iface *Interface) []string {
+	var decls []ImportedNominal
+	for _, imp := range iface.Imports {
+		for _, ns := range [][]ImportedNominal{imp.Enums, imp.Flags, imp.Records, imp.Variants} {
+			decls = append(decls, directNominals(ns)...)
+		}
+	}
+	for _, e := range iface.Enums {
+		decls = append(decls, ImportedNominal{Name: e.Name, GoName: e.GoName, Source: e})
+	}
+	for _, f := range iface.Flags {
+		decls = append(decls, ImportedNominal{Name: f.Name, GoName: f.GoName, Source: f})
+	}
+	for _, r := range iface.Records {
+		decls = append(decls, ImportedNominal{Name: r.Name, GoName: r.GoName, Source: r})
+	}
+	for _, v := range iface.Variants {
+		decls = append(decls, ImportedNominal{Name: v.Name, GoName: v.GoName, Source: v})
+	}
+
+	byVar := make(map[string]ImportedNominal, len(decls))
+	for _, d := range decls {
+		byVar[hostTypeExpr(d.Source)] = d
+	}
+
+	var out []string
+	done := make(map[string]bool, len(decls))
+	var visit func(d ImportedNominal)
+	var visitRefs func(t Type)
+	visit = func(d ImportedNominal) {
+		if done[hostTypeExpr(d.Source)] {
+			return
+		}
+		done[hostTypeExpr(d.Source)] = true
+		switch n := d.Source.(type) {
+		case *TypeRecord:
+			for _, f := range n.Fields {
+				visitRefs(f.Type)
+			}
+		case *TypeVariant:
+			for _, c := range n.Cases {
+				visitRefs(c.Payload)
+			}
+		}
+		out = append(out, fmt.Sprintf("typ%s_ := b_.AddType(%q, %s)\n\t_ = typ%s_", d.GoName, d.Name, nominalHostTypeDefExpr(d.Source), d.GoName))
+	}
+	visitRefs = func(t Type) {
+		switch v := t.(type) {
+		case *TypeRecord, *TypeVariant, *TypeEnum, *TypeFlags:
+			if d, ok := byVar[hostTypeExpr(v)]; ok {
+				visit(d)
+			}
+		case *TypeList:
+			visitRefs(v.Elem)
+		case *TypeOption:
+			visitRefs(v.Elem)
+		case *TypeTuple:
+			for _, f := range v.Fields {
+				visitRefs(f)
+			}
+		case *TypeResult:
+			visitRefs(v.OK)
+			visitRefs(v.Err)
+		}
+	}
+	for _, d := range decls {
+		visit(d)
+	}
+	return out
 }
 
 // nominalHostTypeDefExpr returns the inline host.TypeExpr for the given

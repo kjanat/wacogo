@@ -42,13 +42,10 @@ func NewFactory(ctx context.Context, e *wacogo.Engine) (*Factory, error) {
 
 	typDirection_ := b_.AddType("direction", host.Enum{Cases: []string{"north", "east", "south", "west"}})
 	_ = typDirection_
-
 	typPerms_ := b_.AddType("perms", host.Flags{Names: []string{"read", "write"}})
 	_ = typPerms_
-
 	typPoint_ := b_.AddType("point", host.Record{Fields: []host.Field{{Name: "x", Type: host.U32}, {Name: "y", Type: host.U32}}})
 	_ = typPoint_
-
 	typShape_ := b_.AddType("shape", host.Variant{Cases: []host.Case{{Name: "circle", Payload: host.U32}, {Name: "square", Payload: nil}}})
 	_ = typShape_
 
