@@ -19,7 +19,12 @@ type ifaceView struct {
 	// on the parent (interface-level) Go interface: freestanding funcs
 	// plus hoisted resource constructors and statics.
 	ParentFuncs []parentFunc
-	SourceFile  string
+}
+
+type fileHeaderView struct {
+	*Interface
+	SourceFile string
+	PackageDoc bool
 }
 
 // parentFunc is one entry on the parent (interface-level) Go interface.
@@ -36,9 +41,10 @@ type parentFunc struct {
 func emitIfaceFile(iface *Interface, sourceFile string) ([]byte, error) {
 	var buf bytes.Buffer
 
-	headerView := ifaceView{
+	headerView := fileHeaderView{
 		Interface:  iface,
 		SourceFile: sourceFile,
+		PackageDoc: true,
 	}
 	header, err := renderTemplate("file_header.tmpl", headerView)
 	if err != nil {
@@ -70,7 +76,6 @@ func emitIfaceFile(iface *Interface, sourceFile string) ([]byte, error) {
 		Tuples:      TupleTypes(types),
 		Options:     OptionTypes(types),
 		Results:     ResultTypes(types),
-		SourceFile:  sourceFile,
 	}
 	for _, f := range iface.Funcs {
 		view.ParentFuncs = append(view.ParentFuncs, parentFunc{

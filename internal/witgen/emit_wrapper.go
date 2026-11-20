@@ -21,7 +21,6 @@ type wrapperView struct {
 	*Interface
 	WrapName     string
 	WrapperFuncs []wrapperFunc
-	SourceFile   string
 }
 
 // emitWrapperFile produces the full text of <iface>.wrap.go for one
@@ -40,7 +39,7 @@ type wrapperView struct {
 func emitWrapperFile(iface *Interface, sourceFile string) ([]byte, error) {
 	var buf bytes.Buffer
 
-	headerView := wrapperView{
+	headerView := fileHeaderView{
 		Interface:  iface,
 		SourceFile: sourceFile,
 	}
@@ -65,9 +64,8 @@ func emitWrapperFile(iface *Interface, sourceFile string) ([]byte, error) {
 	buf.WriteString(")\n\n")
 
 	view := wrapperView{
-		Interface:  iface,
-		WrapName:   iface.WrapName,
-		SourceFile: sourceFile,
+		Interface: iface,
+		WrapName:  iface.WrapName,
 	}
 
 	// One ExportedFunc field per parent-level freestanding func.

@@ -12,9 +12,10 @@ func TestRenderAndFormat_FileHeader(t *testing.T) {
 		Name:      "calc",
 		GoPackage: "calc",
 	}
-	view := ifaceView{
+	view := fileHeaderView{
 		Interface:  iface,
 		SourceFile: "add.wit",
+		PackageDoc: true,
 	}
 	raw, err := renderTemplate("file_header.tmpl", view)
 	if err != nil {
