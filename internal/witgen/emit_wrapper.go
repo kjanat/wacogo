@@ -131,6 +131,7 @@ func emitWrapperFile(iface *Interface, sourceFile string) ([]byte, error) {
 		for _, s := range rt.Statics {
 			emitParentWrapperStatic(&wb, iface.WrapName, rt, s, reserved)
 		}
+		emitRemoteDispatcher(&wb, iface.WrapName, rt, reserved)
 	}
 	buf.WriteString(wb.String())
 
@@ -144,21 +145,29 @@ func emitWrapperFile(iface *Interface, sourceFile string) ([]byte, error) {
 func emitParentWrapperFunc(w *strings.Builder, ifaceWrapName string, f *Func, reserved map[string]bool) {
 	sig := buildMethodSignature(f.GoName, f.Params, f.Result, reserved)
 	fmt.Fprintf(w, "func (w *%sWrapper) %s {\n", lcfirst(ifaceWrapName), sig)
-	emitWrapBody(w, "w.fn"+f.GoName, "w.callerInst", "w", f.Params, f.Result, nil /* selfRT */, reserved)
+	emitWrapBody(w, "w.fn"+f.GoName, "w.callerInst", "w", f.Params, f.Result, nil, "", reserved)
 	fmt.Fprint(w, "}\n\n")
 }
 
 // emitParentWrapperCtor emits a *<iface>Wrapper method for a hoisted
-// resource ctor. The result is always own<R> lifted into a
-// *<R>Handle via New<R>HandleFrom.
+// resource ctor.
 func emitParentWrapperCtor(w *strings.Builder, ifaceWrapName string, rt *TypeResource) {
 	fmt.Fprintf(w, "func (w *%sWrapper) %s {\n",
 		lcfirst(ifaceWrapName), ctorSigForSide(false, rt))
-	// Reuse the generic emitter by treating the ctor's implicit own<R>
-	// result as a regular result type.
-	ownResult := &TypeOwn{Resource: rt}
-	emitWrapBody(w, "w.fnNew"+rt.WrapName, "w.callerInst", "w", rt.Ctor.Params, ownResult, nil /* selfRT */)
+	emitWrapBody(w, "w.fnNew"+rt.WrapName, "w.callerInst", "w", rt.Ctor.Params, rt.Ctor.ResultType(rt), nil, "")
 	fmt.Fprint(w, "}\n\n")
+}
+
+// emitRemoteDispatcher emits the *<r>Remote type that implements <R> by
+// calling the wrapped instance's [method] exports with h lent as self.
+func emitRemoteDispatcher(w *strings.Builder, ifaceWrapName string, rt *TypeResource, reserved map[string]bool) {
+	name := remoteTypeName(rt)
+	fmt.Fprintf(w, "type %s struct {\n\tw *%sWrapper\n\th *%sHandle\n}\n\n", name, lcfirst(ifaceWrapName), rt.WrapName)
+	for _, m := range rt.Methods {
+		fmt.Fprintf(w, "func (d_ *%s) %s {\n", name, buildMethodSignature(m.GoName, m.Params, m.Result, reserved))
+		emitWrapBody(w, "d_.w.fn"+rt.WrapName+m.GoName, "d_.w.callerInst", "d_.w", m.Params, m.Result, rt, "d_.h", reserved)
+		fmt.Fprint(w, "}\n\n")
+	}
 }
 
 // emitParentWrapperStatic emits a *<iface>Wrapper method for a hoisted
@@ -166,7 +175,7 @@ func emitParentWrapperCtor(w *strings.Builder, ifaceWrapName string, rt *TypeRes
 func emitParentWrapperStatic(w *strings.Builder, ifaceWrapName string, rt *TypeResource, s ResourceStatic, reserved map[string]bool) {
 	sig := buildMethodSignature(s.GoName, s.Params, s.Result, reserved)
 	fmt.Fprintf(w, "func (w *%sWrapper) %s {\n", lcfirst(ifaceWrapName), sig)
-	emitWrapBody(w, "w.fn"+s.GoName, "w.callerInst", "w", s.Params, s.Result, nil /* selfRT */, reserved)
+	emitWrapBody(w, "w.fn"+s.GoName, "w.callerInst", "w", s.Params, s.Result, nil, "", reserved)
 	fmt.Fprint(w, "}\n\n")
 }
 
@@ -201,14 +210,12 @@ func buildMethodSignature(goName string, params []*Param, result Type, reserved 
 //   - fnExpr: Go expression for the *host.ExportedFunc.
 //   - callerInstExpr: Go expression for the caller-side
 //     *host.ComponentInstance to pass to CallRaw.
-//   - recv: receiver name on the surrounding method (e.g. "w" or "d").
-//     Used to reference the receiver in implicit-self borrow handling
-//     (e.g. `d.handle` for resource method receivers).
+//   - wrapExpr: Go expression for the *<iface>Wrapper. Lift helpers pass
+//     it to *<r>Remote dispatchers of returned local resources.
 //   - params: WIT params (excludes the implicit borrow-self for methods).
 //   - result: result type (nil for void).
-//   - selfRT: when non-nil, this is the resource type whose receiver
-//     supplies the implicit borrow<R> first arg. The receiver is
-//     assumed to be `d.handle` (rep, same-component shortcut).
+//   - selfRT, selfExpr: when selfRT is non-nil, selfExpr is the
+//     *<R>Handle lent as the implicit borrow<R> first arg.
 //
 // User-supplied params from WIT can have any name (including `result`,
 // `err`, `drop`, etc.) so inside the body we never reference them by
@@ -221,7 +228,7 @@ func buildMethodSignature(goName string, params []*Param, result Type, reserved 
 // returns its error to CallRaw, which stops before calling the guest on a
 // lowering failure and skips post-return on a lifting failure. A successful
 // method returns the captured result along with nil.
-func emitWrapBody(w *strings.Builder, fnExpr, callerInstExpr, recv string, params []*Param, result Type, selfRT *TypeResource, reserved ...map[string]bool) {
+func emitWrapBody(w *strings.Builder, fnExpr, callerInstExpr, wrapExpr string, params []*Param, result Type, selfRT *TypeResource, selfExpr string, reserved ...map[string]bool) {
 	emitWrapResultDecls(w, result)
 
 	// Build the reserved set from the optional parameter.
@@ -253,9 +260,7 @@ func emitWrapBody(w *strings.Builder, fnExpr, callerInstExpr, recv string, param
 	off := 0
 	paramBase := 0
 	if selfRT != nil {
-		// Self is borrow<R> of the receiver. Same-component shortcut:
-		// the receiver carries the rep directly.
-		fmt.Fprintf(w, "\t\t\t\tstack[0] = uint64(%s.handle)\n", recv)
+		emitWrapBorrowArgWrite(w, selfExpr, selfRT, "stack[0]", "\t\t\t\t", callerInstExpr, fnExpr, 0)
 		off = 1
 		// Implicit-self occupies WIT param index 0; user params start at 1.
 		paramBase = 1
@@ -269,7 +274,7 @@ func emitWrapBody(w *strings.Builder, fnExpr, callerInstExpr, recv string, param
 	// read closure: callee-side lift of result.
 	fmt.Fprint(w, "\t\t\tfunc(caller, callee *host.CallContext, stack []uint64) error {\n")
 	if result != nil {
-		emitWrapResultRead(w, result, recv, callerInstExpr, fnExpr)
+		emitWrapResultRead(w, result, wrapExpr, callerInstExpr, fnExpr)
 	}
 	fmt.Fprint(w, "\t\t\t\treturn nil\n\t\t\t},\n")
 
@@ -414,9 +419,9 @@ func emitBindOrHandleValueFor(w *strings.Builder, outVar, argRef string, rt *Typ
 // return the error to CallRaw. *TypeResult lifts directly to the
 // sealed interface value — the inner business outcome flows out via
 // resVal_ and the outer error is reserved for trap/infrastructure.
-func emitWrapResultRead(w *strings.Builder, result Type, recv, callerInstExpr, fnExpr string) {
+func emitWrapResultRead(w *strings.Builder, result Type, wrapExpr, callerInstExpr, fnExpr string) {
 	if FlatSlots(result) > 1 {
-		emitWrapResultReadMem(w, result, recv, callerInstExpr, fnExpr)
+		emitWrapResultReadMem(w, result, wrapExpr, callerInstExpr, fnExpr)
 		return
 	}
 	switch ty := result.(type) {
@@ -427,13 +432,13 @@ func emitWrapResultRead(w *strings.Builder, result Type, recv, callerInstExpr, f
 	case *TypeFlags:
 		fmt.Fprintf(w, "\t\t\tresVal_ = %s\n", liftFlatFlagsExpr(ty, "stack[0]"))
 	case *TypeOwn:
-		emitWrapOwnResultRead(w, ty.Resource, "stack[0]", recv, callerInstExpr, fnExpr)
+		emitWrapOwnResultRead(w, ty.Resource, "stack[0]", wrapExpr, callerInstExpr, fnExpr)
 	default:
 		// Compound flat result (including *TypeResult): liftFlat<Name>
 		// against callee. liftFlat<Result*> already returns the sealed
 		// interface, so we can assign directly to resVal_.
 		n := FlatSlots(result)
-		fmt.Fprintf(w, "\t\t\tif v_, err_ := liftFlat%s(ctx, caller, callee, %s, %s.ResultType(0), stack[0:%d]); err_ != nil { return err_ } else { resVal_ = v_ }\n", TypeName(result), callerInstExpr, fnExpr, n)
+		fmt.Fprintf(w, "\t\t\tif v_, err_ := liftFlat%s(ctx, caller, callee, %s, %s, %s.ResultType(0), stack[0:%d]); err_ != nil { return err_ } else { resVal_ = v_ }\n", TypeName(result), callerInstExpr, wrapExpr, fnExpr, n)
 	}
 }
 
@@ -441,19 +446,20 @@ func emitWrapResultRead(w *strings.Builder, result Type, recv, callerInstExpr, f
 // fit in maxFlatResults slots — stack[0] is a pointer into callee memory.
 // liftMem<Name> always returns the user-facing type directly (sealed
 // interface for *TypeResult), so the result flows straight into resVal_.
-func emitWrapResultReadMem(w *strings.Builder, result Type, recv, callerInstExpr, fnExpr string) {
-	fmt.Fprintf(w, "\t\t\tif v_, err_ := liftMem%s(ctx, caller, callee, %s, %s.ResultType(0), uint32(stack[0])); err_ != nil { return err_ } else { resVal_ = v_ }\n", TypeName(result), callerInstExpr, fnExpr)
+func emitWrapResultReadMem(w *strings.Builder, result Type, wrapExpr, callerInstExpr, fnExpr string) {
+	fmt.Fprintf(w, "\t\t\tif v_, err_ := liftMem%s(ctx, caller, callee, %s, %s, %s.ResultType(0), uint32(stack[0])); err_ != nil { return err_ } else { resVal_ = v_ }\n", TypeName(result), callerInstExpr, wrapExpr, fnExpr)
 }
 
 // emitWrapOwnResultRead emits the own-result lift: TransferOwn callee
 // → caller, then construct *<R>Handle via New<R>HandleFrom. Two
 // branches:
 //   - Same-package R: dispatch impl is the local Go value found via
-//     defining.LookupExtern on the rep. Direct dispatch — no forwarder.
+//     defining.LookupExtern on the rep. A wasm defining instance gets
+//     a *<r>Remote on wrapExpr instead.
 //   - Cross-package R: dispatch impl is a forwarder wrapping
 //     (caller, rh, fns), where fns lives on instanceState (precomputed
 //     at NewInstance time).
-func emitWrapOwnResultRead(w *strings.Builder, rt *TypeResource, slotExpr, recv, callerInstExpr, fnExpr string) {
+func emitWrapOwnResultRead(w *strings.Builder, rt *TypeResource, slotExpr, wrapExpr, callerInstExpr, fnExpr string) {
 	if rt.IsImported() {
 		fmt.Fprint(w, "\t\t\t{\n")
 		fmt.Fprintf(w, "\t\t\t\ttr_ := %s.ResultType(0).(wacogo.TypeOwn).ResourceType\n", fnExpr)
@@ -477,11 +483,7 @@ func emitWrapOwnResultRead(w *strings.Builder, rt *TypeResource, slotExpr, recv,
 	fmt.Fprint(w, "\t\t\t\tif srcErr_ != nil { return srcErr_ }\n")
 	fmt.Fprint(w, "\t\t\t\tdstH_, dstErr_ := srcH_.TransferOwn(caller.TransferTarget())\n")
 	fmt.Fprint(w, "\t\t\t\tif dstErr_ != nil { return dstErr_ }\n")
-	fmt.Fprintf(w, "\t\t\t\tvar impl_ %s\n", rt.WrapName)
-	fmt.Fprintf(w, "\t\t\t\tif obj_, ok_ := dstH_.Type().Instance().LookupExtern(dstH_.Rep()); ok_ {\n")
-	fmt.Fprintf(w, "\t\t\t\t\tif typed_, ok2_ := obj_.(%s); ok2_ { impl_ = typed_ }\n", rt.WrapName)
-	fmt.Fprint(w, "\t\t\t\t}\n")
-	fmt.Fprintf(w, "\t\t\t\tresVal_ = New%sHandleFrom(dstH_, impl_)\n", rt.WrapName)
+	emitNewHandleFromLocal(w, "dstH_", "resVal_", rt, "\t\t\t\t", wrapExpr)
 	fmt.Fprint(w, "\t\t\t}\n")
 }
 

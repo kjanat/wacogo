@@ -119,6 +119,18 @@ func TestGolden(t *testing.T) {
 			world:       "example:demo/docshost",
 			packageRoot: "github.com/kjanat/wacogo/internal/witgen/testdata/genfixtures",
 		},
+		{
+			name:        "NominalOrder",
+			witPath:     "testdata/wit/nominal_order.wit",
+			world:       "example:demo/drawings",
+			packageRoot: "github.com/kjanat/wacogo/internal/witgen/testdata/genfixtures",
+		},
+		{
+			name:        "FallibleCtor",
+			witPath:     "testdata/wit/fallible_ctor.wit",
+			world:       "example:demo/counting",
+			packageRoot: "github.com/kjanat/wacogo/internal/witgen/testdata/genfixtures",
+		},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {

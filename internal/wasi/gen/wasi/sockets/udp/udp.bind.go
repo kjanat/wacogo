@@ -67,7 +67,6 @@ func NewFactory(ctx context.Context, e *wacogo.Engine) (*Factory, error) {
 	_ = typIpv6SocketAddress_
 	typIpSocketAddress_ := b_.AddType("ip-socket-address", host.Variant{Cases: []host.Case{{Name: "ipv4", Payload: typIpv4SocketAddress_}, {Name: "ipv6", Payload: typIpv6SocketAddress_}}})
 	_ = typIpSocketAddress_
-
 	typIncomingDatagram_ := b_.AddType("incoming-datagram", host.Record{Fields: []host.Field{{Name: "data", Type: host.List{Elem: host.U8}}, {Name: "remote-address", Type: typIpSocketAddress_}}})
 	_ = typIncomingDatagram_
 	typOutgoingDatagram_ := b_.AddType("outgoing-datagram", host.Record{Fields: []host.Field{{Name: "data", Type: host.List{Elem: host.U8}}, {Name: "remote-address", Type: host.Option{Inner: typIpSocketAddress_}}}})
@@ -278,16 +277,16 @@ func fromGoMemIncomingDatagram(ctx context.Context, cc *host.CallContext, h *hos
 	return nil
 }
 
-func liftFlatIncomingDatagram(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (IncomingDatagram, error) {
+func liftFlatIncomingDatagram(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *udpWrapper, ty wacogo.Type, stack []uint64) (IncomingDatagram, error) {
 	var v_ IncomingDatagram
 	recT_ := ty.(wacogo.TypeRecord)
 	_ = recT_
-	if tmp_, err_ := liftFlatListU8(ctx, caller, callee, h, recT_.Fields[0].Type, stack[0:2]); err_ != nil {
+	if tmp_, err_ := liftFlatListU8(ctx, caller, callee, h, w_, recT_.Fields[0].Type, stack[0:2]); err_ != nil {
 		return IncomingDatagram{}, err_
 	} else {
 		v_.Data = tmp_
 	}
-	if tmp_, err_ := liftFlatNetworkIpSocketAddress(ctx, caller, callee, h, recT_.Fields[1].Type, stack[2:14]); err_ != nil {
+	if tmp_, err_ := liftFlatNetworkIpSocketAddress(ctx, caller, callee, h, w_, recT_.Fields[1].Type, stack[2:14]); err_ != nil {
 		return IncomingDatagram{}, err_
 	} else {
 		v_.RemoteAddress = tmp_
@@ -295,16 +294,16 @@ func liftFlatIncomingDatagram(ctx context.Context, caller, callee *host.CallCont
 	return v_, nil
 }
 
-func liftMemIncomingDatagram(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (IncomingDatagram, error) {
+func liftMemIncomingDatagram(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *udpWrapper, ty wacogo.Type, ptr uint32) (IncomingDatagram, error) {
 	var v_ IncomingDatagram
 	recT_ := ty.(wacogo.TypeRecord)
 	_ = recT_
-	if tmp_, err_ := liftMemListU8(ctx, caller, callee, h, recT_.Fields[0].Type, ptr); err_ != nil {
+	if tmp_, err_ := liftMemListU8(ctx, caller, callee, h, w_, recT_.Fields[0].Type, ptr); err_ != nil {
 		return IncomingDatagram{}, err_
 	} else {
 		v_.Data = tmp_
 	}
-	if tmp_, err_ := liftMemNetworkIpSocketAddress(ctx, caller, callee, h, recT_.Fields[1].Type, ptr+8); err_ != nil {
+	if tmp_, err_ := liftMemNetworkIpSocketAddress(ctx, caller, callee, h, w_, recT_.Fields[1].Type, ptr+8); err_ != nil {
 		return IncomingDatagram{}, err_
 	} else {
 		v_.RemoteAddress = tmp_
@@ -414,14 +413,14 @@ func fromGoMemListIncomingDatagram(ctx context.Context, cc *host.CallContext, h 
 	return nil
 }
 
-func liftFlatListIncomingDatagram(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) ([]IncomingDatagram, error) {
+func liftFlatListIncomingDatagram(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *udpWrapper, ty wacogo.Type, stack []uint64) ([]IncomingDatagram, error) {
 	lstT_ := ty.(wacogo.TypeList)
 	_ = lstT_
 	ptr_ := uint32(stack[0])
 	ln_ := uint32(stack[1])
 	out_ := make([]IncomingDatagram, ln_)
 	for i_ := uint32(0); i_ < ln_; i_++ {
-		if tmp_, err_ := liftMemIncomingDatagram(ctx, caller, callee, h, lstT_.Elem, ptr_+i_*40); err_ != nil {
+		if tmp_, err_ := liftMemIncomingDatagram(ctx, caller, callee, h, w_, lstT_.Elem, ptr_+i_*40); err_ != nil {
 			return nil, err_
 		} else {
 			out_[i_] = tmp_
@@ -430,7 +429,7 @@ func liftFlatListIncomingDatagram(ctx context.Context, caller, callee *host.Call
 	return out_, nil
 }
 
-func liftMemListIncomingDatagram(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) ([]IncomingDatagram, error) {
+func liftMemListIncomingDatagram(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *udpWrapper, ty wacogo.Type, ptr uint32) ([]IncomingDatagram, error) {
 	lstT_ := ty.(wacogo.TypeList)
 	_ = lstT_
 	var lptr_ uint32
@@ -447,7 +446,7 @@ func liftMemListIncomingDatagram(ctx context.Context, caller, callee *host.CallC
 	}
 	out_ := make([]IncomingDatagram, ln_)
 	for i_ := uint32(0); i_ < ln_; i_++ {
-		if tmp_, err_ := liftMemIncomingDatagram(ctx, caller, callee, h, lstT_.Elem, lptr_+i_*40); err_ != nil {
+		if tmp_, err_ := liftMemIncomingDatagram(ctx, caller, callee, h, w_, lstT_.Elem, lptr_+i_*40); err_ != nil {
 			return nil, err_
 		} else {
 			out_[i_] = tmp_
@@ -574,14 +573,14 @@ func fromGoMemListOutgoingDatagram(ctx context.Context, cc *host.CallContext, h 
 	return nil
 }
 
-func liftFlatListOutgoingDatagram(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) ([]OutgoingDatagram, error) {
+func liftFlatListOutgoingDatagram(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *udpWrapper, ty wacogo.Type, stack []uint64) ([]OutgoingDatagram, error) {
 	lstT_ := ty.(wacogo.TypeList)
 	_ = lstT_
 	ptr_ := uint32(stack[0])
 	ln_ := uint32(stack[1])
 	out_ := make([]OutgoingDatagram, ln_)
 	for i_ := uint32(0); i_ < ln_; i_++ {
-		if tmp_, err_ := liftMemOutgoingDatagram(ctx, caller, callee, h, lstT_.Elem, ptr_+i_*44); err_ != nil {
+		if tmp_, err_ := liftMemOutgoingDatagram(ctx, caller, callee, h, w_, lstT_.Elem, ptr_+i_*44); err_ != nil {
 			return nil, err_
 		} else {
 			out_[i_] = tmp_
@@ -590,7 +589,7 @@ func liftFlatListOutgoingDatagram(ctx context.Context, caller, callee *host.Call
 	return out_, nil
 }
 
-func liftMemListOutgoingDatagram(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) ([]OutgoingDatagram, error) {
+func liftMemListOutgoingDatagram(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *udpWrapper, ty wacogo.Type, ptr uint32) ([]OutgoingDatagram, error) {
 	lstT_ := ty.(wacogo.TypeList)
 	_ = lstT_
 	var lptr_ uint32
@@ -607,7 +606,7 @@ func liftMemListOutgoingDatagram(ctx context.Context, caller, callee *host.CallC
 	}
 	out_ := make([]OutgoingDatagram, ln_)
 	for i_ := uint32(0); i_ < ln_; i_++ {
-		if tmp_, err_ := liftMemOutgoingDatagram(ctx, caller, callee, h, lstT_.Elem, lptr_+i_*44); err_ != nil {
+		if tmp_, err_ := liftMemOutgoingDatagram(ctx, caller, callee, h, w_, lstT_.Elem, lptr_+i_*44); err_ != nil {
 			return nil, err_
 		} else {
 			out_[i_] = tmp_
@@ -746,7 +745,7 @@ func fromGoMemListU8(ctx context.Context, cc *host.CallContext, h *host.Componen
 	return nil
 }
 
-func liftFlatListU8(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) ([]uint8, error) {
+func liftFlatListU8(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *udpWrapper, ty wacogo.Type, stack []uint64) ([]uint8, error) {
 	lstT_ := ty.(wacogo.TypeList)
 	_ = lstT_
 	ptr_ := uint32(stack[0])
@@ -764,7 +763,7 @@ func liftFlatListU8(ctx context.Context, caller, callee *host.CallContext, h *ho
 	return out_, nil
 }
 
-func liftMemListU8(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) ([]uint8, error) {
+func liftMemListU8(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *udpWrapper, ty wacogo.Type, ptr uint32) ([]uint8, error) {
 	lstT_ := ty.(wacogo.TypeList)
 	_ = lstT_
 	var lptr_ uint32
@@ -941,14 +940,14 @@ func fromGoMemNetworkIpSocketAddress(ctx context.Context, cc *host.CallContext, 
 	return nil
 }
 
-func liftFlatNetworkIpSocketAddress(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (network.IpSocketAddress, error) {
+func liftFlatNetworkIpSocketAddress(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *udpWrapper, ty wacogo.Type, stack []uint64) (network.IpSocketAddress, error) {
 	varT_ := ty.(wacogo.TypeVariant)
 	_ = varT_
 	disc_ := uint32(stack[0])
 	switch disc_ {
 	case 0:
 		var val network.Ipv4SocketAddress
-		if tmp_, err_ := liftFlatNetworkIpv4SocketAddress(ctx, caller, callee, h, varT_.Cases[0].Payload, stack[1:6]); err_ != nil {
+		if tmp_, err_ := liftFlatNetworkIpv4SocketAddress(ctx, caller, callee, h, w_, varT_.Cases[0].Payload, stack[1:6]); err_ != nil {
 			return nil, err_
 		} else {
 			val = tmp_
@@ -956,7 +955,7 @@ func liftFlatNetworkIpSocketAddress(ctx context.Context, caller, callee *host.Ca
 		return network.IpSocketAddressIpv4{Value: val}, nil
 	case 1:
 		var val network.Ipv6SocketAddress
-		if tmp_, err_ := liftFlatNetworkIpv6SocketAddress(ctx, caller, callee, h, varT_.Cases[1].Payload, stack[1:12]); err_ != nil {
+		if tmp_, err_ := liftFlatNetworkIpv6SocketAddress(ctx, caller, callee, h, w_, varT_.Cases[1].Payload, stack[1:12]); err_ != nil {
 			return nil, err_
 		} else {
 			val = tmp_
@@ -966,7 +965,7 @@ func liftFlatNetworkIpSocketAddress(ctx context.Context, caller, callee *host.Ca
 	return nil, fmt.Errorf("wacogo/witgen: liftFlatNetworkIpSocketAddress: invalid discriminant %d", disc_)
 }
 
-func liftMemNetworkIpSocketAddress(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (network.IpSocketAddress, error) {
+func liftMemNetworkIpSocketAddress(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *udpWrapper, ty wacogo.Type, ptr uint32) (network.IpSocketAddress, error) {
 	varT_ := ty.(wacogo.TypeVariant)
 	_ = varT_
 	var disc_ uint8
@@ -978,7 +977,7 @@ func liftMemNetworkIpSocketAddress(ctx context.Context, caller, callee *host.Cal
 	switch disc_ {
 	case 0:
 		var val network.Ipv4SocketAddress
-		if tmp_, err_ := liftMemNetworkIpv4SocketAddress(ctx, caller, callee, h, varT_.Cases[0].Payload, ptr+4); err_ != nil {
+		if tmp_, err_ := liftMemNetworkIpv4SocketAddress(ctx, caller, callee, h, w_, varT_.Cases[0].Payload, ptr+4); err_ != nil {
 			return nil, err_
 		} else {
 			val = tmp_
@@ -986,7 +985,7 @@ func liftMemNetworkIpSocketAddress(ctx context.Context, caller, callee *host.Cal
 		return network.IpSocketAddressIpv4{Value: val}, nil
 	case 1:
 		var val network.Ipv6SocketAddress
-		if tmp_, err_ := liftMemNetworkIpv6SocketAddress(ctx, caller, callee, h, varT_.Cases[1].Payload, ptr+4); err_ != nil {
+		if tmp_, err_ := liftMemNetworkIpv6SocketAddress(ctx, caller, callee, h, w_, varT_.Cases[1].Payload, ptr+4); err_ != nil {
 			return nil, err_
 		} else {
 			val = tmp_
@@ -1094,12 +1093,12 @@ func fromGoMemNetworkIpv4SocketAddress(ctx context.Context, cc *host.CallContext
 	return nil
 }
 
-func liftFlatNetworkIpv4SocketAddress(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (network.Ipv4SocketAddress, error) {
+func liftFlatNetworkIpv4SocketAddress(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *udpWrapper, ty wacogo.Type, stack []uint64) (network.Ipv4SocketAddress, error) {
 	var v_ network.Ipv4SocketAddress
 	recT_ := ty.(wacogo.TypeRecord)
 	_ = recT_
 	v_.Port = uint16(stack[0])
-	if tmp_, err_ := liftFlatNetworkTupleU8U8U8U8(ctx, caller, callee, h, recT_.Fields[1].Type, stack[1:5]); err_ != nil {
+	if tmp_, err_ := liftFlatNetworkTupleU8U8U8U8(ctx, caller, callee, h, w_, recT_.Fields[1].Type, stack[1:5]); err_ != nil {
 		return network.Ipv4SocketAddress{}, err_
 	} else {
 		v_.Address = tmp_
@@ -1107,7 +1106,7 @@ func liftFlatNetworkIpv4SocketAddress(ctx context.Context, caller, callee *host.
 	return v_, nil
 }
 
-func liftMemNetworkIpv4SocketAddress(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (network.Ipv4SocketAddress, error) {
+func liftMemNetworkIpv4SocketAddress(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *udpWrapper, ty wacogo.Type, ptr uint32) (network.Ipv4SocketAddress, error) {
 	var v_ network.Ipv4SocketAddress
 	recT_ := ty.(wacogo.TypeRecord)
 	_ = recT_
@@ -1116,7 +1115,7 @@ func liftMemNetworkIpv4SocketAddress(ctx context.Context, caller, callee *host.C
 	} else {
 		v_.Port = tmp_
 	}
-	if tmp_, err_ := liftMemNetworkTupleU8U8U8U8(ctx, caller, callee, h, recT_.Fields[1].Type, ptr+2); err_ != nil {
+	if tmp_, err_ := liftMemNetworkTupleU8U8U8U8(ctx, caller, callee, h, w_, recT_.Fields[1].Type, ptr+2); err_ != nil {
 		return network.Ipv4SocketAddress{}, err_
 	} else {
 		v_.Address = tmp_
@@ -1214,13 +1213,13 @@ func fromGoMemNetworkIpv6SocketAddress(ctx context.Context, cc *host.CallContext
 	return nil
 }
 
-func liftFlatNetworkIpv6SocketAddress(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (network.Ipv6SocketAddress, error) {
+func liftFlatNetworkIpv6SocketAddress(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *udpWrapper, ty wacogo.Type, stack []uint64) (network.Ipv6SocketAddress, error) {
 	var v_ network.Ipv6SocketAddress
 	recT_ := ty.(wacogo.TypeRecord)
 	_ = recT_
 	v_.Port = uint16(stack[0])
 	v_.FlowInfo = uint32(stack[1])
-	if tmp_, err_ := liftFlatNetworkTupleU16U16U16U16U16U16U16U16(ctx, caller, callee, h, recT_.Fields[2].Type, stack[2:10]); err_ != nil {
+	if tmp_, err_ := liftFlatNetworkTupleU16U16U16U16U16U16U16U16(ctx, caller, callee, h, w_, recT_.Fields[2].Type, stack[2:10]); err_ != nil {
 		return network.Ipv6SocketAddress{}, err_
 	} else {
 		v_.Address = tmp_
@@ -1229,7 +1228,7 @@ func liftFlatNetworkIpv6SocketAddress(ctx context.Context, caller, callee *host.
 	return v_, nil
 }
 
-func liftMemNetworkIpv6SocketAddress(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (network.Ipv6SocketAddress, error) {
+func liftMemNetworkIpv6SocketAddress(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *udpWrapper, ty wacogo.Type, ptr uint32) (network.Ipv6SocketAddress, error) {
 	var v_ network.Ipv6SocketAddress
 	recT_ := ty.(wacogo.TypeRecord)
 	_ = recT_
@@ -1243,7 +1242,7 @@ func liftMemNetworkIpv6SocketAddress(ctx context.Context, caller, callee *host.C
 	} else {
 		v_.FlowInfo = tmp_
 	}
-	if tmp_, err_ := liftMemNetworkTupleU16U16U16U16U16U16U16U16(ctx, caller, callee, h, recT_.Fields[2].Type, ptr+8); err_ != nil {
+	if tmp_, err_ := liftMemNetworkTupleU16U16U16U16U16U16U16U16(ctx, caller, callee, h, w_, recT_.Fields[2].Type, ptr+8); err_ != nil {
 		return network.Ipv6SocketAddress{}, err_
 	} else {
 		v_.Address = tmp_
@@ -1388,7 +1387,7 @@ func fromGoMemNetworkTupleU16U16U16U16U16U16U16U16(ctx context.Context, cc *host
 	return nil
 }
 
-func liftFlatNetworkTupleU16U16U16U16U16U16U16U16(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (network.TupleU16U16U16U16U16U16U16U16, error) {
+func liftFlatNetworkTupleU16U16U16U16U16U16U16U16(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *udpWrapper, ty wacogo.Type, stack []uint64) (network.TupleU16U16U16U16U16U16U16U16, error) {
 	var v_ network.TupleU16U16U16U16U16U16U16U16
 	tupT_ := ty.(wacogo.TypeTuple)
 	_ = tupT_
@@ -1403,7 +1402,7 @@ func liftFlatNetworkTupleU16U16U16U16U16U16U16U16(ctx context.Context, caller, c
 	return v_, nil
 }
 
-func liftMemNetworkTupleU16U16U16U16U16U16U16U16(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (network.TupleU16U16U16U16U16U16U16U16, error) {
+func liftMemNetworkTupleU16U16U16U16U16U16U16U16(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *udpWrapper, ty wacogo.Type, ptr uint32) (network.TupleU16U16U16U16U16U16U16U16, error) {
 	var v_ network.TupleU16U16U16U16U16U16U16U16
 	tupT_ := ty.(wacogo.TypeTuple)
 	_ = tupT_
@@ -1556,7 +1555,7 @@ func fromGoMemNetworkTupleU8U8U8U8(ctx context.Context, cc *host.CallContext, h 
 	return nil
 }
 
-func liftFlatNetworkTupleU8U8U8U8(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (network.TupleU8U8U8U8, error) {
+func liftFlatNetworkTupleU8U8U8U8(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *udpWrapper, ty wacogo.Type, stack []uint64) (network.TupleU8U8U8U8, error) {
 	var v_ network.TupleU8U8U8U8
 	tupT_ := ty.(wacogo.TypeTuple)
 	_ = tupT_
@@ -1567,7 +1566,7 @@ func liftFlatNetworkTupleU8U8U8U8(ctx context.Context, caller, callee *host.Call
 	return v_, nil
 }
 
-func liftMemNetworkTupleU8U8U8U8(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (network.TupleU8U8U8U8, error) {
+func liftMemNetworkTupleU8U8U8U8(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *udpWrapper, ty wacogo.Type, ptr uint32) (network.TupleU8U8U8U8, error) {
 	var v_ network.TupleU8U8U8U8
 	tupT_ := ty.(wacogo.TypeTuple)
 	_ = tupT_
@@ -1699,14 +1698,14 @@ func fromGoMemOptionNetworkIpSocketAddress(ctx context.Context, cc *host.CallCon
 	return nil
 }
 
-func liftFlatOptionNetworkIpSocketAddress(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (OptionNetworkIpSocketAddress, error) {
+func liftFlatOptionNetworkIpSocketAddress(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *udpWrapper, ty wacogo.Type, stack []uint64) (OptionNetworkIpSocketAddress, error) {
 	optT_ := ty.(wacogo.TypeOption)
 	_ = optT_
 	disc_ := uint32(stack[0])
 	var out_ OptionNetworkIpSocketAddress
 	if disc_ != 0 {
 		out_.IsSome = true
-		if tmp_, err_ := liftFlatNetworkIpSocketAddress(ctx, caller, callee, h, optT_.Inner, stack[1:13]); err_ != nil {
+		if tmp_, err_ := liftFlatNetworkIpSocketAddress(ctx, caller, callee, h, w_, optT_.Inner, stack[1:13]); err_ != nil {
 			return OptionNetworkIpSocketAddress{}, err_
 		} else {
 			out_.Value = tmp_
@@ -1715,7 +1714,7 @@ func liftFlatOptionNetworkIpSocketAddress(ctx context.Context, caller, callee *h
 	return out_, nil
 }
 
-func liftMemOptionNetworkIpSocketAddress(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (OptionNetworkIpSocketAddress, error) {
+func liftMemOptionNetworkIpSocketAddress(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *udpWrapper, ty wacogo.Type, ptr uint32) (OptionNetworkIpSocketAddress, error) {
 	optT_ := ty.(wacogo.TypeOption)
 	_ = optT_
 	var disc_ uint8
@@ -1727,7 +1726,7 @@ func liftMemOptionNetworkIpSocketAddress(ctx context.Context, caller, callee *ho
 	var out_ OptionNetworkIpSocketAddress
 	if disc_ != 0 {
 		out_.IsSome = true
-		if tmp_, err_ := liftMemNetworkIpSocketAddress(ctx, caller, callee, h, optT_.Inner, ptr+4); err_ != nil {
+		if tmp_, err_ := liftMemNetworkIpSocketAddress(ctx, caller, callee, h, w_, optT_.Inner, ptr+4); err_ != nil {
 			return OptionNetworkIpSocketAddress{}, err_
 		} else {
 			out_.Value = tmp_
@@ -1836,16 +1835,16 @@ func fromGoMemOutgoingDatagram(ctx context.Context, cc *host.CallContext, h *hos
 	return nil
 }
 
-func liftFlatOutgoingDatagram(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (OutgoingDatagram, error) {
+func liftFlatOutgoingDatagram(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *udpWrapper, ty wacogo.Type, stack []uint64) (OutgoingDatagram, error) {
 	var v_ OutgoingDatagram
 	recT_ := ty.(wacogo.TypeRecord)
 	_ = recT_
-	if tmp_, err_ := liftFlatListU8(ctx, caller, callee, h, recT_.Fields[0].Type, stack[0:2]); err_ != nil {
+	if tmp_, err_ := liftFlatListU8(ctx, caller, callee, h, w_, recT_.Fields[0].Type, stack[0:2]); err_ != nil {
 		return OutgoingDatagram{}, err_
 	} else {
 		v_.Data = tmp_
 	}
-	if tmp_, err_ := liftFlatOptionNetworkIpSocketAddress(ctx, caller, callee, h, recT_.Fields[1].Type, stack[2:15]); err_ != nil {
+	if tmp_, err_ := liftFlatOptionNetworkIpSocketAddress(ctx, caller, callee, h, w_, recT_.Fields[1].Type, stack[2:15]); err_ != nil {
 		return OutgoingDatagram{}, err_
 	} else {
 		v_.RemoteAddress = tmp_
@@ -1853,16 +1852,16 @@ func liftFlatOutgoingDatagram(ctx context.Context, caller, callee *host.CallCont
 	return v_, nil
 }
 
-func liftMemOutgoingDatagram(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (OutgoingDatagram, error) {
+func liftMemOutgoingDatagram(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *udpWrapper, ty wacogo.Type, ptr uint32) (OutgoingDatagram, error) {
 	var v_ OutgoingDatagram
 	recT_ := ty.(wacogo.TypeRecord)
 	_ = recT_
-	if tmp_, err_ := liftMemListU8(ctx, caller, callee, h, recT_.Fields[0].Type, ptr); err_ != nil {
+	if tmp_, err_ := liftMemListU8(ctx, caller, callee, h, w_, recT_.Fields[0].Type, ptr); err_ != nil {
 		return OutgoingDatagram{}, err_
 	} else {
 		v_.Data = tmp_
 	}
-	if tmp_, err_ := liftMemOptionNetworkIpSocketAddress(ctx, caller, callee, h, recT_.Fields[1].Type, ptr+8); err_ != nil {
+	if tmp_, err_ := liftMemOptionNetworkIpSocketAddress(ctx, caller, callee, h, w_, recT_.Fields[1].Type, ptr+8); err_ != nil {
 		return OutgoingDatagram{}, err_
 	} else {
 		v_.RemoteAddress = tmp_
@@ -1978,13 +1977,13 @@ func fromGoMemResultListIncomingDatagramNetworkErrorCode(ctx context.Context, cc
 	return nil
 }
 
-func liftFlatResultListIncomingDatagramNetworkErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (ResultListIncomingDatagramNetworkErrorCode, error) {
+func liftFlatResultListIncomingDatagramNetworkErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *udpWrapper, ty wacogo.Type, stack []uint64) (ResultListIncomingDatagramNetworkErrorCode, error) {
 	resT_ := ty.(wacogo.TypeResult)
 	_ = resT_
 	disc_ := uint32(stack[0])
 	if disc_ == 0 {
 		var okVal_ []IncomingDatagram
-		if tmp_, err_ := liftFlatListIncomingDatagram(ctx, caller, callee, h, resT_.Ok, stack[1:3]); err_ != nil {
+		if tmp_, err_ := liftFlatListIncomingDatagram(ctx, caller, callee, h, w_, resT_.Ok, stack[1:3]); err_ != nil {
 			return nil, err_
 		} else {
 			okVal_ = tmp_
@@ -1996,7 +1995,7 @@ func liftFlatResultListIncomingDatagramNetworkErrorCode(ctx context.Context, cal
 	return ResultListIncomingDatagramNetworkErrorCodeErr{Value: errVal_}, nil
 }
 
-func liftMemResultListIncomingDatagramNetworkErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (ResultListIncomingDatagramNetworkErrorCode, error) {
+func liftMemResultListIncomingDatagramNetworkErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *udpWrapper, ty wacogo.Type, ptr uint32) (ResultListIncomingDatagramNetworkErrorCode, error) {
 	resT_ := ty.(wacogo.TypeResult)
 	_ = resT_
 	var disc_ uint8
@@ -2007,7 +2006,7 @@ func liftMemResultListIncomingDatagramNetworkErrorCode(ctx context.Context, call
 	}
 	if disc_ == 0 {
 		var okVal_ []IncomingDatagram
-		if tmp_, err_ := liftMemListIncomingDatagram(ctx, caller, callee, h, resT_.Ok, ptr+4); err_ != nil {
+		if tmp_, err_ := liftMemListIncomingDatagram(ctx, caller, callee, h, w_, resT_.Ok, ptr+4); err_ != nil {
 			return nil, err_
 		} else {
 			okVal_ = tmp_
@@ -2160,13 +2159,13 @@ func fromGoMemResultNetworkIpSocketAddressNetworkErrorCode(ctx context.Context, 
 	return nil
 }
 
-func liftFlatResultNetworkIpSocketAddressNetworkErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (ResultNetworkIpSocketAddressNetworkErrorCode, error) {
+func liftFlatResultNetworkIpSocketAddressNetworkErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *udpWrapper, ty wacogo.Type, stack []uint64) (ResultNetworkIpSocketAddressNetworkErrorCode, error) {
 	resT_ := ty.(wacogo.TypeResult)
 	_ = resT_
 	disc_ := uint32(stack[0])
 	if disc_ == 0 {
 		var okVal_ network.IpSocketAddress
-		if tmp_, err_ := liftFlatNetworkIpSocketAddress(ctx, caller, callee, h, resT_.Ok, stack[1:13]); err_ != nil {
+		if tmp_, err_ := liftFlatNetworkIpSocketAddress(ctx, caller, callee, h, w_, resT_.Ok, stack[1:13]); err_ != nil {
 			return nil, err_
 		} else {
 			okVal_ = tmp_
@@ -2178,7 +2177,7 @@ func liftFlatResultNetworkIpSocketAddressNetworkErrorCode(ctx context.Context, c
 	return ResultNetworkIpSocketAddressNetworkErrorCodeErr{Value: errVal_}, nil
 }
 
-func liftMemResultNetworkIpSocketAddressNetworkErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (ResultNetworkIpSocketAddressNetworkErrorCode, error) {
+func liftMemResultNetworkIpSocketAddressNetworkErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *udpWrapper, ty wacogo.Type, ptr uint32) (ResultNetworkIpSocketAddressNetworkErrorCode, error) {
 	resT_ := ty.(wacogo.TypeResult)
 	_ = resT_
 	var disc_ uint8
@@ -2189,7 +2188,7 @@ func liftMemResultNetworkIpSocketAddressNetworkErrorCode(ctx context.Context, ca
 	}
 	if disc_ == 0 {
 		var okVal_ network.IpSocketAddress
-		if tmp_, err_ := liftMemNetworkIpSocketAddress(ctx, caller, callee, h, resT_.Ok, ptr+4); err_ != nil {
+		if tmp_, err_ := liftMemNetworkIpSocketAddress(ctx, caller, callee, h, w_, resT_.Ok, ptr+4); err_ != nil {
 			return nil, err_
 		} else {
 			okVal_ = tmp_
@@ -2342,13 +2341,13 @@ func fromGoMemResultTupleIncomingDatagramStreamOutgoingDatagramStreamNetworkErro
 	return nil
 }
 
-func liftFlatResultTupleIncomingDatagramStreamOutgoingDatagramStreamNetworkErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (ResultTupleIncomingDatagramStreamOutgoingDatagramStreamNetworkErrorCode, error) {
+func liftFlatResultTupleIncomingDatagramStreamOutgoingDatagramStreamNetworkErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *udpWrapper, ty wacogo.Type, stack []uint64) (ResultTupleIncomingDatagramStreamOutgoingDatagramStreamNetworkErrorCode, error) {
 	resT_ := ty.(wacogo.TypeResult)
 	_ = resT_
 	disc_ := uint32(stack[0])
 	if disc_ == 0 {
 		var okVal_ TupleIncomingDatagramStreamOutgoingDatagramStream
-		if tmp_, err_ := liftFlatTupleIncomingDatagramStreamOutgoingDatagramStream(ctx, caller, callee, h, resT_.Ok, stack[1:3]); err_ != nil {
+		if tmp_, err_ := liftFlatTupleIncomingDatagramStreamOutgoingDatagramStream(ctx, caller, callee, h, w_, resT_.Ok, stack[1:3]); err_ != nil {
 			return nil, err_
 		} else {
 			okVal_ = tmp_
@@ -2360,7 +2359,7 @@ func liftFlatResultTupleIncomingDatagramStreamOutgoingDatagramStreamNetworkError
 	return ResultTupleIncomingDatagramStreamOutgoingDatagramStreamNetworkErrorCodeErr{Value: errVal_}, nil
 }
 
-func liftMemResultTupleIncomingDatagramStreamOutgoingDatagramStreamNetworkErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (ResultTupleIncomingDatagramStreamOutgoingDatagramStreamNetworkErrorCode, error) {
+func liftMemResultTupleIncomingDatagramStreamOutgoingDatagramStreamNetworkErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *udpWrapper, ty wacogo.Type, ptr uint32) (ResultTupleIncomingDatagramStreamOutgoingDatagramStreamNetworkErrorCode, error) {
 	resT_ := ty.(wacogo.TypeResult)
 	_ = resT_
 	var disc_ uint8
@@ -2371,7 +2370,7 @@ func liftMemResultTupleIncomingDatagramStreamOutgoingDatagramStreamNetworkErrorC
 	}
 	if disc_ == 0 {
 		var okVal_ TupleIncomingDatagramStreamOutgoingDatagramStream
-		if tmp_, err_ := liftMemTupleIncomingDatagramStreamOutgoingDatagramStream(ctx, caller, callee, h, resT_.Ok, ptr+4); err_ != nil {
+		if tmp_, err_ := liftMemTupleIncomingDatagramStreamOutgoingDatagramStream(ctx, caller, callee, h, w_, resT_.Ok, ptr+4); err_ != nil {
 			return nil, err_
 		} else {
 			okVal_ = tmp_
@@ -2507,7 +2506,7 @@ func fromGoMemResultU64NetworkErrorCode(ctx context.Context, cc *host.CallContex
 	return nil
 }
 
-func liftFlatResultU64NetworkErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (ResultU64NetworkErrorCode, error) {
+func liftFlatResultU64NetworkErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *udpWrapper, ty wacogo.Type, stack []uint64) (ResultU64NetworkErrorCode, error) {
 	resT_ := ty.(wacogo.TypeResult)
 	_ = resT_
 	disc_ := uint32(stack[0])
@@ -2521,7 +2520,7 @@ func liftFlatResultU64NetworkErrorCode(ctx context.Context, caller, callee *host
 	return ResultU64NetworkErrorCodeErr{Value: errVal_}, nil
 }
 
-func liftMemResultU64NetworkErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (ResultU64NetworkErrorCode, error) {
+func liftMemResultU64NetworkErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *udpWrapper, ty wacogo.Type, ptr uint32) (ResultU64NetworkErrorCode, error) {
 	resT_ := ty.(wacogo.TypeResult)
 	_ = resT_
 	var disc_ uint8
@@ -2665,7 +2664,7 @@ func fromGoMemResultU8NetworkErrorCode(ctx context.Context, cc *host.CallContext
 	return nil
 }
 
-func liftFlatResultU8NetworkErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (ResultU8NetworkErrorCode, error) {
+func liftFlatResultU8NetworkErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *udpWrapper, ty wacogo.Type, stack []uint64) (ResultU8NetworkErrorCode, error) {
 	resT_ := ty.(wacogo.TypeResult)
 	_ = resT_
 	disc_ := uint32(stack[0])
@@ -2679,7 +2678,7 @@ func liftFlatResultU8NetworkErrorCode(ctx context.Context, caller, callee *host.
 	return ResultU8NetworkErrorCodeErr{Value: errVal_}, nil
 }
 
-func liftMemResultU8NetworkErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (ResultU8NetworkErrorCode, error) {
+func liftMemResultU8NetworkErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *udpWrapper, ty wacogo.Type, ptr uint32) (ResultU8NetworkErrorCode, error) {
 	resT_ := ty.(wacogo.TypeResult)
 	_ = resT_
 	var disc_ uint8
@@ -2814,7 +2813,7 @@ func fromGoMemResult_NetworkErrorCode(ctx context.Context, cc *host.CallContext,
 	return nil
 }
 
-func liftFlatResult_NetworkErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (Result_NetworkErrorCode, error) {
+func liftFlatResult_NetworkErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *udpWrapper, ty wacogo.Type, stack []uint64) (Result_NetworkErrorCode, error) {
 	resT_ := ty.(wacogo.TypeResult)
 	_ = resT_
 	disc_ := uint32(stack[0])
@@ -2826,7 +2825,7 @@ func liftFlatResult_NetworkErrorCode(ctx context.Context, caller, callee *host.C
 	return Result_NetworkErrorCodeErr{Value: errVal_}, nil
 }
 
-func liftMemResult_NetworkErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (Result_NetworkErrorCode, error) {
+func liftMemResult_NetworkErrorCode(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *udpWrapper, ty wacogo.Type, ptr uint32) (Result_NetworkErrorCode, error) {
 	resT_ := ty.(wacogo.TypeResult)
 	_ = resT_
 	var disc_ uint8
@@ -3014,7 +3013,7 @@ func fromGoMemTupleIncomingDatagramStreamOutgoingDatagramStream(ctx context.Cont
 	return nil
 }
 
-func liftFlatTupleIncomingDatagramStreamOutgoingDatagramStream(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (TupleIncomingDatagramStreamOutgoingDatagramStream, error) {
+func liftFlatTupleIncomingDatagramStreamOutgoingDatagramStream(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *udpWrapper, ty wacogo.Type, stack []uint64) (TupleIncomingDatagramStreamOutgoingDatagramStream, error) {
 	var v_ TupleIncomingDatagramStreamOutgoingDatagramStream
 	tupT_ := ty.(wacogo.TypeTuple)
 	_ = tupT_
@@ -3036,6 +3035,9 @@ func liftFlatTupleIncomingDatagramStreamOutgoingDatagramStream(ctx context.Conte
 			}
 		}
 		v_.F0 = NewIncomingDatagramStreamHandleFrom(dstH_, impl_)
+		if impl_ == nil {
+			v_.F0.IncomingDatagramStream = &incomingDatagramStreamRemote{w: w_, h: v_.F0}
+		}
 	}
 	{
 		calleeOh_ := uint32(stack[1])
@@ -3055,11 +3057,14 @@ func liftFlatTupleIncomingDatagramStreamOutgoingDatagramStream(ctx context.Conte
 			}
 		}
 		v_.F1 = NewOutgoingDatagramStreamHandleFrom(dstH_, impl_)
+		if impl_ == nil {
+			v_.F1.OutgoingDatagramStream = &outgoingDatagramStreamRemote{w: w_, h: v_.F1}
+		}
 	}
 	return v_, nil
 }
 
-func liftMemTupleIncomingDatagramStreamOutgoingDatagramStream(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (TupleIncomingDatagramStreamOutgoingDatagramStream, error) {
+func liftMemTupleIncomingDatagramStreamOutgoingDatagramStream(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *udpWrapper, ty wacogo.Type, ptr uint32) (TupleIncomingDatagramStreamOutgoingDatagramStream, error) {
 	var v_ TupleIncomingDatagramStreamOutgoingDatagramStream
 	tupT_ := ty.(wacogo.TypeTuple)
 	_ = tupT_
@@ -3086,6 +3091,9 @@ func liftMemTupleIncomingDatagramStreamOutgoingDatagramStream(ctx context.Contex
 			}
 		}
 		v_.F0 = NewIncomingDatagramStreamHandleFrom(dstH_, impl_)
+		if impl_ == nil {
+			v_.F0.IncomingDatagramStream = &incomingDatagramStreamRemote{w: w_, h: v_.F0}
+		}
 	}
 	{
 		var calleeOh_ uint32
@@ -3110,6 +3118,9 @@ func liftMemTupleIncomingDatagramStreamOutgoingDatagramStream(ctx context.Contex
 			}
 		}
 		v_.F1 = NewOutgoingDatagramStreamHandleFrom(dstH_, impl_)
+		if impl_ == nil {
+			v_.F1.OutgoingDatagramStream = &outgoingDatagramStreamRemote{w: w_, h: v_.F1}
+		}
 	}
 	return v_, nil
 }

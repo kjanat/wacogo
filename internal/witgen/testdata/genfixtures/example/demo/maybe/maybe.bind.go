@@ -132,14 +132,14 @@ func fromGoMemOptionString(ctx context.Context, cc *host.CallContext, h *host.Co
 	return nil
 }
 
-func liftFlatOptionString(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (OptionString, error) {
+func liftFlatOptionString(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *maybeWrapper, ty wacogo.Type, stack []uint64) (OptionString, error) {
 	optT_ := ty.(wacogo.TypeOption)
 	_ = optT_
 	disc_ := uint32(stack[0])
 	var out_ OptionString
 	if disc_ != 0 {
 		out_.IsSome = true
-		if tmp_, err_ := liftFlatString(ctx, caller, callee, h, optT_.Inner, stack[1:3]); err_ != nil {
+		if tmp_, err_ := liftFlatString(ctx, caller, callee, h, w_, optT_.Inner, stack[1:3]); err_ != nil {
 			return OptionString{}, err_
 		} else {
 			out_.Value = tmp_
@@ -148,7 +148,7 @@ func liftFlatOptionString(ctx context.Context, caller, callee *host.CallContext,
 	return out_, nil
 }
 
-func liftMemOptionString(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (OptionString, error) {
+func liftMemOptionString(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *maybeWrapper, ty wacogo.Type, ptr uint32) (OptionString, error) {
 	optT_ := ty.(wacogo.TypeOption)
 	_ = optT_
 	var disc_ uint8
@@ -160,7 +160,7 @@ func liftMemOptionString(ctx context.Context, caller, callee *host.CallContext, 
 	var out_ OptionString
 	if disc_ != 0 {
 		out_.IsSome = true
-		if tmp_, err_ := liftMemString(ctx, caller, callee, h, optT_.Inner, ptr+4); err_ != nil {
+		if tmp_, err_ := liftMemString(ctx, caller, callee, h, w_, optT_.Inner, ptr+4); err_ != nil {
 			return OptionString{}, err_
 		} else {
 			out_.Value = tmp_
@@ -269,7 +269,7 @@ func fromGoMemString(ctx context.Context, cc *host.CallContext, h *host.Componen
 	return nil
 }
 
-func liftFlatString(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (string, error) {
+func liftFlatString(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *maybeWrapper, ty wacogo.Type, stack []uint64) (string, error) {
 	ptr_ := uint32(stack[0])
 	ln_ := uint32(stack[1])
 	bs_, ok_ := callee.Memory().Read(ptr_, ln_)
@@ -279,7 +279,7 @@ func liftFlatString(ctx context.Context, caller, callee *host.CallContext, h *ho
 	return string(bs_), nil
 }
 
-func liftMemString(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (string, error) {
+func liftMemString(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *maybeWrapper, ty wacogo.Type, ptr uint32) (string, error) {
 	var sptr_ uint32
 	if tmp_, ok_ := callee.Memory().ReadUint32Le(ptr); !ok_ {
 		return "", fmt.Errorf("wacogo/witgen: liftMemString: string ptr: bad memory read")

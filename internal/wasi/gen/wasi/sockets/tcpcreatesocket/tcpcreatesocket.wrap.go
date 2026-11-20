@@ -38,7 +38,7 @@ func (w *tcpCreateSocketWrapper) CreateTcpSocket(ctx context.Context, addressFam
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemResultTcpSocketNetworkErrorCode(ctx, caller, callee, w.callerInst, w.fnCreateTcpSocket.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemResultTcpSocketNetworkErrorCode(ctx, caller, callee, w.callerInst, w, w.fnCreateTcpSocket.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_

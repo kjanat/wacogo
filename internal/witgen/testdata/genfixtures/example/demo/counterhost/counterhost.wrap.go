@@ -59,6 +59,9 @@ func (w *counterhostWrapper) NewCounter(ctx context.Context, initial uint32) (*C
 						}
 					}
 					resVal_ = NewCounterHandleFrom(dstH_, impl_)
+					if impl_ == nil {
+						resVal_.Counter = &counterRemote{w: w, h: resVal_}
+					}
 				}
 				return nil
 			},
@@ -68,4 +71,77 @@ func (w *counterhostWrapper) NewCounter(ctx context.Context, initial uint32) (*C
 		}
 	}
 	return resVal_, nil
+}
+
+type counterRemote struct {
+	w *counterhostWrapper
+	h *CounterHandle
+}
+
+func (d_ *counterRemote) Current(ctx context.Context) (uint32, error) {
+	var resVal_ uint32
+	{
+		callErr_ := d_.w.fnCounterCurrent.CallRaw(ctx, d_.w.callerInst,
+			func(caller, callee *host.CallContext, stack []uint64) error {
+				{
+					tr_ := d_.w.fnCounterCurrent.ParamType(0).(wacogo.TypeBorrow).ResourceType
+					callerH_, err_ := d_.h.bind(caller, d_.w.callerInst)
+					if err_ != nil {
+						return err_
+					}
+					srcH_, err_ := caller.LookupBorrowable(tr_, callerH_)
+					if err_ != nil {
+						return err_
+					}
+					dstH_, err_ := srcH_.LendTo(callee.TransferTarget(), callee.Task())
+					if err_ != nil {
+						return err_
+					}
+					stack[0] = uint64(dstH_.HandleID())
+				}
+				return nil
+			},
+			func(caller, callee *host.CallContext, stack []uint64) error {
+				resVal_ = uint32(stack[0])
+				return nil
+			},
+		)
+		if callErr_ != nil {
+			return 0, fmt.Errorf("wacogo/witgen: CallRaw failed: %w", callErr_)
+		}
+	}
+	return resVal_, nil
+}
+
+func (d_ *counterRemote) Increment(ctx context.Context) error {
+	{
+		callErr_ := d_.w.fnCounterIncrement.CallRaw(ctx, d_.w.callerInst,
+			func(caller, callee *host.CallContext, stack []uint64) error {
+				{
+					tr_ := d_.w.fnCounterIncrement.ParamType(0).(wacogo.TypeBorrow).ResourceType
+					callerH_, err_ := d_.h.bind(caller, d_.w.callerInst)
+					if err_ != nil {
+						return err_
+					}
+					srcH_, err_ := caller.LookupBorrowable(tr_, callerH_)
+					if err_ != nil {
+						return err_
+					}
+					dstH_, err_ := srcH_.LendTo(callee.TransferTarget(), callee.Task())
+					if err_ != nil {
+						return err_
+					}
+					stack[0] = uint64(dstH_.HandleID())
+				}
+				return nil
+			},
+			func(caller, callee *host.CallContext, stack []uint64) error {
+				return nil
+			},
+		)
+		if callErr_ != nil {
+			return fmt.Errorf("wacogo/witgen: CallRaw failed: %w", callErr_)
+		}
+	}
+	return nil
 }

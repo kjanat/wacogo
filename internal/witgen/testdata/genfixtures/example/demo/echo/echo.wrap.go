@@ -39,7 +39,7 @@ func (w *echoWrapper) Greet(ctx context.Context, name string) (string, error) {
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemString(ctx, caller, callee, w.callerInst, w.fnGreet.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemString(ctx, caller, callee, w.callerInst, w, w.fnGreet.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_

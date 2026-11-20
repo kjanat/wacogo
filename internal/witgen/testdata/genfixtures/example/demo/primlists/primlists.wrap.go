@@ -62,7 +62,7 @@ func (w *primlistsWrapper) RevBool(ctx context.Context, xs []bool) ([]bool, erro
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemListBool(ctx, caller, callee, w.callerInst, w.fnRevBool.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemListBool(ctx, caller, callee, w.callerInst, w, w.fnRevBool.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_
@@ -89,7 +89,7 @@ func (w *primlistsWrapper) RevChar(ctx context.Context, xs []rune) ([]rune, erro
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemListChar(ctx, caller, callee, w.callerInst, w.fnRevChar.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemListChar(ctx, caller, callee, w.callerInst, w, w.fnRevChar.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_
@@ -116,7 +116,7 @@ func (w *primlistsWrapper) RevF32(ctx context.Context, xs []float32) ([]float32,
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemListF32(ctx, caller, callee, w.callerInst, w.fnRevF32.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemListF32(ctx, caller, callee, w.callerInst, w, w.fnRevF32.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_
@@ -143,7 +143,7 @@ func (w *primlistsWrapper) RevF64(ctx context.Context, xs []float64) ([]float64,
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemListF64(ctx, caller, callee, w.callerInst, w.fnRevF64.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemListF64(ctx, caller, callee, w.callerInst, w, w.fnRevF64.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_
@@ -170,7 +170,7 @@ func (w *primlistsWrapper) RevS16(ctx context.Context, xs []int16) ([]int16, err
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemListS16(ctx, caller, callee, w.callerInst, w.fnRevS16.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemListS16(ctx, caller, callee, w.callerInst, w, w.fnRevS16.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_
@@ -197,7 +197,7 @@ func (w *primlistsWrapper) RevS32(ctx context.Context, xs []int32) ([]int32, err
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemListS32(ctx, caller, callee, w.callerInst, w.fnRevS32.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemListS32(ctx, caller, callee, w.callerInst, w, w.fnRevS32.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_
@@ -224,7 +224,7 @@ func (w *primlistsWrapper) RevS64(ctx context.Context, xs []int64) ([]int64, err
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemListS64(ctx, caller, callee, w.callerInst, w.fnRevS64.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemListS64(ctx, caller, callee, w.callerInst, w, w.fnRevS64.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_
@@ -251,7 +251,7 @@ func (w *primlistsWrapper) RevS8(ctx context.Context, xs []int8) ([]int8, error)
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemListS8(ctx, caller, callee, w.callerInst, w.fnRevS8.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemListS8(ctx, caller, callee, w.callerInst, w, w.fnRevS8.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_
@@ -278,7 +278,7 @@ func (w *primlistsWrapper) RevU16(ctx context.Context, xs []uint16) ([]uint16, e
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemListU16(ctx, caller, callee, w.callerInst, w.fnRevU16.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemListU16(ctx, caller, callee, w.callerInst, w, w.fnRevU16.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_
@@ -305,7 +305,7 @@ func (w *primlistsWrapper) RevU32(ctx context.Context, xs []uint32) ([]uint32, e
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemListU32(ctx, caller, callee, w.callerInst, w.fnRevU32.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemListU32(ctx, caller, callee, w.callerInst, w, w.fnRevU32.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_
@@ -332,7 +332,7 @@ func (w *primlistsWrapper) RevU64(ctx context.Context, xs []uint64) ([]uint64, e
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemListU64(ctx, caller, callee, w.callerInst, w.fnRevU64.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemListU64(ctx, caller, callee, w.callerInst, w, w.fnRevU64.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_
@@ -359,7 +359,7 @@ func (w *primlistsWrapper) RevU8(ctx context.Context, xs []uint8) ([]uint8, erro
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemListU8(ctx, caller, callee, w.callerInst, w.fnRevU8.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemListU8(ctx, caller, callee, w.callerInst, w, w.fnRevU8.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_

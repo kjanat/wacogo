@@ -39,6 +39,9 @@ func CollectTypes(iface *Interface) []Type {
 			for _, p := range r.Ctor.Params {
 				walkType(p.Type, seen)
 			}
+			if r.Ctor.Result != nil {
+				walkType(r.Ctor.Result, seen)
+			}
 		}
 		for _, m := range r.Methods {
 			for _, p := range m.Params {
@@ -133,6 +136,9 @@ func walkType(t Type, seen map[string]Type) {
 		if v.Ctor != nil {
 			for _, p := range v.Ctor.Params {
 				walkType(p.Type, seen)
+			}
+			if v.Ctor.Result != nil {
+				walkType(v.Ctor.Result, seen)
 			}
 		}
 		for _, s := range v.Statics {

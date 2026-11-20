@@ -36,7 +36,7 @@ func (w *terminalStderrWrapper) GetTerminalStderr(ctx context.Context) (OptionTe
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemOptionTerminalOutputResource(ctx, caller, callee, w.callerInst, w.fnGetTerminalStderr.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemOptionTerminalOutputResource(ctx, caller, callee, w.callerInst, w, w.fnGetTerminalStderr.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_

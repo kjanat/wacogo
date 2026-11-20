@@ -636,10 +636,10 @@ if ok_ := callee.Memory().Write(sptr_, bs_); !ok_ {
 // emitHelper writes the full Go function declaration (signature + body)
 // for type t in the given mode. The two parallel families differ in
 // signature; the body is produced by helperBody.
-func emitHelper(w *strings.Builder, t Type, mode emitMode) {
+func emitHelper(w *strings.Builder, t Type, mode emitMode, wrapperType string) {
 	name := TypeName(t)
 	goTy := GoTypeOf(t)
-	fmt.Fprint(w, emitHelperSig(name, goTy, mode))
+	fmt.Fprint(w, emitHelperSig(name, goTy, mode, wrapperType))
 	fmt.Fprint(w, " {\n")
 	fmt.Fprint(w, helperBody(t, mode))
 	if isLowerMode(mode) {
@@ -654,7 +654,7 @@ func isLowerMode(m emitMode) bool {
 
 // emitHelperSig returns the full helper function signature line (without
 // the trailing "{").
-func emitHelperSig(name, goTy string, mode emitMode) string {
+func emitHelperSig(name, goTy string, mode emitMode, wrapperType string) string {
 	switch mode {
 	case modeToGoFlat:
 		return fmt.Sprintf("func toGoFlat%s(ctx context.Context, cc *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (%s, error)", name, goTy)
@@ -665,9 +665,9 @@ func emitHelperSig(name, goTy string, mode emitMode) string {
 	case modeFromGoMem:
 		return fmt.Sprintf("func fromGoMem%s(ctx context.Context, cc *host.CallContext, h *host.ComponentInstance, ptr uint32, v %s) error", name, goTy)
 	case modeLiftFlat:
-		return fmt.Sprintf("func liftFlat%s(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (%s, error)", name, goTy)
+		return fmt.Sprintf("func liftFlat%s(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *%s, ty wacogo.Type, stack []uint64) (%s, error)", name, wrapperType, goTy)
 	case modeLiftMem:
-		return fmt.Sprintf("func liftMem%s(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (%s, error)", name, goTy)
+		return fmt.Sprintf("func liftMem%s(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *%s, ty wacogo.Type, ptr uint32) (%s, error)", name, wrapperType, goTy)
 	case modeLowerFlat:
 		return fmt.Sprintf("func lowerFlat%s(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64, v %s) error", name, goTy)
 	case modeLowerMem:
@@ -919,8 +919,9 @@ func emitOwnResultLower(w *strings.Builder, rt *TypeResource, valExpr string) {
 // emitWrapCtor emits the wrapNew<R>(f *Factory) host.Func definition
 // for a resource constructor.
 //
-// The user impl's Constructor returns *<R>Handle (an unregistered handle
-// wrapping the impl in a local dispatch wrapper). result.bind(cc, h)
+// A fallible constructor lowers its result<own<R>, E> like any other
+// result. Otherwise the user impl's Constructor returns *<R>Handle (an
+// unregistered handle wrapping the impl in a local dispatch wrapper). result.bind(cc, h)
 // drives the state machine to register the impl on h's extTable and
 // issue an own canon entry on cc.Instance(); result.Invalidate() then
 // transfers ownership of the canon entry to the wasm caller.
@@ -943,6 +944,13 @@ func emitWrapCtor(w *strings.Builder, rt *TypeResource) {
 		args = "ctx"
 	} else {
 		args = "ctx, " + args
+	}
+	if rt.Ctor.Result != nil {
+		emitTrampolineUserCall(w, witName, rt.Ctor.Result, fmt.Sprintf("state_.impl.New%s(%s)", rt.WrapName, args))
+		fmt.Fprint(w, "\t\treturn nil\n")
+		fmt.Fprint(w, "\t}\n")
+		fmt.Fprint(w, "}\n\n")
+		return
 	}
 	fmt.Fprintf(w, "\t\tresult_, err_ := state_.impl.New%s(%s)\n", rt.WrapName, args)
 	fmt.Fprintf(w, "\t\tif err_ != nil { return fmt.Errorf(\"wacogo/witgen: %s: impl returned error: %%w\", err_) }\n", witName)
@@ -1096,16 +1104,17 @@ func emitBindFile(iface *Interface, sourceFile string) ([]byte, error) {
 	// Emit per-type lift/lower helpers (one quartet per non-primitive type).
 	types := CollectTypes(iface)
 	helpers := HelperTypes(types)
+	wrapperType := lcfirst(iface.WrapName) + "Wrapper"
 	var hb strings.Builder
 	for _, t := range helpers {
-		emitHelper(&hb, t, modeToGoFlat)
-		emitHelper(&hb, t, modeToGoMem)
-		emitHelper(&hb, t, modeFromGoFlat)
-		emitHelper(&hb, t, modeFromGoMem)
-		emitHelper(&hb, t, modeLiftFlat)
-		emitHelper(&hb, t, modeLiftMem)
-		emitHelper(&hb, t, modeLowerFlat)
-		emitHelper(&hb, t, modeLowerMem)
+		emitHelper(&hb, t, modeToGoFlat, wrapperType)
+		emitHelper(&hb, t, modeToGoMem, wrapperType)
+		emitHelper(&hb, t, modeFromGoFlat, wrapperType)
+		emitHelper(&hb, t, modeFromGoMem, wrapperType)
+		emitHelper(&hb, t, modeLiftFlat, wrapperType)
+		emitHelper(&hb, t, modeLiftMem, wrapperType)
+		emitHelper(&hb, t, modeLowerFlat, wrapperType)
+		emitHelper(&hb, t, modeLowerMem, wrapperType)
 	}
 	buf.WriteString(hb.String())
 
@@ -1223,7 +1232,7 @@ func emitForwarderBody(w *strings.Builder, ir ImportedResource, m ResourceMethod
 	// read closure: result lift
 	fmt.Fprint(w, "\t\t\tfunc(caller, callee *host.CallContext, stack []uint64) error {\n")
 	if m.Result != nil {
-		emitWrapResultRead(w, m.Result, "f", "f.caller", fnExpr)
+		emitWrapResultRead(w, m.Result, "nil", "f.caller", fnExpr)
 	}
 	fmt.Fprint(w, "\t\t\t\treturn nil\n\t\t\t},\n")
 	fmt.Fprint(w, "\t\t)\n")
@@ -1624,13 +1633,22 @@ func emitFlatSlotWriteFromGo(w *strings.Builder, ty Type, valExpr string, slotOf
 
 // emitNewHandleFromLocal emits the construction of a local *<R>Handle
 // from an in-scope core.ResourceHandle expression. Resolves impl via
-// the defining instance's extern table; nil impl is acceptable.
-func emitNewHandleFromLocal(w *strings.Builder, rhExpr, dstVar string, rt *TypeResource, indent string) {
+// the defining instance's extern table. When wrapExpr is non-empty and
+// the extern table has no impl, the handle dispatches its methods to the
+// wrapped instance through a *<r>Remote. Otherwise nil impl is acceptable.
+func emitNewHandleFromLocal(w *strings.Builder, rhExpr, dstVar string, rt *TypeResource, indent, wrapExpr string) {
 	fmt.Fprintf(w, "%svar impl_ %s\n", indent, rt.WrapName)
 	fmt.Fprintf(w, "%sif obj_, ok_ := %s.Type().Instance().LookupExtern(%s.Rep()); ok_ {\n", indent, rhExpr, rhExpr)
 	fmt.Fprintf(w, "%s\tif typed_, ok2_ := obj_.(%s); ok2_ { impl_ = typed_ }\n", indent, rt.WrapName)
 	fmt.Fprintf(w, "%s}\n", indent)
 	fmt.Fprintf(w, "%s%s = New%sHandleFrom(%s, impl_)\n", indent, dstVar, rt.WrapName, rhExpr)
+	if wrapExpr != "" {
+		fmt.Fprintf(w, "%sif impl_ == nil { %s.%s = &%s{w: %s, h: %s} }\n", indent, dstVar, rt.WrapName, remoteTypeName(rt), wrapExpr, dstVar)
+	}
+}
+
+func remoteTypeName(rt *TypeResource) string {
+	return lcfirst(rt.WrapName) + "Remote"
 }
 
 // emitNewHandleFromForeign emits the construction of a foreign
@@ -1692,7 +1710,7 @@ func emitToGoFlatOwnRead(w *strings.Builder, rt *TypeResource, dstVar, slotExpr,
 		fmt.Fprintf(w, "%sstate_ := h.UserState().(*instanceState)\n", inner)
 		emitNewHandleFromForeign(w, "rh_", dstVar, "h", rt, inner)
 	} else {
-		emitNewHandleFromLocal(w, "rh_", dstVar, rt, inner)
+		emitNewHandleFromLocal(w, "rh_", dstVar, rt, inner, "")
 	}
 	fmt.Fprintf(w, "%s}\n", indent)
 }
@@ -1736,7 +1754,7 @@ func emitToGoMemOwnRead(w *strings.Builder, rt *TypeResource, dstVar, ptrExpr, h
 		fmt.Fprintf(w, "%sstate_ := h.UserState().(*instanceState)\n", inner)
 		emitNewHandleFromForeign(w, "rh_", dstVar, "h", rt, inner)
 	} else {
-		emitNewHandleFromLocal(w, "rh_", dstVar, rt, inner)
+		emitNewHandleFromLocal(w, "rh_", dstVar, rt, inner, "")
 	}
 	fmt.Fprintf(w, "%s}\n", indent)
 }
@@ -2129,7 +2147,7 @@ func emitElemReadIntoLift(w *strings.Builder, elemTy Type, dstVar, ptrExpr, help
 		emitLiftMemBorrowRead(w, et.Resource, dstVar, ptrExpr, helperName, op, sink, indent, tyExpr)
 	default:
 		// Compound element: dispatch to liftMem<ElemName>.
-		fmt.Fprintf(w, "%sif tmp_, err_ := liftMem%s(ctx, caller, callee, h, %s, %s); err_ != nil {\n%s\t%s\n%s} else {\n%s\t%s = tmp_\n%s}\n",
+		fmt.Fprintf(w, "%sif tmp_, err_ := liftMem%s(ctx, caller, callee, h, w_, %s, %s); err_ != nil {\n%s\t%s\n%s} else {\n%s\t%s = tmp_\n%s}\n",
 			indent, TypeName(elemTy), tyExpr, ptrExpr,
 			indent, sink.Emit("err_"),
 			indent,
@@ -2156,7 +2174,7 @@ func emitFlatSlotReadIntoLift(w *strings.Builder, ty Type, dstVar string, slotOf
 		emitLiftFlatBorrowRead(w, tt.Resource, dstVar, fmt.Sprintf("stack[%d]", slotOff), helperName, op, sink, indent, tyExpr)
 	default:
 		// Multi-slot compound: call liftFlat<X>.
-		fmt.Fprintf(w, "%sif tmp_, err_ := liftFlat%s(ctx, caller, callee, h, %s, stack[%d:%d]); err_ != nil {\n%s\t%s\n%s} else {\n%s\t%s = tmp_\n%s}\n",
+		fmt.Fprintf(w, "%sif tmp_, err_ := liftFlat%s(ctx, caller, callee, h, w_, %s, stack[%d:%d]); err_ != nil {\n%s\t%s\n%s} else {\n%s\t%s = tmp_\n%s}\n",
 			indent, TypeName(ty), tyExpr, slotOff, slotOff+slotN,
 			indent, sink.Emit("err_"),
 			indent,
@@ -2235,7 +2253,7 @@ func emitLiftFlatOwnRead(w *strings.Builder, rt *TypeResource, dstVar, slotExpr,
 		fmt.Fprintf(w, "%sstate_ := h.UserState().(*instanceState)\n", inner)
 		emitNewHandleFromForeign(w, "dstH_", dstVar, "h", rt, inner)
 	} else {
-		emitNewHandleFromLocal(w, "dstH_", dstVar, rt, inner)
+		emitNewHandleFromLocal(w, "dstH_", dstVar, rt, inner, "w_")
 	}
 	fmt.Fprintf(w, "%s}\n", indent)
 }
@@ -2260,7 +2278,7 @@ func emitLiftFlatBorrowRead(w *strings.Builder, rt *TypeResource, dstVar, slotEx
 		fmt.Fprintf(w, "%sstate_ := h.UserState().(*instanceState)\n", inner)
 		emitNewHandleFromForeign(w, "dstH_", dstVar, "h", rt, inner)
 	} else {
-		emitNewHandleFromLocal(w, "dstH_", dstVar, rt, inner)
+		emitNewHandleFromLocal(w, "dstH_", dstVar, rt, inner, "")
 	}
 	fmt.Fprintf(w, "%s}\n", indent)
 }
@@ -2280,7 +2298,7 @@ func emitLiftMemOwnRead(w *strings.Builder, rt *TypeResource, dstVar, ptrExpr, h
 		fmt.Fprintf(w, "%sstate_ := h.UserState().(*instanceState)\n", inner)
 		emitNewHandleFromForeign(w, "dstH_", dstVar, "h", rt, inner)
 	} else {
-		emitNewHandleFromLocal(w, "dstH_", dstVar, rt, inner)
+		emitNewHandleFromLocal(w, "dstH_", dstVar, rt, inner, "w_")
 	}
 	fmt.Fprintf(w, "%s}\n", indent)
 }
@@ -2300,7 +2318,7 @@ func emitLiftMemBorrowRead(w *strings.Builder, rt *TypeResource, dstVar, ptrExpr
 		fmt.Fprintf(w, "%sstate_ := h.UserState().(*instanceState)\n", inner)
 		emitNewHandleFromForeign(w, "dstH_", dstVar, "h", rt, inner)
 	} else {
-		emitNewHandleFromLocal(w, "dstH_", dstVar, rt, inner)
+		emitNewHandleFromLocal(w, "dstH_", dstVar, rt, inner, "")
 	}
 	fmt.Fprintf(w, "%s}\n", indent)
 }
@@ -2682,18 +2700,80 @@ func emitLowerMemResult(w *strings.Builder, v *TypeResult, helperName string, si
 	fmt.Fprintf(w, "}\n")
 }
 
-// importedNominalAddTypeStmt returns the full Go statement that registers a
-// cross-interface nominal type with the host.Builder. This is used by the
-// factory template to declare typXxx variables for imported records, variants,
-// enums, and flags that must be referenced in function signatures.
-//
-// The generated statement is of the form:
-//
-//	typ<GoName> := b.AddType("wit-name", host.Record{...})
-func importedNominalAddTypeStmt(n ImportedNominal) string {
-	var sb strings.Builder
-	fmt.Fprintf(&sb, "typ%s_ := b_.AddType(%q, %s)\n\t_ = typ%s_", n.GoName, n.Name, nominalHostTypeDefExpr(n.Source), n.GoName)
-	return sb.String()
+// nominalAddTypeStmts returns one `typ<GoName>_ := b_.AddType(...)`
+// statement per nominal type registered by iface's NewFactory: directly
+// imported nominals first, then iface's own enums, flags, records and
+// variants. A nominal's statement follows the statements of every
+// nominal its definition references.
+func nominalAddTypeStmts(iface *Interface) []string {
+	var decls []ImportedNominal
+	for _, imp := range iface.Imports {
+		for _, ns := range [][]ImportedNominal{imp.Enums, imp.Flags, imp.Records, imp.Variants} {
+			decls = append(decls, directNominals(ns)...)
+		}
+	}
+	for _, e := range iface.Enums {
+		decls = append(decls, ImportedNominal{Name: e.Name, GoName: e.GoName, Source: e})
+	}
+	for _, f := range iface.Flags {
+		decls = append(decls, ImportedNominal{Name: f.Name, GoName: f.GoName, Source: f})
+	}
+	for _, r := range iface.Records {
+		decls = append(decls, ImportedNominal{Name: r.Name, GoName: r.GoName, Source: r})
+	}
+	for _, v := range iface.Variants {
+		decls = append(decls, ImportedNominal{Name: v.Name, GoName: v.GoName, Source: v})
+	}
+
+	byVar := make(map[string]ImportedNominal, len(decls))
+	for _, d := range decls {
+		byVar[hostTypeExpr(d.Source)] = d
+	}
+
+	var out []string
+	done := make(map[string]bool, len(decls))
+	var visit func(d ImportedNominal)
+	var visitRefs func(t Type)
+	visit = func(d ImportedNominal) {
+		if done[hostTypeExpr(d.Source)] {
+			return
+		}
+		done[hostTypeExpr(d.Source)] = true
+		switch n := d.Source.(type) {
+		case *TypeRecord:
+			for _, f := range n.Fields {
+				visitRefs(f.Type)
+			}
+		case *TypeVariant:
+			for _, c := range n.Cases {
+				visitRefs(c.Payload)
+			}
+		}
+		out = append(out, fmt.Sprintf("typ%s_ := b_.AddType(%q, %s)\n\t_ = typ%s_", d.GoName, d.Name, nominalHostTypeDefExpr(d.Source), d.GoName))
+	}
+	visitRefs = func(t Type) {
+		switch v := t.(type) {
+		case *TypeRecord, *TypeVariant, *TypeEnum, *TypeFlags:
+			if d, ok := byVar[hostTypeExpr(v)]; ok {
+				visit(d)
+			}
+		case *TypeList:
+			visitRefs(v.Elem)
+		case *TypeOption:
+			visitRefs(v.Elem)
+		case *TypeTuple:
+			for _, f := range v.Fields {
+				visitRefs(f)
+			}
+		case *TypeResult:
+			visitRefs(v.OK)
+			visitRefs(v.Err)
+		}
+	}
+	for _, d := range decls {
+		visit(d)
+	}
+	return out
 }
 
 // nominalHostTypeDefExpr returns the inline host.TypeExpr for the given

@@ -19,21 +19,20 @@ var templatesFS embed.FS
 var tmplSet = template.Must(
 	template.New("witgen").
 		Funcs(template.FuncMap{
-			"goType":                    GoTypeOf,
-			"tupleName":                 func(t *TypeTuple) string { return TypeName(t) },
-			"optionName":                func(t *TypeOption) string { return TypeName(t) },
-			"resultDecl":                resultDecl,
-			"elemName":                  TypeName,
-			"funcSigForSide":            funcSigForSide,
-			"methodSigForSide":          methodSigForSide,
-			"ctorSigForSide":            ctorSigForSide,
-			"staticSigForSide":          staticSigForSide,
-			"resourceFieldName":         resourceFieldName,
-			"importedNominalAddTypeStmt": importedNominalAddTypeStmt,
-			"directNominals":             directNominals,
-			"lcfirst":                   lcfirst,
-			"inc":                       func(i int) int { return i + 1 },
-			"goDoc":                     goDocComment,
+			"goType":              GoTypeOf,
+			"tupleName":           func(t *TypeTuple) string { return TypeName(t) },
+			"optionName":          func(t *TypeOption) string { return TypeName(t) },
+			"resultDecl":          resultDecl,
+			"elemName":            TypeName,
+			"funcSigForSide":      funcSigForSide,
+			"methodSigForSide":    methodSigForSide,
+			"ctorSigForSide":      ctorSigForSide,
+			"staticSigForSide":    staticSigForSide,
+			"resourceFieldName":   resourceFieldName,
+			"nominalAddTypeStmts": nominalAddTypeStmts,
+			"lcfirst":             lcfirst,
+			"inc":                 func(i int) int { return i + 1 },
+			"goDoc":               goDocComment,
 		}).
 		ParseFS(templatesFS, "templates/*.tmpl"),
 )
@@ -64,7 +63,7 @@ func resultDecl(r *TypeResult) string {
 
 // directNominals returns the subset of ns that are not Transitive — i.e.
 // nominals directly referenced in the importing iface's own signatures.
-// Used by factory.tmpl to skip AddType emission for transitively-pulled
+// nominalAddTypeStmts uses it to skip AddType emission for transitively-pulled
 // imports (which exist only to drive qualifier rewriting on imported
 // resource methods, not for host.Builder type registration).
 func directNominals(ns []ImportedNominal) []ImportedNominal {
@@ -99,16 +98,15 @@ func funcSigForSide(useImpl bool, fn *Func) string {
 }
 
 // ctorSigForSide returns the constructor signature for a resource's hoisted
-// constructor as it appears on the parent interface. After the handle-
-// management refactor the return type is uniformly (*<R>Handle, error). The
-// useImpl parameter is retained for callsite compatibility but has no
-// effect on resource rendering.
+// constructor as it appears on the parent interface. The useImpl parameter
+// is retained for callsite compatibility but has no effect on resource
+// rendering.
 func ctorSigForSide(useImpl bool, rt *TypeResource) string {
 	ps := []string{"ctx context.Context"}
 	for _, p := range rt.Ctor.Params {
 		ps = append(ps, p.GoName+" "+GoTypeOf(p.Type))
 	}
-	return fmt.Sprintf("New%s(%s) (*%sHandle, error)", rt.WrapName, strings.Join(ps, ", "), rt.WrapName)
+	return fmt.Sprintf("New%s(%s) %s", rt.WrapName, strings.Join(ps, ", "), returnTypeForSide(rt.Ctor.ResultType(rt), false))
 }
 
 // staticSigForSide returns the static-function signature for a resource as it

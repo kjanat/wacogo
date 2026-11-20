@@ -53,7 +53,7 @@ func (w *networkWrapper) NetworkErrorCode(ctx context.Context, err *wioerror.Err
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemOptionErrorCode(ctx, caller, callee, w.callerInst, w.fnNetworkErrorCode.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemOptionErrorCode(ctx, caller, callee, w.callerInst, w, w.fnNetworkErrorCode.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_
@@ -66,4 +66,9 @@ func (w *networkWrapper) NetworkErrorCode(ctx context.Context, err *wioerror.Err
 		}
 	}
 	return resVal_, nil
+}
+
+type networkResourceRemote struct {
+	w *networkWrapper
+	h *NetworkResourceHandle
 }

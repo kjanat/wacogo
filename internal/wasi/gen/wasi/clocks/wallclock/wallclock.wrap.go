@@ -50,7 +50,7 @@ func (w *wallClockWrapper) Now(ctx context.Context) (Datetime, error) {
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemDatetime(ctx, caller, callee, w.callerInst, w.fnNow.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemDatetime(ctx, caller, callee, w.callerInst, w, w.fnNow.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_
@@ -73,7 +73,7 @@ func (w *wallClockWrapper) Resolution(ctx context.Context) (Datetime, error) {
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemDatetime(ctx, caller, callee, w.callerInst, w.fnResolution.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemDatetime(ctx, caller, callee, w.callerInst, w, w.fnResolution.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_

@@ -100,7 +100,7 @@ func TestEmitLiftMem_TupleU32String(t *testing.T) {
 	body := helperBody(tup, modeLiftMem)
 	for _, want := range []string{
 		"ReadUint32Le(ptr)", // u32 at offset 0
-		"liftMemString(ctx, caller, callee, h, tupT_.Types[1], ptr + 4)", // string at offset 4
+		"liftMemString(ctx, caller, callee, h, w_, tupT_.Types[1], ptr + 4)", // string at offset 4
 		"v_.F0",
 		"v_.F1",
 	} {
@@ -129,7 +129,7 @@ func TestEmitLiftFlat_TupleU32String(t *testing.T) {
 	body := helperBody(tup, modeLiftFlat)
 	for _, want := range []string{
 		"v_.F0 = uint32(stack[0])",
-		"liftFlatString(ctx, caller, callee, h, tupT_.Types[1], stack[1:3])",
+		"liftFlatString(ctx, caller, callee, h, w_, tupT_.Types[1], stack[1:3])",
 	} {
 		if !strings.Contains(body, want) {
 			t.Errorf("liftFlatTupleU32String body missing %q. Body:\n%s", want, body)
@@ -140,14 +140,14 @@ func TestEmitLiftFlat_TupleU32String(t *testing.T) {
 func TestEmitHelper_FunctionSignatures(t *testing.T) {
 	// Spot-check the wrapper signatures emitted by emitHelper.
 	var sb strings.Builder
-	emitHelper(&sb, TypeString{}, modeLiftFlat)
-	emitHelper(&sb, TypeString{}, modeLiftMem)
-	emitHelper(&sb, TypeString{}, modeLowerFlat)
-	emitHelper(&sb, TypeString{}, modeLowerMem)
+	emitHelper(&sb, TypeString{}, modeLiftFlat, "demoWrapper")
+	emitHelper(&sb, TypeString{}, modeLiftMem, "demoWrapper")
+	emitHelper(&sb, TypeString{}, modeLowerFlat, "demoWrapper")
+	emitHelper(&sb, TypeString{}, modeLowerMem, "demoWrapper")
 	out := sb.String()
 	for _, want := range []string{
-		"func liftFlatString(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (string, error) {",
-		"func liftMemString(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (string, error) {",
+		"func liftFlatString(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *demoWrapper, ty wacogo.Type, stack []uint64) (string, error) {",
+		"func liftMemString(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *demoWrapper, ty wacogo.Type, ptr uint32) (string, error) {",
 		"func lowerFlatString(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64, v string) error {",
 		"func lowerMemString(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32, v string) error {",
 	} {
@@ -431,6 +431,46 @@ func TestEmitWrapStatic(t *testing.T) {
 	} {
 		if !strings.Contains(src, want) {
 			t.Errorf("missing %q. Source:\n%s", want, src)
+		}
+	}
+}
+
+func TestNominalAddTypeStmts_DependencyOrder(t *testing.T) {
+	wrappers := map[string]func(Type) Type{
+		"direct": func(v Type) Type { return v },
+		"list":   func(v Type) Type { return &TypeList{Elem: v} },
+		"option": func(v Type) Type { return &TypeOption{Elem: v} },
+		"tuple":  func(v Type) Type { return &TypeTuple{Fields: []Type{PrimU32, v}} },
+		"ok":     func(v Type) Type { return &TypeResult{OK: v} },
+		"err":    func(v Type) Type { return &TypeResult{OK: PrimU32, Err: v} },
+	}
+	for name, wrap := range wrappers {
+		t.Run(name, func(t *testing.T) {
+			leaf := &TypeVariant{Name: "leaf", GoName: "Leaf", Cases: []VariantCase{{Name: "a", GoName: "LeafA"}}}
+			box := &TypeRecord{Name: "box", GoName: "Box", Fields: []RecordField{{Name: "f", GoName: "F", Type: wrap(leaf)}}}
+			outer := &TypeVariant{Name: "outer", GoName: "Outer", Cases: []VariantCase{{Name: "b", GoName: "OuterB", Payload: box}}}
+			holder := &TypeRecord{Name: "holder", GoName: "Holder", Fields: []RecordField{{Name: "o", GoName: "O", Type: outer}}}
+
+			own := &Interface{Records: []*TypeRecord{holder, box}, Variants: []*TypeVariant{outer, leaf}}
+			assertNominalOrder(t, nominalAddTypeStmts(own), "typLeaf_", "typBox_", "typOuter_", "typHolder_")
+
+			imported := &Interface{Imports: []ImportRef{{
+				Records:  []ImportedNominal{{Name: "holder", GoName: "Holder", Source: holder}, {Name: "box", GoName: "Box", Source: box}},
+				Variants: []ImportedNominal{{Name: "outer", GoName: "Outer", Source: outer}, {Name: "leaf", GoName: "Leaf", Source: leaf}},
+			}}}
+			assertNominalOrder(t, nominalAddTypeStmts(imported), "typLeaf_", "typBox_", "typOuter_", "typHolder_")
+		})
+	}
+}
+
+func assertNominalOrder(t *testing.T, stmts []string, vars ...string) {
+	t.Helper()
+	if len(stmts) != len(vars) {
+		t.Fatalf("got %d statements, want %d:\n%s", len(stmts), len(vars), strings.Join(stmts, "\n"))
+	}
+	for i, v := range vars {
+		if !strings.HasPrefix(stmts[i], v+" := b_.AddType(") {
+			t.Errorf("statement %d: got %q, want %s declared", i, stmts[i], v)
 		}
 	}
 }

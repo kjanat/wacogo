@@ -110,7 +110,7 @@ func fromGoMemPoint(ctx context.Context, cc *host.CallContext, h *host.Component
 	return nil
 }
 
-func liftFlatPoint(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (Point, error) {
+func liftFlatPoint(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *midpointWrapper, ty wacogo.Type, stack []uint64) (Point, error) {
 	var v_ Point
 	recT_ := ty.(wacogo.TypeRecord)
 	_ = recT_
@@ -119,7 +119,7 @@ func liftFlatPoint(ctx context.Context, caller, callee *host.CallContext, h *hos
 	return v_, nil
 }
 
-func liftMemPoint(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (Point, error) {
+func liftMemPoint(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *midpointWrapper, ty wacogo.Type, ptr uint32) (Point, error) {
 	var v_ Point
 	recT_ := ty.(wacogo.TypeRecord)
 	_ = recT_

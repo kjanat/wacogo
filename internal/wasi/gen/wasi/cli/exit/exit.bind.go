@@ -127,7 +127,7 @@ func fromGoMemResult__(ctx context.Context, cc *host.CallContext, h *host.Compon
 	return nil
 }
 
-func liftFlatResult__(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (Result__, error) {
+func liftFlatResult__(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *exitWrapper, ty wacogo.Type, stack []uint64) (Result__, error) {
 	resT_ := ty.(wacogo.TypeResult)
 	_ = resT_
 	disc_ := uint32(stack[0])
@@ -137,7 +137,7 @@ func liftFlatResult__(ctx context.Context, caller, callee *host.CallContext, h *
 	return Result__Err{}, nil
 }
 
-func liftMemResult__(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (Result__, error) {
+func liftMemResult__(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *exitWrapper, ty wacogo.Type, ptr uint32) (Result__, error) {
 	resT_ := ty.(wacogo.TypeResult)
 	_ = resT_
 	var disc_ uint8

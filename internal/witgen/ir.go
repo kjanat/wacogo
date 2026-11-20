@@ -561,10 +561,18 @@ type ResourceMethod struct {
 }
 
 // ResourceCtor is a resource's constructor (zero-or-one per resource).
-// The implicit result is own<R> pointing at the parent *TypeResource.
+// Result is nil when the constructor returns own<R>.
 type ResourceCtor struct {
 	Params []*Param
+	Result *TypeResult
 	Docs   string
+}
+
+func (c *ResourceCtor) ResultType(rt *TypeResource) Type {
+	if c.Result != nil {
+		return c.Result
+	}
+	return &TypeOwn{Resource: rt}
 }
 
 // ResourceStatic is a static (no-receiver) function on a resource.

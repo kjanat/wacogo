@@ -180,7 +180,7 @@ func fromGoMemOptionTerminalInputResource(ctx context.Context, cc *host.CallCont
 	return nil
 }
 
-func liftFlatOptionTerminalInputResource(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (OptionTerminalInputResource, error) {
+func liftFlatOptionTerminalInputResource(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *terminalStdinWrapper, ty wacogo.Type, stack []uint64) (OptionTerminalInputResource, error) {
 	optT_ := ty.(wacogo.TypeOption)
 	_ = optT_
 	disc_ := uint32(stack[0])
@@ -206,7 +206,7 @@ func liftFlatOptionTerminalInputResource(ctx context.Context, caller, callee *ho
 	return out_, nil
 }
 
-func liftMemOptionTerminalInputResource(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (OptionTerminalInputResource, error) {
+func liftMemOptionTerminalInputResource(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *terminalStdinWrapper, ty wacogo.Type, ptr uint32) (OptionTerminalInputResource, error) {
 	optT_ := ty.(wacogo.TypeOption)
 	_ = optT_
 	var disc_ uint8

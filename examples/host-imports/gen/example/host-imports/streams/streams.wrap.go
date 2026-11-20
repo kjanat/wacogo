@@ -59,6 +59,9 @@ func (w *streamsWrapper) NewDataStream(ctx context.Context, seed uint32) (*DataS
 						}
 					}
 					resVal_ = NewDataStreamHandleFrom(dstH_, impl_)
+					if impl_ == nil {
+						resVal_.DataStream = &dataStreamRemote{w: w, h: resVal_}
+					}
 				}
 				return nil
 			},
@@ -68,4 +71,79 @@ func (w *streamsWrapper) NewDataStream(ctx context.Context, seed uint32) (*DataS
 		}
 	}
 	return resVal_, nil
+}
+
+type dataStreamRemote struct {
+	w *streamsWrapper
+	h *DataStreamHandle
+}
+
+func (d_ *dataStreamRemote) Read(ctx context.Context) (uint32, error) {
+	var resVal_ uint32
+	{
+		callErr_ := d_.w.fnDataStreamRead.CallRaw(ctx, d_.w.callerInst,
+			func(caller, callee *host.CallContext, stack []uint64) error {
+				{
+					tr_ := d_.w.fnDataStreamRead.ParamType(0).(wacogo.TypeBorrow).ResourceType
+					callerH_, err_ := d_.h.bind(caller, d_.w.callerInst)
+					if err_ != nil {
+						return err_
+					}
+					srcH_, err_ := caller.LookupBorrowable(tr_, callerH_)
+					if err_ != nil {
+						return err_
+					}
+					dstH_, err_ := srcH_.LendTo(callee.TransferTarget(), callee.Task())
+					if err_ != nil {
+						return err_
+					}
+					stack[0] = uint64(dstH_.HandleID())
+				}
+				return nil
+			},
+			func(caller, callee *host.CallContext, stack []uint64) error {
+				resVal_ = uint32(stack[0])
+				return nil
+			},
+		)
+		if callErr_ != nil {
+			return 0, fmt.Errorf("wacogo/witgen: CallRaw failed: %w", callErr_)
+		}
+	}
+	return resVal_, nil
+}
+
+func (d_ *dataStreamRemote) Write(ctx context.Context, v uint32) error {
+	arg0_ := v
+	{
+		callErr_ := d_.w.fnDataStreamWrite.CallRaw(ctx, d_.w.callerInst,
+			func(caller, callee *host.CallContext, stack []uint64) error {
+				{
+					tr_ := d_.w.fnDataStreamWrite.ParamType(0).(wacogo.TypeBorrow).ResourceType
+					callerH_, err_ := d_.h.bind(caller, d_.w.callerInst)
+					if err_ != nil {
+						return err_
+					}
+					srcH_, err_ := caller.LookupBorrowable(tr_, callerH_)
+					if err_ != nil {
+						return err_
+					}
+					dstH_, err_ := srcH_.LendTo(callee.TransferTarget(), callee.Task())
+					if err_ != nil {
+						return err_
+					}
+					stack[0] = uint64(dstH_.HandleID())
+				}
+				stack[1] = uint64(arg0_)
+				return nil
+			},
+			func(caller, callee *host.CallContext, stack []uint64) error {
+				return nil
+			},
+		)
+		if callErr_ != nil {
+			return fmt.Errorf("wacogo/witgen: CallRaw failed: %w", callErr_)
+		}
+	}
+	return nil
 }

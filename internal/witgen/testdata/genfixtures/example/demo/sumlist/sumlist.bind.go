@@ -169,7 +169,7 @@ func fromGoMemListU32(ctx context.Context, cc *host.CallContext, h *host.Compone
 	return nil
 }
 
-func liftFlatListU32(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) ([]uint32, error) {
+func liftFlatListU32(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *sumlistWrapper, ty wacogo.Type, stack []uint64) ([]uint32, error) {
 	lstT_ := ty.(wacogo.TypeList)
 	_ = lstT_
 	ptr_ := uint32(stack[0])
@@ -190,7 +190,7 @@ func liftFlatListU32(ctx context.Context, caller, callee *host.CallContext, h *h
 	return out_, nil
 }
 
-func liftMemListU32(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) ([]uint32, error) {
+func liftMemListU32(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *sumlistWrapper, ty wacogo.Type, ptr uint32) ([]uint32, error) {
 	lstT_ := ty.(wacogo.TypeList)
 	_ = lstT_
 	var lptr_ uint32

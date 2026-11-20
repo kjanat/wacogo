@@ -107,7 +107,7 @@ func fromGoMemTupleU32U32(ctx context.Context, cc *host.CallContext, h *host.Com
 	return nil
 }
 
-func liftFlatTupleU32U32(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (TupleU32U32, error) {
+func liftFlatTupleU32U32(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *pairWrapper, ty wacogo.Type, stack []uint64) (TupleU32U32, error) {
 	var v_ TupleU32U32
 	tupT_ := ty.(wacogo.TypeTuple)
 	_ = tupT_
@@ -116,7 +116,7 @@ func liftFlatTupleU32U32(ctx context.Context, caller, callee *host.CallContext, 
 	return v_, nil
 }
 
-func liftMemTupleU32U32(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (TupleU32U32, error) {
+func liftMemTupleU32U32(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *pairWrapper, ty wacogo.Type, ptr uint32) (TupleU32U32, error) {
 	var v_ TupleU32U32
 	tupT_ := ty.(wacogo.TypeTuple)
 	_ = tupT_

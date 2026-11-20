@@ -59,7 +59,7 @@ func (w *outgoingHandlerWrapper) Handle(ctx context.Context, request *types.Outg
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemResultFutureIncomingResponseTypesErrorCode(ctx, caller, callee, w.callerInst, w.fnHandle.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemResultFutureIncomingResponseTypesErrorCode(ctx, caller, callee, w.callerInst, w, w.fnHandle.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_

@@ -128,7 +128,7 @@ func fromGoMemDatetime(ctx context.Context, cc *host.CallContext, h *host.Compon
 	return nil
 }
 
-func liftFlatDatetime(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (Datetime, error) {
+func liftFlatDatetime(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *wallClockWrapper, ty wacogo.Type, stack []uint64) (Datetime, error) {
 	var v_ Datetime
 	recT_ := ty.(wacogo.TypeRecord)
 	_ = recT_
@@ -137,7 +137,7 @@ func liftFlatDatetime(ctx context.Context, caller, callee *host.CallContext, h *
 	return v_, nil
 }
 
-func liftMemDatetime(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (Datetime, error) {
+func liftMemDatetime(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *wallClockWrapper, ty wacogo.Type, ptr uint32) (Datetime, error) {
 	var v_ Datetime
 	recT_ := ty.(wacogo.TypeRecord)
 	_ = recT_

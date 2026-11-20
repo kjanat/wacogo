@@ -153,14 +153,14 @@ func fromGoMemListString(ctx context.Context, cc *host.CallContext, h *host.Comp
 	return nil
 }
 
-func liftFlatListString(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) ([]string, error) {
+func liftFlatListString(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *environmentWrapper, ty wacogo.Type, stack []uint64) ([]string, error) {
 	lstT_ := ty.(wacogo.TypeList)
 	_ = lstT_
 	ptr_ := uint32(stack[0])
 	ln_ := uint32(stack[1])
 	out_ := make([]string, ln_)
 	for i_ := uint32(0); i_ < ln_; i_++ {
-		if tmp_, err_ := liftMemString(ctx, caller, callee, h, lstT_.Elem, ptr_+i_*8); err_ != nil {
+		if tmp_, err_ := liftMemString(ctx, caller, callee, h, w_, lstT_.Elem, ptr_+i_*8); err_ != nil {
 			return nil, err_
 		} else {
 			out_[i_] = tmp_
@@ -169,7 +169,7 @@ func liftFlatListString(ctx context.Context, caller, callee *host.CallContext, h
 	return out_, nil
 }
 
-func liftMemListString(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) ([]string, error) {
+func liftMemListString(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *environmentWrapper, ty wacogo.Type, ptr uint32) ([]string, error) {
 	lstT_ := ty.(wacogo.TypeList)
 	_ = lstT_
 	var lptr_ uint32
@@ -186,7 +186,7 @@ func liftMemListString(ctx context.Context, caller, callee *host.CallContext, h 
 	}
 	out_ := make([]string, ln_)
 	for i_ := uint32(0); i_ < ln_; i_++ {
-		if tmp_, err_ := liftMemString(ctx, caller, callee, h, lstT_.Elem, lptr_+i_*8); err_ != nil {
+		if tmp_, err_ := liftMemString(ctx, caller, callee, h, w_, lstT_.Elem, lptr_+i_*8); err_ != nil {
 			return nil, err_
 		} else {
 			out_[i_] = tmp_
@@ -313,14 +313,14 @@ func fromGoMemListTupleStringString(ctx context.Context, cc *host.CallContext, h
 	return nil
 }
 
-func liftFlatListTupleStringString(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) ([]TupleStringString, error) {
+func liftFlatListTupleStringString(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *environmentWrapper, ty wacogo.Type, stack []uint64) ([]TupleStringString, error) {
 	lstT_ := ty.(wacogo.TypeList)
 	_ = lstT_
 	ptr_ := uint32(stack[0])
 	ln_ := uint32(stack[1])
 	out_ := make([]TupleStringString, ln_)
 	for i_ := uint32(0); i_ < ln_; i_++ {
-		if tmp_, err_ := liftMemTupleStringString(ctx, caller, callee, h, lstT_.Elem, ptr_+i_*16); err_ != nil {
+		if tmp_, err_ := liftMemTupleStringString(ctx, caller, callee, h, w_, lstT_.Elem, ptr_+i_*16); err_ != nil {
 			return nil, err_
 		} else {
 			out_[i_] = tmp_
@@ -329,7 +329,7 @@ func liftFlatListTupleStringString(ctx context.Context, caller, callee *host.Cal
 	return out_, nil
 }
 
-func liftMemListTupleStringString(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) ([]TupleStringString, error) {
+func liftMemListTupleStringString(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *environmentWrapper, ty wacogo.Type, ptr uint32) ([]TupleStringString, error) {
 	lstT_ := ty.(wacogo.TypeList)
 	_ = lstT_
 	var lptr_ uint32
@@ -346,7 +346,7 @@ func liftMemListTupleStringString(ctx context.Context, caller, callee *host.Call
 	}
 	out_ := make([]TupleStringString, ln_)
 	for i_ := uint32(0); i_ < ln_; i_++ {
-		if tmp_, err_ := liftMemTupleStringString(ctx, caller, callee, h, lstT_.Elem, lptr_+i_*16); err_ != nil {
+		if tmp_, err_ := liftMemTupleStringString(ctx, caller, callee, h, w_, lstT_.Elem, lptr_+i_*16); err_ != nil {
 			return nil, err_
 		} else {
 			out_[i_] = tmp_
@@ -462,14 +462,14 @@ func fromGoMemOptionString(ctx context.Context, cc *host.CallContext, h *host.Co
 	return nil
 }
 
-func liftFlatOptionString(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (OptionString, error) {
+func liftFlatOptionString(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *environmentWrapper, ty wacogo.Type, stack []uint64) (OptionString, error) {
 	optT_ := ty.(wacogo.TypeOption)
 	_ = optT_
 	disc_ := uint32(stack[0])
 	var out_ OptionString
 	if disc_ != 0 {
 		out_.IsSome = true
-		if tmp_, err_ := liftFlatString(ctx, caller, callee, h, optT_.Inner, stack[1:3]); err_ != nil {
+		if tmp_, err_ := liftFlatString(ctx, caller, callee, h, w_, optT_.Inner, stack[1:3]); err_ != nil {
 			return OptionString{}, err_
 		} else {
 			out_.Value = tmp_
@@ -478,7 +478,7 @@ func liftFlatOptionString(ctx context.Context, caller, callee *host.CallContext,
 	return out_, nil
 }
 
-func liftMemOptionString(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (OptionString, error) {
+func liftMemOptionString(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *environmentWrapper, ty wacogo.Type, ptr uint32) (OptionString, error) {
 	optT_ := ty.(wacogo.TypeOption)
 	_ = optT_
 	var disc_ uint8
@@ -490,7 +490,7 @@ func liftMemOptionString(ctx context.Context, caller, callee *host.CallContext, 
 	var out_ OptionString
 	if disc_ != 0 {
 		out_.IsSome = true
-		if tmp_, err_ := liftMemString(ctx, caller, callee, h, optT_.Inner, ptr+4); err_ != nil {
+		if tmp_, err_ := liftMemString(ctx, caller, callee, h, w_, optT_.Inner, ptr+4); err_ != nil {
 			return OptionString{}, err_
 		} else {
 			out_.Value = tmp_
@@ -599,7 +599,7 @@ func fromGoMemString(ctx context.Context, cc *host.CallContext, h *host.Componen
 	return nil
 }
 
-func liftFlatString(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (string, error) {
+func liftFlatString(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *environmentWrapper, ty wacogo.Type, stack []uint64) (string, error) {
 	ptr_ := uint32(stack[0])
 	ln_ := uint32(stack[1])
 	bs_, ok_ := callee.Memory().Read(ptr_, ln_)
@@ -609,7 +609,7 @@ func liftFlatString(ctx context.Context, caller, callee *host.CallContext, h *ho
 	return string(bs_), nil
 }
 
-func liftMemString(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (string, error) {
+func liftMemString(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *environmentWrapper, ty wacogo.Type, ptr uint32) (string, error) {
 	var sptr_ uint32
 	if tmp_, ok_ := callee.Memory().ReadUint32Le(ptr); !ok_ {
 		return "", fmt.Errorf("wacogo/witgen: liftMemString: string ptr: bad memory read")
@@ -715,16 +715,16 @@ func fromGoMemTupleStringString(ctx context.Context, cc *host.CallContext, h *ho
 	return nil
 }
 
-func liftFlatTupleStringString(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (TupleStringString, error) {
+func liftFlatTupleStringString(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *environmentWrapper, ty wacogo.Type, stack []uint64) (TupleStringString, error) {
 	var v_ TupleStringString
 	tupT_ := ty.(wacogo.TypeTuple)
 	_ = tupT_
-	if tmp_, err_ := liftFlatString(ctx, caller, callee, h, tupT_.Types[0], stack[0:2]); err_ != nil {
+	if tmp_, err_ := liftFlatString(ctx, caller, callee, h, w_, tupT_.Types[0], stack[0:2]); err_ != nil {
 		return TupleStringString{}, err_
 	} else {
 		v_.F0 = tmp_
 	}
-	if tmp_, err_ := liftFlatString(ctx, caller, callee, h, tupT_.Types[1], stack[2:4]); err_ != nil {
+	if tmp_, err_ := liftFlatString(ctx, caller, callee, h, w_, tupT_.Types[1], stack[2:4]); err_ != nil {
 		return TupleStringString{}, err_
 	} else {
 		v_.F1 = tmp_
@@ -732,16 +732,16 @@ func liftFlatTupleStringString(ctx context.Context, caller, callee *host.CallCon
 	return v_, nil
 }
 
-func liftMemTupleStringString(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (TupleStringString, error) {
+func liftMemTupleStringString(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *environmentWrapper, ty wacogo.Type, ptr uint32) (TupleStringString, error) {
 	var v_ TupleStringString
 	tupT_ := ty.(wacogo.TypeTuple)
 	_ = tupT_
-	if tmp_, err_ := liftMemString(ctx, caller, callee, h, tupT_.Types[0], ptr); err_ != nil {
+	if tmp_, err_ := liftMemString(ctx, caller, callee, h, w_, tupT_.Types[0], ptr); err_ != nil {
 		return TupleStringString{}, err_
 	} else {
 		v_.F0 = tmp_
 	}
-	if tmp_, err_ := liftMemString(ctx, caller, callee, h, tupT_.Types[1], ptr+8); err_ != nil {
+	if tmp_, err_ := liftMemString(ctx, caller, callee, h, w_, tupT_.Types[1], ptr+8); err_ != nil {
 		return TupleStringString{}, err_
 	} else {
 		v_.F1 = tmp_

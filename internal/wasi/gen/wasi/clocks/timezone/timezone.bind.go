@@ -38,7 +38,6 @@ func NewFactory(ctx context.Context, e *wacogo.Engine) (*Factory, error) {
 
 	typDatetime_ := b_.AddType("datetime", host.Record{Fields: []host.Field{{Name: "seconds", Type: host.U64}, {Name: "nanoseconds", Type: host.U32}}})
 	_ = typDatetime_
-
 	typTimezoneDisplay_ := b_.AddType("timezone-display", host.Record{Fields: []host.Field{{Name: "utc-offset", Type: host.S32}, {Name: "name", Type: host.String}, {Name: "in-daylight-saving-time", Type: host.Bool}}})
 	_ = typTimezoneDisplay_
 
@@ -153,7 +152,7 @@ func fromGoMemString(ctx context.Context, cc *host.CallContext, h *host.Componen
 	return nil
 }
 
-func liftFlatString(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (string, error) {
+func liftFlatString(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *timezoneWrapper, ty wacogo.Type, stack []uint64) (string, error) {
 	ptr_ := uint32(stack[0])
 	ln_ := uint32(stack[1])
 	bs_, ok_ := callee.Memory().Read(ptr_, ln_)
@@ -163,7 +162,7 @@ func liftFlatString(ctx context.Context, caller, callee *host.CallContext, h *ho
 	return string(bs_), nil
 }
 
-func liftMemString(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (string, error) {
+func liftMemString(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *timezoneWrapper, ty wacogo.Type, ptr uint32) (string, error) {
 	var sptr_ uint32
 	if tmp_, ok_ := callee.Memory().ReadUint32Le(ptr); !ok_ {
 		return "", fmt.Errorf("wacogo/witgen: liftMemString: string ptr: bad memory read")
@@ -283,12 +282,12 @@ func fromGoMemTimezoneDisplay(ctx context.Context, cc *host.CallContext, h *host
 	return nil
 }
 
-func liftFlatTimezoneDisplay(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (TimezoneDisplay, error) {
+func liftFlatTimezoneDisplay(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *timezoneWrapper, ty wacogo.Type, stack []uint64) (TimezoneDisplay, error) {
 	var v_ TimezoneDisplay
 	recT_ := ty.(wacogo.TypeRecord)
 	_ = recT_
 	v_.UtcOffset = int32(int64(stack[0]))
-	if tmp_, err_ := liftFlatString(ctx, caller, callee, h, recT_.Fields[1].Type, stack[1:3]); err_ != nil {
+	if tmp_, err_ := liftFlatString(ctx, caller, callee, h, w_, recT_.Fields[1].Type, stack[1:3]); err_ != nil {
 		return TimezoneDisplay{}, err_
 	} else {
 		v_.Name = tmp_
@@ -297,7 +296,7 @@ func liftFlatTimezoneDisplay(ctx context.Context, caller, callee *host.CallConte
 	return v_, nil
 }
 
-func liftMemTimezoneDisplay(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (TimezoneDisplay, error) {
+func liftMemTimezoneDisplay(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *timezoneWrapper, ty wacogo.Type, ptr uint32) (TimezoneDisplay, error) {
 	var v_ TimezoneDisplay
 	recT_ := ty.(wacogo.TypeRecord)
 	_ = recT_
@@ -306,7 +305,7 @@ func liftMemTimezoneDisplay(ctx context.Context, caller, callee *host.CallContex
 	} else {
 		v_.UtcOffset = int32(tmp_)
 	}
-	if tmp_, err_ := liftMemString(ctx, caller, callee, h, recT_.Fields[1].Type, ptr+4); err_ != nil {
+	if tmp_, err_ := liftMemString(ctx, caller, callee, h, w_, recT_.Fields[1].Type, ptr+4); err_ != nil {
 		return TimezoneDisplay{}, err_
 	} else {
 		v_.Name = tmp_
@@ -397,7 +396,7 @@ func fromGoMemWallclockDatetime(ctx context.Context, cc *host.CallContext, h *ho
 	return nil
 }
 
-func liftFlatWallclockDatetime(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (wallclock.Datetime, error) {
+func liftFlatWallclockDatetime(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *timezoneWrapper, ty wacogo.Type, stack []uint64) (wallclock.Datetime, error) {
 	var v_ wallclock.Datetime
 	recT_ := ty.(wacogo.TypeRecord)
 	_ = recT_
@@ -406,7 +405,7 @@ func liftFlatWallclockDatetime(ctx context.Context, caller, callee *host.CallCon
 	return v_, nil
 }
 
-func liftMemWallclockDatetime(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (wallclock.Datetime, error) {
+func liftMemWallclockDatetime(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *timezoneWrapper, ty wacogo.Type, ptr uint32) (wallclock.Datetime, error) {
 	var v_ wallclock.Datetime
 	recT_ := ty.(wacogo.TypeRecord)
 	_ = recT_

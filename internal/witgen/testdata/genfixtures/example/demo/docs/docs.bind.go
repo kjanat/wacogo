@@ -42,13 +42,10 @@ func NewFactory(ctx context.Context, e *wacogo.Engine) (*Factory, error) {
 
 	typDirection_ := b_.AddType("direction", host.Enum{Cases: []string{"north", "east", "south", "west"}})
 	_ = typDirection_
-
 	typPerms_ := b_.AddType("perms", host.Flags{Names: []string{"read", "write"}})
 	_ = typPerms_
-
 	typPoint_ := b_.AddType("point", host.Record{Fields: []host.Field{{Name: "x", Type: host.U32}, {Name: "y", Type: host.U32}}})
 	_ = typPoint_
-
 	typShape_ := b_.AddType("shape", host.Variant{Cases: []host.Case{{Name: "circle", Payload: host.U32}, {Name: "square", Payload: nil}}})
 	_ = typShape_
 
@@ -180,7 +177,7 @@ func fromGoMemString(ctx context.Context, cc *host.CallContext, h *host.Componen
 	return nil
 }
 
-func liftFlatString(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, stack []uint64) (string, error) {
+func liftFlatString(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *docsWrapper, ty wacogo.Type, stack []uint64) (string, error) {
 	ptr_ := uint32(stack[0])
 	ln_ := uint32(stack[1])
 	bs_, ok_ := callee.Memory().Read(ptr_, ln_)
@@ -190,7 +187,7 @@ func liftFlatString(ctx context.Context, caller, callee *host.CallContext, h *ho
 	return string(bs_), nil
 }
 
-func liftMemString(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, ty wacogo.Type, ptr uint32) (string, error) {
+func liftMemString(ctx context.Context, caller, callee *host.CallContext, h *host.ComponentInstance, w_ *docsWrapper, ty wacogo.Type, ptr uint32) (string, error) {
 	var sptr_ uint32
 	if tmp_, ok_ := callee.Memory().ReadUint32Le(ptr); !ok_ {
 		return "", fmt.Errorf("wacogo/witgen: liftMemString: string ptr: bad memory read")

@@ -44,7 +44,7 @@ func (w *pollWrapper) Poll(ctx context.Context, in []*PollableHandle) ([]uint32,
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemListU32(ctx, caller, callee, w.callerInst, w.fnPoll.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemListU32(ctx, caller, callee, w.callerInst, w, w.fnPoll.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_
@@ -54,6 +54,79 @@ func (w *pollWrapper) Poll(ctx context.Context, in []*PollableHandle) ([]uint32,
 		)
 		if callErr_ != nil {
 			return nil, fmt.Errorf("wacogo/witgen: CallRaw failed: %w", callErr_)
+		}
+	}
+	return resVal_, nil
+}
+
+type pollableRemote struct {
+	w *pollWrapper
+	h *PollableHandle
+}
+
+func (d_ *pollableRemote) Block(ctx context.Context) error {
+	{
+		callErr_ := d_.w.fnPollableBlock.CallRaw(ctx, d_.w.callerInst,
+			func(caller, callee *host.CallContext, stack []uint64) error {
+				{
+					tr_ := d_.w.fnPollableBlock.ParamType(0).(wacogo.TypeBorrow).ResourceType
+					callerH_, err_ := d_.h.bind(caller, d_.w.callerInst)
+					if err_ != nil {
+						return err_
+					}
+					srcH_, err_ := caller.LookupBorrowable(tr_, callerH_)
+					if err_ != nil {
+						return err_
+					}
+					dstH_, err_ := srcH_.LendTo(callee.TransferTarget(), callee.Task())
+					if err_ != nil {
+						return err_
+					}
+					stack[0] = uint64(dstH_.HandleID())
+				}
+				return nil
+			},
+			func(caller, callee *host.CallContext, stack []uint64) error {
+				return nil
+			},
+		)
+		if callErr_ != nil {
+			return fmt.Errorf("wacogo/witgen: CallRaw failed: %w", callErr_)
+		}
+	}
+	return nil
+}
+
+func (d_ *pollableRemote) Ready(ctx context.Context) (bool, error) {
+	var resVal_ bool
+	{
+		callErr_ := d_.w.fnPollableReady.CallRaw(ctx, d_.w.callerInst,
+			func(caller, callee *host.CallContext, stack []uint64) error {
+				{
+					tr_ := d_.w.fnPollableReady.ParamType(0).(wacogo.TypeBorrow).ResourceType
+					callerH_, err_ := d_.h.bind(caller, d_.w.callerInst)
+					if err_ != nil {
+						return err_
+					}
+					srcH_, err_ := caller.LookupBorrowable(tr_, callerH_)
+					if err_ != nil {
+						return err_
+					}
+					dstH_, err_ := srcH_.LendTo(callee.TransferTarget(), callee.Task())
+					if err_ != nil {
+						return err_
+					}
+					stack[0] = uint64(dstH_.HandleID())
+				}
+				return nil
+			},
+			func(caller, callee *host.CallContext, stack []uint64) error {
+				resVal_ = stack[0] != 0
+				return nil
+			},
+		)
+		if callErr_ != nil {
+			return false, fmt.Errorf("wacogo/witgen: CallRaw failed: %w", callErr_)
 		}
 	}
 	return resVal_, nil

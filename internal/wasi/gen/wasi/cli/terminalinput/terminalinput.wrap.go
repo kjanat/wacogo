@@ -26,3 +26,8 @@ func WrapInstance(caller *host.ComponentInstance, callee *wacogo.ComponentInstan
 	w_ := &terminalInputWrapper{callerInst: caller}
 	return w_
 }
+
+type terminalInputResourceRemote struct {
+	w *terminalInputWrapper
+	h *TerminalInputResourceHandle
+}

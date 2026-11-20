@@ -9,6 +9,7 @@ import (
 
 	"github.com/kjanat/wacogo"
 	"github.com/kjanat/wacogo/host"
+	poll "github.com/kjanat/wacogo/internal/wasi/gen/wasi/io/poll"
 	network "github.com/kjanat/wacogo/internal/wasi/gen/wasi/sockets/network"
 )
 
@@ -61,10 +62,103 @@ func (w *ipNameLookupWrapper) ResolveAddresses(ctx context.Context, p_network *n
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemResultResolveAddressStreamNetworkErrorCode(ctx, caller, callee, w.callerInst, w.fnResolveAddresses.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemResultResolveAddressStreamNetworkErrorCode(ctx, caller, callee, w.callerInst, w, w.fnResolveAddresses.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_
+				}
+				return nil
+			},
+		)
+		if callErr_ != nil {
+			return nil, fmt.Errorf("wacogo/witgen: CallRaw failed: %w", callErr_)
+		}
+	}
+	return resVal_, nil
+}
+
+type resolveAddressStreamRemote struct {
+	w *ipNameLookupWrapper
+	h *ResolveAddressStreamHandle
+}
+
+func (d_ *resolveAddressStreamRemote) ResolveNextAddress(ctx context.Context) (ResultOptionNetworkIpAddressNetworkErrorCode, error) {
+	var resVal_ ResultOptionNetworkIpAddressNetworkErrorCode
+	{
+		callErr_ := d_.w.fnResolveAddressStreamResolveNextAddress.CallRaw(ctx, d_.w.callerInst,
+			func(caller, callee *host.CallContext, stack []uint64) error {
+				{
+					tr_ := d_.w.fnResolveAddressStreamResolveNextAddress.ParamType(0).(wacogo.TypeBorrow).ResourceType
+					callerH_, err_ := d_.h.bind(caller, d_.w.callerInst)
+					if err_ != nil {
+						return err_
+					}
+					srcH_, err_ := caller.LookupBorrowable(tr_, callerH_)
+					if err_ != nil {
+						return err_
+					}
+					dstH_, err_ := srcH_.LendTo(callee.TransferTarget(), callee.Task())
+					if err_ != nil {
+						return err_
+					}
+					stack[0] = uint64(dstH_.HandleID())
+				}
+				return nil
+			},
+			func(caller, callee *host.CallContext, stack []uint64) error {
+				if v_, err_ := liftMemResultOptionNetworkIpAddressNetworkErrorCode(ctx, caller, callee, d_.w.callerInst, d_.w, d_.w.fnResolveAddressStreamResolveNextAddress.ResultType(0), uint32(stack[0])); err_ != nil {
+					return err_
+				} else {
+					resVal_ = v_
+				}
+				return nil
+			},
+		)
+		if callErr_ != nil {
+			return nil, fmt.Errorf("wacogo/witgen: CallRaw failed: %w", callErr_)
+		}
+	}
+	return resVal_, nil
+}
+
+func (d_ *resolveAddressStreamRemote) Subscribe(ctx context.Context) (*poll.PollableHandle, error) {
+	var resVal_ *poll.PollableHandle
+	{
+		callErr_ := d_.w.fnResolveAddressStreamSubscribe.CallRaw(ctx, d_.w.callerInst,
+			func(caller, callee *host.CallContext, stack []uint64) error {
+				{
+					tr_ := d_.w.fnResolveAddressStreamSubscribe.ParamType(0).(wacogo.TypeBorrow).ResourceType
+					callerH_, err_ := d_.h.bind(caller, d_.w.callerInst)
+					if err_ != nil {
+						return err_
+					}
+					srcH_, err_ := caller.LookupBorrowable(tr_, callerH_)
+					if err_ != nil {
+						return err_
+					}
+					dstH_, err_ := srcH_.LendTo(callee.TransferTarget(), callee.Task())
+					if err_ != nil {
+						return err_
+					}
+					stack[0] = uint64(dstH_.HandleID())
+				}
+				return nil
+			},
+			func(caller, callee *host.CallContext, stack []uint64) error {
+				{
+					tr_ := d_.w.fnResolveAddressStreamSubscribe.ResultType(0).(wacogo.TypeOwn).ResourceType
+					calleeH_ := uint32(stack[0])
+					srcH_, srcErr_ := callee.LookupOwn(tr_, calleeH_)
+					if srcErr_ != nil {
+						return srcErr_
+					}
+					dstH_, dstErr_ := srcH_.TransferOwn(caller.TransferTarget())
+					if dstErr_ != nil {
+						return dstErr_
+					}
+					state_ := d_.w.callerInst.UserState().(*instanceState)
+					fwd_ := &pollPollableForwarder{caller: d_.w.callerInst, rh: dstH_, fns: state_.pollPollableFwdFns}
+					resVal_ = poll.NewPollableHandleFrom(dstH_, fwd_)
 				}
 				return nil
 			},

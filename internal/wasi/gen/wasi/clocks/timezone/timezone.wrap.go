@@ -42,7 +42,7 @@ func (w *timezoneWrapper) Display(ctx context.Context, when wallclock.Datetime) 
 				return nil
 			},
 			func(caller, callee *host.CallContext, stack []uint64) error {
-				if v_, err_ := liftMemTimezoneDisplay(ctx, caller, callee, w.callerInst, w.fnDisplay.ResultType(0), uint32(stack[0])); err_ != nil {
+				if v_, err_ := liftMemTimezoneDisplay(ctx, caller, callee, w.callerInst, w, w.fnDisplay.ResultType(0), uint32(stack[0])); err_ != nil {
 					return err_
 				} else {
 					resVal_ = v_
