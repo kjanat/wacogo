@@ -1,0 +1,31 @@
+name: Python component
+
+on:
+  pull_request:
+  push:
+    branches: [master]
+
+permissions:
+  contents: read
+
+jobs:
+  python-component:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+      - name: Build the Python component
+        run: |
+          python -m pip install componentize-py==0.23.0
+          componentize-py -d examples/python-json/guest/formatter.wit -w json-formatter \
+            componentize --stub-wasi -p examples/python-json/guest formatter -o "$RUNNER_TEMP/python-json.wasm"
+      - name: Execute the Python component in Wacogo
+        run: PYTHON_JSON_COMPONENT="$RUNNER_TEMP/python-json.wasm" go test -v ./examples/python-json
