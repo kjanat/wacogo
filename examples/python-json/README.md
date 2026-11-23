@@ -10,13 +10,16 @@ with [componentize-py](https://github.com/bytecodealliance/componentize-py/tree/
 
 ```sh
 python -m venv .venv
-.venv/bin/python -m pip install componentize-py==0.23.0
+.venv/bin/python -m pip install -r examples/python-json/requirements.txt
 .venv/bin/componentize-py -d examples/python-json/guest/formatter.wit -w json-formatter \
   componentize --stub-wasi -p examples/python-json/guest formatter -o /tmp/python-json.wasm
 printf '%s\n' '{"name":"café","valid":true}' |
   go run ./examples/python-json /tmp/python-json.wasm
 PYTHON_JSON_COMPONENT=/tmp/python-json.wasm go test -v ./examples/python-json
 ```
+
+This is an interoperability example, not a lossless JSON rewriter: Python's
+JSON decoder keeps the last value for a duplicate property name.
 
 The build produces a component, so the Go host uses `LoadComponent` and
 calls the nested interface export. It does not execute a Python subprocess.
