@@ -6,7 +6,7 @@ on the versioned `example:python-json/formatter@0.1.0` interface. JSON comes in
 and goes out as UTF-8 bytes; a parse error comes back as a WIT error value.
 
 From the repository root, install Python 3.12 and create a virtual environment
-with [componentize-py](https://github.com/bytecodealliance/componentize-py/tree/v0.23.0):
+with [componentize-py](https://github.com/bytecodealliance/componentize-py):
 
 ```sh
 python -m venv .venv
@@ -18,8 +18,9 @@ printf '%s\n' '{"name":"café","valid":true}' |
 PYTHON_JSON_COMPONENT=/tmp/python-json.wasm go test -v ./examples/python-json
 ```
 
-This is an interoperability example, not a lossless JSON rewriter: Python's
-JSON decoder keeps the last value for a duplicate property name.
+This example uses Python's standard JSON decoder. Duplicate property names
+collapse to the last value, and decimals can round to binary floating-point
+precision. Use a lossless formatter when either behavior matters.
 
 The build produces a component, so the Go host uses `LoadComponent` and
 calls the nested interface export. It does not execute a Python subprocess.
