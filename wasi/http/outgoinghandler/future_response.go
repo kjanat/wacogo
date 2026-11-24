@@ -2,13 +2,7 @@ package outgoinghandler
 
 import (
 	"context"
-	"crypto/tls"
-	"errors"
-	"net"
 	"net/http"
-	"net/url"
-	"os"
-	"syscall"
 
 	"github.com/kjanat/wacogo/host"
 	"github.com/kjanat/wacogo/wasi/http/types"
@@ -70,7 +64,7 @@ func (f *futureIncomingResponseImpl) Get(ctx context.Context) (types.OptionResul
 			IsSome: true,
 			Value: types.ResultResultIncomingResponseErrorCode_Ok{
 				Value: types.ResultIncomingResponseErrorCodeErr{
-					Value: translateResultErr(err),
+					Value: types.ErrorCodeOf(err),
 				},
 			},
 		}, nil
@@ -118,79 +112,4 @@ func (p *futureResponsePollable) Ready(ctx context.Context) (bool, error) {
 	default:
 		return false, nil
 	}
-}
-
-func translateResultErr(err error) types.ErrorCode {
-	if err == nil {
-		return nil
-	}
-
-	var coded *types.CodedError
-	if errors.As(err, &coded) && coded.Code != nil {
-		return coded.Code
-	}
-
-	if errors.Is(err, context.DeadlineExceeded) {
-		return types.ErrorCodeConnectionTimeout{}
-	}
-	if errors.Is(err, context.Canceled) {
-		return types.ErrorCodeInternalError{Value: types.SomeString(err.Error())}
-	}
-
-	if dnsErr, ok := errors.AsType[*net.DNSError](err); ok {
-		switch {
-		case dnsErr.IsTimeout:
-			return types.ErrorCodeDNSTimeout{}
-		case dnsErr.IsNotFound:
-			return types.ErrorCodeDestinationNotFound{}
-		}
-		return types.ErrorCodeDNSError{
-			Value: types.DNSErrorPayload{Rcode: types.SomeString(dnsErr.Err)},
-		}
-	}
-
-	if _, ok := errors.AsType[*tls.CertificateVerificationError](err); ok {
-		return types.ErrorCodeTLSCertificateError{}
-	}
-	if _, ok := errors.AsType[tls.RecordHeaderError](err); ok {
-		return types.ErrorCodeTLSProtocolError{}
-	}
-
-	if opErr, ok := errors.AsType[*net.OpError](err); ok {
-		if opErr.Timeout() {
-			switch opErr.Op {
-			case "read":
-				return types.ErrorCodeConnectionReadTimeout{}
-			case "write":
-				return types.ErrorCodeConnectionWriteTimeout{}
-			}
-			return types.ErrorCodeConnectionTimeout{}
-		}
-		if sysErr, ok := errors.AsType[*os.SyscallError](opErr.Err); ok {
-			if errno, ok := sysErr.Err.(syscall.Errno); ok {
-				switch errno {
-				case syscall.ECONNREFUSED:
-					return types.ErrorCodeConnectionRefused{}
-				case syscall.ECONNRESET, syscall.EPIPE:
-					return types.ErrorCodeConnectionTerminated{}
-				case syscall.ETIMEDOUT:
-					return types.ErrorCodeConnectionTimeout{}
-				case syscall.EHOSTUNREACH, syscall.ENETUNREACH:
-					return types.ErrorCodeDestinationIPUnroutable{}
-				}
-			}
-		}
-	}
-
-	var urlErr *url.Error
-	if errors.As(err, &urlErr) && urlErr.Timeout() {
-		return types.ErrorCodeConnectionTimeout{}
-	}
-
-	var netErr net.Error
-	if errors.As(err, &netErr) && netErr.Timeout() {
-		return types.ErrorCodeConnectionTimeout{}
-	}
-
-	return types.ErrorCodeInternalError{Value: types.SomeString(err.Error())}
 }

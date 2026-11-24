@@ -18,8 +18,17 @@ type impl struct {
 	errorInst  *host.ComponentInstance
 }
 
-func (i *impl) HTTPErrorCode(_ context.Context, _ *wioerror.ErrorResourceHandle) (OptionErrorCode, error) {
-	return OptionErrorCode{}, fmt.Errorf("wasi:http/types.http-error-code: %w", wasierr.ErrNotImplemented)
+func (i *impl) HTTPErrorCode(_ context.Context, h *wioerror.ErrorResourceHandle) (OptionErrorCode, error) {
+	res, ok := h.LocalImpl()
+	if !ok {
+		return OptionErrorCode{}, nil
+	}
+	failure, ok := res.(interface{ Unwrap() error })
+	if !ok {
+		return OptionErrorCode{}, nil
+	}
+	code, ok := httpErrorCode(failure.Unwrap())
+	return OptionErrorCode{IsSome: ok, Value: code}, nil
 }
 
 func (i *impl) NewFields(_ context.Context) (*FieldsHandle, error) {
@@ -61,14 +70,14 @@ func (i *impl) IncomingBodyFinish(ctx context.Context, bodyHandle *IncomingBodyH
 	if !ok {
 		return nil, fmt.Errorf("wasi:http/types.incoming-body.finish: invalid incoming body handle")
 	}
+	trailers, err := bImpl.finish(i.pollInst)
+	if err != nil {
+		return nil, fmt.Errorf("wasi:http/types.incoming-body.finish: %w", err)
+	}
 	if err := bodyHandle.Drop(ctx); err != nil {
 		return nil, fmt.Errorf("wasi:http/types.incoming-body.finish: %w", err)
 	}
-
-	return NewFutureTrailersHandle(&futureTrailersImpl{
-		headers:  bImpl.resp.Trailer,
-		pollInst: i.pollInst,
-	}), nil
+	return NewFutureTrailersHandle(trailers), nil
 }
 
 func (i *impl) NewOutgoingResponse(_ context.Context, _ *FieldsHandle) (*OutgoingResponseHandle, error) {
