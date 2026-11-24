@@ -159,11 +159,11 @@ func TestInstanceImportResolver(t *testing.T) {
 	}
 }
 
-func TestAliasResolverWalksParent(t *testing.T) {
-	gp := &instantiationState{types: []Type{TypeBool{}}}
-	p := &instantiationState{parentState: gp}
-	c := &instantiationState{parentState: p}
-	got := aliasResolver{outerDepth: 2, typeIdx: 0}.resolve(&resolverCtx{state: c})
+func TestAliasResolverReadsBoundSlot(t *testing.T) {
+	gp := &instantiationState{types: []Type{TypeU32{}}}
+	p := &instantiationState{parentState: gp, types: []Type{TypeU64{}}}
+	c := &instantiationState{parentState: p, types: []Type{TypeU8{}, TypeBool{}}}
+	got := aliasResolver{slot: 1}.resolve(&resolverCtx{state: c})
 	if _, ok := got.(TypeBool); !ok {
 		t.Fatalf("want TypeBool, got %T", got)
 	}

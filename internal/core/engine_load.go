@@ -47,6 +47,7 @@ type loadScope struct {
 	// outerComponentClosures records deferred outer aliases for subComponents slots
 	// that reference import placeholders. Propagated to the Component.
 	outerComponentClosures map[int]outerRef
+	outerTypeClosures      map[int]outerRef
 }
 
 // walkUp traverses count parent scopes. Panics if nesting depth is exceeded,
@@ -163,6 +164,7 @@ func (e *Engine) loadComponentFromParser(ctx context.Context, parser *wasmparser
 			parent:                 parentScope,
 			outerModuleClosures:    make(map[int]outerRef),
 			outerComponentClosures: make(map[int]outerRef),
+			outerTypeClosures:      make(map[int]outerRef),
 		},
 		parser:          parser,
 		resourceDtors:   make(map[uint32]uint32),
@@ -501,7 +503,12 @@ func (l *componentLoader) processAliasOuter(a wasmparser.AliasOuter) {
 		return
 	}
 	if a.Kind == wasmparser.OuterAliasKindType {
-		l.allocType(aliasResolver{outerDepth: a.Count, typeIdx: a.Index})
+		if a.Count == 0 {
+			l.allocType(indexResolver{idx: a.Index})
+			return
+		}
+		slot := l.allocType(aliasResolver{slot: uint32(len(l.typeResolvers))})
+		l.scope.outerTypeClosures[int(slot)] = outerRef{count: a.Count, index: a.Index}
 		return
 	}
 
@@ -719,6 +726,10 @@ func (l *componentLoader) buildComponent(parentScope *loadScope) (*Component, er
 	if len(l.scope.outerComponentClosures) > 0 {
 		outerComponentClosures = l.scope.outerComponentClosures
 	}
+	var outerTypeClosures map[int]outerRef
+	if len(l.scope.outerTypeClosures) > 0 {
+		outerTypeClosures = l.scope.outerTypeClosures
+	}
 
 	comp := &Component{
 		engine:                 l.engine,
@@ -731,8 +742,9 @@ func (l *componentLoader) buildComponent(parentScope *loadScope) (*Component, er
 		typeResolvers:          l.typeResolvers,
 		outerModuleClosures:    outerModuleClosures,
 		outerComponentClosures: outerComponentClosures,
-		reach:                  closureReach(outerModuleClosures, outerComponentClosures, l.scope.subComponents),
+		outerTypeClosures:      outerTypeClosures,
 	}
+	comp.reach = comp.closureReach()
 
 	return comp, nil
 }

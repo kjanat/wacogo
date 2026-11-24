@@ -1,0 +1,13 @@
+(component $Root
+  (core type $mt (module (export "f" (func (result i32)))))
+  (core module $M (func (export "f") (result i32) i32.const 7))
+  (component $A (core type $mt (module (export "f" (func (result i64)))))
+    (component $N (alias outer $Root $mt (core type $mt2))
+      (import "m" (core module (type $mt2)))
+      (export "m2" (core module 0)))
+    (export "n" (component $N)))
+  (instance $a (instantiate $A)) (alias export $a "n" (component $nc))
+  (instance $n (instantiate $nc (with "m" (core module $M))))
+  (core instance $ci (instantiate $M))
+  (func $f (result u32) (canon lift (core func $ci "f")))
+  (export "f" (func $f)))

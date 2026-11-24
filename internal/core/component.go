@@ -73,6 +73,9 @@ type Component struct {
 	// subComponents index space.
 	outerComponentClosures map[int]outerRef
 
+	outerTypeClosures map[int]outerRef
+	boundTypes        []Type
+
 	reach uint32
 
 	// wpType is the opaque wasmparser type handle for this component, populated
@@ -90,16 +93,15 @@ type outerRef struct {
 	index uint32 // index in the target parent's index space
 }
 
-func closureReach(moduleClosures, componentClosures map[int]outerRef, subComponents []*Component) uint32 {
+func (c *Component) closureReach() uint32 {
 	var reach uint32
-	for _, ref := range moduleClosures {
-		reach = max(reach, ref.count)
+	for _, closures := range []map[int]outerRef{c.outerModuleClosures, c.outerComponentClosures, c.outerTypeClosures} {
+		for _, ref := range closures {
+			reach = max(reach, ref.count)
+		}
 	}
-	for _, ref := range componentClosures {
-		reach = max(reach, ref.count)
-	}
-	for j, sub := range subComponents {
-		if _, aliased := componentClosures[j]; aliased || sub == nil || sub.reach == 0 {
+	for j, sub := range c.subComponents {
+		if _, aliased := c.outerComponentClosures[j]; aliased || sub == nil || sub.reach == 0 {
 			continue
 		}
 		reach = max(reach, sub.reach-1)

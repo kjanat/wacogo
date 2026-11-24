@@ -284,21 +284,9 @@ func (r instanceImportResolver) resolve(rc *resolverCtx) Type {
 	return inst.exportedType(r.exportName)
 }
 
-type aliasResolver struct {
-	outerDepth uint32
-	typeIdx    uint32
-}
+type aliasResolver struct{ slot uint32 }
 
-func (r aliasResolver) resolve(rc *resolverCtx) Type {
-	target := rc.state
-	for range r.outerDepth {
-		if target.parentState == nil {
-			panic("wacogo: aliasResolver: outerDepth exceeds nesting")
-		}
-		target = target.parentState
-	}
-	return target.types[r.typeIdx]
-}
+func (r aliasResolver) resolve(rc *resolverCtx) Type { return rc.state.types[r.slot] }
 
 // importResolver reads a Type from the instantiation args bag for a direct
 // component-level type import. Returns nil if the import was not supplied or

@@ -232,12 +232,15 @@ func (e *Engine) instantiateWithParentCfg(ctx context.Context, component *Compon
 	copy(compiledModules, component.compiledModules)
 	subComponents := make([]*Component, len(component.subComponents))
 	copy(subComponents, component.subComponents)
+	types := make([]Type, len(component.typeResolvers))
+	copy(types, component.boundTypes)
 
 	// Resolve outer closures from the parent state. This fills in compiled
 	// modules and sub-components that were import placeholders at load time.
 	if parentState != nil {
 		compiledModules, _, _ = bindClosures(parentState, component.outerModuleClosures, compiledModules, 1, (*instantiationState).outerModule)
 		subComponents, _, _ = bindClosures(parentState, component.outerComponentClosures, subComponents, 1, (*instantiationState).outerComponent)
+		types, _, _ = bindClosures(parentState, component.outerTypeClosures, types, 1, (*instantiationState).outerType)
 	}
 
 	// Validate import kind compatibility before running any plan steps.
@@ -271,7 +274,7 @@ func (e *Engine) instantiateWithParentCfg(ctx context.Context, component *Compon
 	state := &instantiationState{
 		inst:            inst,
 		imports:         cfg.imports,
-		types:           make([]Type, len(component.typeResolvers)),
+		types:           types,
 		compiledModules: compiledModules,
 		subComponents:   subComponents,
 		parentState:     parentState,
@@ -680,7 +683,12 @@ func (s *instantiationState) bindComponent(comp *Component, depth uint32) *Compo
 	}
 	compiledModules, moduleClosures, modulesChanged := bindClosures(s, comp.outerModuleClosures, comp.compiledModules, depth, (*instantiationState).outerModule)
 	subComponents, componentClosures, componentsChanged := bindClosures(s, comp.outerComponentClosures, subComponents, depth, (*instantiationState).outerComponent)
-	if !subsChanged && !modulesChanged && !componentsChanged {
+	boundTypes := comp.boundTypes
+	if boundTypes == nil && len(comp.outerTypeClosures) > 0 {
+		boundTypes = make([]Type, len(comp.typeResolvers))
+	}
+	boundTypes, typeClosures, typesChanged := bindClosures(s, comp.outerTypeClosures, boundTypes, depth, (*instantiationState).outerType)
+	if !subsChanged && !modulesChanged && !componentsChanged && !typesChanged {
 		return comp
 	}
 	cloned := *comp
@@ -688,7 +696,9 @@ func (s *instantiationState) bindComponent(comp *Component, depth uint32) *Compo
 	cloned.outerModuleClosures = moduleClosures
 	cloned.subComponents = subComponents
 	cloned.outerComponentClosures = componentClosures
-	cloned.reach = closureReach(moduleClosures, componentClosures, subComponents)
+	cloned.boundTypes = boundTypes
+	cloned.outerTypeClosures = typeClosures
+	cloned.reach = cloned.closureReach()
 	return &cloned
 }
 
@@ -701,6 +711,13 @@ func (s *instantiationState) outerModule(index uint32) CompiledModule {
 		panic(fmt.Sprintf("wacogo: closure resolution module index %d out of range (have %d)", index, len(s.compiledModules)))
 	}
 	return s.compiledModules[index]
+}
+
+func (s *instantiationState) outerType(index uint32) Type {
+	if int(index) >= len(s.types) {
+		panic(fmt.Sprintf("wacogo: closure resolution type index %d out of range (have %d)", index, len(s.types)))
+	}
+	return s.types[index]
 }
 
 func (s *instantiationState) outerComponent(index uint32) *Component {

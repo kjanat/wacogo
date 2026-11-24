@@ -1,0 +1,7 @@
+(component $Root (core module $D (func (export "f") (result i32) i32.const 1))
+  (component $A (core module $M (func (export "f") (result i32) i32.const 2)) (component $C (alias outer $A $M (core module $M2)) (core instance $ci (instantiate $M2)) (func $f (result u32) (canon lift (core func $ci "f"))) (export "f" (func $f))) (export "c" (component $C)))
+  (component $B (core module $D (func (export "f") (result i32) i32.const 3)) (import "c" (component $Ci (export "f" (func (result u32)))))
+    (instance $i (instantiate $Ci)) (alias export $i "f" (func $f)) (export "f" (func $f)))
+  (instance $a (instantiate $A)) (alias export $a "c" (component $c))
+  (instance $b (instantiate $B (with "c" (component $c))))
+  (alias export $b "f" (func $f)) (export "f" (func $f)))
