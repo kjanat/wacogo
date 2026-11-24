@@ -3,6 +3,7 @@ package types
 import (
 	"context"
 	"maps"
+	"math"
 	"net/http"
 	"slices"
 	"strconv"
@@ -62,19 +63,44 @@ func parseFieldValue(name string, value []byte) ([]byte, bool) {
 	if !isContentLength(name) {
 		return slices.Clone(value), validFieldValue(value)
 	}
-	if len(value) == 0 {
-		return nil, false
-	}
-	for _, b := range value {
-		if b < '0' || b > '9' {
-			return nil, false
-		}
-	}
-	n, err := strconv.ParseUint(string(value), 10, 64)
-	if err != nil {
+	n, ok := parseContentLength(value)
+	if !ok {
 		return nil, false
 	}
 	return []byte(strconv.FormatUint(n, 10)), true
+}
+
+func parseContentLength(value []byte) (uint64, bool) {
+	if len(value) == 0 {
+		return 0, false
+	}
+	for _, b := range value {
+		if b < '0' || b > '9' {
+			return 0, false
+		}
+	}
+	n, err := strconv.ParseUint(string(value), 10, 64)
+	return n, err == nil
+}
+
+type contentLength struct {
+	declared bool
+	value    uint64
+}
+
+func declaredContentLength(entries []TupleStringListU8) (contentLength, bool) {
+	var length contentLength
+	for _, e := range entries {
+		if !isContentLength(e.F0) {
+			continue
+		}
+		n, ok := parseContentLength(e.F1)
+		if length.declared || !ok || n > math.MaxInt64 {
+			return contentLength{}, false
+		}
+		length = contentLength{declared: true, value: n}
+	}
+	return length, true
 }
 
 type fieldsImpl struct {

@@ -108,17 +108,15 @@ func (i *impl) OutgoingBodyFinish(ctx context.Context, bh *OutgoingBodyHandle, t
 		obImpl.request.r.Trailer = headerFromEntries(entries)
 	}
 
-	if !obImpl.streamDropped {
+	if obImpl.writeOpened && !obImpl.streamDropped {
 		obImpl.streamDropped = true // prevent the finalizer from panicking
 		return nil, fmt.Errorf("wasi:http/types.outgoing-body.finish: body stream not dropped")
 	}
 
-	var closeErr error
-	if obImpl.writeOpened {
-		closeErr = obImpl.writer.Close()
-		obImpl.writeOpened = false
-		obImpl.writer = nil
+	if sizeErr := obImpl.sizeMismatch(); sizeErr != nil {
+		obImpl.pipe.closeWithError(&CodedError{Code: ErrorCodeHTTPProtocolError{}, Msg: sizeErr.Msg})
+		return types.Result_ErrorCodeErr{Value: sizeErr.Code}, nil
 	}
-
-	return types.Result_ErrorCodeOk{}, closeErr
+	obImpl.pipe.closeWithError(nil)
+	return types.Result_ErrorCodeOk{}, nil
 }

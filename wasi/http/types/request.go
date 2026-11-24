@@ -14,12 +14,14 @@ type GoOutgoingRequest interface {
 }
 
 type outgoingRequestImpl struct {
-	r          *http.Request
-	headers    []TupleStringListU8
-	streamInst *host.ComponentInstance
-	pollInst   *host.ComponentInstance
-	errorInst  *host.ComponentInstance
-	body       *outgoingBodyImpl
+	r           *http.Request
+	headers     []TupleStringListU8
+	length      contentLength
+	lengthValid bool
+	streamInst  *host.ComponentInstance
+	pollInst    *host.ComponentInstance
+	errorInst   *host.ComponentInstance
+	body        *outgoingBodyImpl
 }
 
 func newOutgoingRequestImpl(headers []TupleStringListU8, streamInst, pollInst, errorInst *host.ComponentInstance) *outgoingRequestImpl {
@@ -33,18 +35,27 @@ func newOutgoingRequestImpl(headers []TupleStringListU8, streamInst, pollInst, e
 		ProtoMinor: 1,
 		Header:     headerFromEntries(headers),
 	}
+	length, lengthValid := declaredContentLength(headers)
+	if length.declared {
+		req.ContentLength = int64(length.value)
+	}
 	return &outgoingRequestImpl{
-		r:          req,
-		headers:    headers,
-		streamInst: streamInst,
-		pollInst:   pollInst,
-		errorInst:  errorInst,
+		r:           req,
+		headers:     headers,
+		length:      length,
+		lengthValid: lengthValid,
+		streamInst:  streamInst,
+		pollInst:    pollInst,
+		errorInst:   errorInst,
 	}
 }
 
 func (r *outgoingRequestImpl) ToHTTPRequest() *http.Request {
-	if r.body != nil && r.body.writeOpened {
-		r.r.Body = r.body.reader
+	switch {
+	case r.length.declared && r.length.value == 0:
+		r.r.Body = http.NoBody
+	case r.body != nil:
+		r.r.Body = r.body.pipe.reader()
 	}
 	return r.r
 }
@@ -59,7 +70,7 @@ func (r *outgoingRequestImpl) Authority(_ context.Context) (OptionString, error)
 }
 
 func (r *outgoingRequestImpl) Body(_ context.Context) (ResultOutgoingBody_, error) {
-	if r.body != nil {
+	if r.body != nil || !r.lengthValid {
 		return types.ResultOutgoingBody_Err{}, nil
 	}
 	r.body = newOutgoingBodyImpl(r)

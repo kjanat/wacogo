@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"sync/atomic"
 
 	"github.com/kjanat/wacogo/internal/wasi/gen/wasi/http/types"
 	"github.com/kjanat/wacogo/wasi/io/streams"
@@ -11,9 +12,10 @@ import (
 
 type outgoingBodyImpl struct {
 	request *outgoingRequestImpl
+	length  contentLength
+	written atomic.Uint64
 
-	reader        *io.PipeReader
-	writer        *io.PipeWriter
+	pipe          *bodyPipe
 	writeOpened   bool
 	streamDropped bool
 	selfDropped   bool
@@ -22,7 +24,26 @@ type outgoingBodyImpl struct {
 func newOutgoingBodyImpl(request *outgoingRequestImpl) *outgoingBodyImpl {
 	return &outgoingBodyImpl{
 		request: request,
+		length:  request.length,
+		pipe:    newBodyPipe(),
 	}
+}
+
+func bodySizeError(written, declared uint64) *CodedError {
+	return &CodedError{
+		Code: ErrorCodeHTTPRequestBodySize{Value: SomeU64(written)},
+		Msg:  fmt.Sprintf("wasi:http/types.outgoing-body: %d bytes written, content-length is %d", written, declared),
+	}
+}
+
+func (b *outgoingBodyImpl) sizeMismatch() *CodedError {
+	if !b.length.declared {
+		return nil
+	}
+	if written := b.written.Load(); written != b.length.value {
+		return bodySizeError(written, b.length.value)
+	}
+	return nil
 }
 
 func (b *outgoingBodyImpl) Write(_ context.Context) (ResultOutputStream_, error) {
@@ -30,11 +51,7 @@ func (b *outgoingBodyImpl) Write(_ context.Context) (ResultOutputStream_, error)
 		return types.ResultOutputStream_Err{}, nil
 	}
 	b.writeOpened = true
-	pr, pw := io.Pipe()
-	b.reader = pr
-	b.writer = pw
-
-	stream := streams.NewIOWriterOutputStream(b.request.errorInst, b.request.pollInst, &outgoingBodyWriter{Writer: pw, body: b})
+	stream := streams.NewIOWriterOutputStream(b.request.errorInst, b.request.pollInst, &outgoingBodyWriter{Writer: b.pipe, body: b})
 	handle := streams.NewOutputStreamHandleIn(b.request.streamInst, stream)
 	return types.ResultOutputStream_Ok{Value: handle}, nil
 }
@@ -65,15 +82,24 @@ func (b *outgoingBodyImpl) destroy() {
 		return
 	}
 	b.selfDropped = true
-	if b.writer != nil {
-		b.writer.CloseWithError(io.ErrUnexpectedEOF)
-	}
-	b.writer = nil
+	b.pipe.closeWithError(io.ErrUnexpectedEOF)
 }
 
 type outgoingBodyWriter struct {
 	io.Writer
 	body *outgoingBodyImpl
+}
+
+func (b *outgoingBodyWriter) Write(p []byte) (int, error) {
+	if b.body.length.declared {
+		if total := b.body.written.Load() + uint64(len(p)); total > b.body.length.value {
+			b.body.written.Store(total)
+			return 0, bodySizeError(total, b.body.length.value)
+		}
+	}
+	n, err := b.Writer.Write(p)
+	b.body.written.Add(uint64(n))
+	return n, err
 }
 
 func (b *outgoingBodyWriter) Close() error {

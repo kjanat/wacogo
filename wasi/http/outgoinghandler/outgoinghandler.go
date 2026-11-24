@@ -45,6 +45,11 @@ func (i *impl) Handle(ctx context.Context, rh *types.OutgoingRequestHandle, ro O
 	}
 
 	httpRequest := request.ToHTTPRequest().WithContext(ctx)
+	if httpRequest.Body == nil && httpRequest.ContentLength > 0 {
+		return ResultFutureIncomingResponseTypesErrorCodeErr{
+			Value: types.ErrorCodeHTTPRequestBodySize{Value: types.SomeU64(0)},
+		}, nil
+	}
 
 	ch := make(chan struct{})
 	respFuture := &futureIncomingResponseImpl{

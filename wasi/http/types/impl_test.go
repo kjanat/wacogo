@@ -195,8 +195,9 @@ func TestOutgoingBodyFinish(t *testing.T) {
 
 	t.Run("trailers and writer", func(t *testing.T) {
 		req := newOutgoingRequestImpl(nil, nil, nil, nil)
-		pr, pw := io.Pipe()
-		body := &outgoingBodyImpl{request: req, reader: pr, writer: pw, writeOpened: true, streamDropped: true}
+		body := newOutgoingBodyImpl(req)
+		body.writeOpened, body.streamDropped = true, true
+		pr := body.pipe.reader()
 		res, err := (&impl{}).OutgoingBodyFinish(ctx, NewOutgoingBodyHandle(body), OptionFields{IsSome: true, Value: NewFieldsHandle(newFieldsImpl(trailers, false))})
 		if err != nil {
 			t.Fatal(err)
@@ -207,9 +208,6 @@ func TestOutgoingBodyFinish(t *testing.T) {
 		if want := (http.Header{"X-T": {"1", "2"}}); !reflect.DeepEqual(req.r.Trailer, want) {
 			t.Fatalf("trailer = %v, want %v", req.r.Trailer, want)
 		}
-		if body.writeOpened || body.writer != nil {
-			t.Fatal("writer still open")
-		}
 		if n, err := pr.Read(make([]byte, 1)); n != 0 || err != io.EOF {
 			t.Fatalf("read after finish = %d, %v", n, err)
 		}
@@ -217,7 +215,7 @@ func TestOutgoingBodyFinish(t *testing.T) {
 
 	t.Run("trailer errors", func(t *testing.T) {
 		entriesErr, dropErr := errors.New("entries"), errors.New("drop")
-		body := &outgoingBodyImpl{request: newOutgoingRequestImpl(nil, nil, nil, nil), streamDropped: true}
+		body := newOutgoingBodyImpl(newOutgoingRequestImpl(nil, nil, nil, nil))
 		fields := faultyFields{fieldsImpl: newFieldsImpl(trailers, false), entriesErr: entriesErr, dropErr: dropErr}
 		res, err := (&impl{}).OutgoingBodyFinish(ctx, NewOutgoingBodyHandle(body), OptionFields{IsSome: true, Value: NewFieldsHandle(fields)})
 		if res != nil || !errors.Is(err, entriesErr) || !errors.Is(err, dropErr) {
