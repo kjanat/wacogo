@@ -125,3 +125,42 @@ func TestOutgoingRequestKeepsHeaderEntries(t *testing.T) {
 		})
 	}
 }
+
+func TestFieldsRejectForbiddenNames(t *testing.T) {
+	ctx := context.Background()
+	for _, name := range []string{"Host", "content-length", "CONNECTION", "Transfer-Encoding", "upgrade", "trailer", "te", "keep-alive", "proxy-connection"} {
+		t.Run(name, func(t *testing.T) {
+			res, err := (&impl{}).FieldsFromList(ctx, []TupleStringListU8{entry("accept", "a"), entry(name, "v")})
+			if err != nil {
+				t.Fatal(err)
+			}
+			if got, ok := res.(types.ResultFieldsHeaderErrorErr); !ok || got.Value != (types.HeaderErrorForbidden{}) {
+				t.Fatalf("from-list = %#v, want forbidden", res)
+			}
+
+			fh := NewFieldsHandle(newFieldsImpl([]TupleStringListU8{entry("accept", "a")}, false))
+			for op, call := range map[string]func() (Result_HeaderError, error){
+				"append": func() (Result_HeaderError, error) { return fh.Append(ctx, name, []uint8("v")) },
+				"set":    func() (Result_HeaderError, error) { return fh.Set(ctx, name, [][]uint8{[]uint8("v")}) },
+			} {
+				res, err := call()
+				if err != nil {
+					t.Fatal(err)
+				}
+				if got, ok := res.(Result_HeaderErrorErr); !ok || got.Value != (types.HeaderErrorForbidden{}) {
+					t.Fatalf("%s = %#v, want forbidden", op, res)
+				}
+			}
+			requireEntries(t, fh, []TupleStringListU8{entry("accept", "a")})
+		})
+	}
+
+	immutable := NewFieldsHandle(newFieldsImpl(nil, true))
+	res, err := immutable.Append(ctx, "host", []uint8("v"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got, ok := res.(Result_HeaderErrorErr); !ok || got.Value != (types.HeaderErrorImmutable{}) {
+		t.Fatalf("append to immutable = %#v, want immutable", res)
+	}
+}

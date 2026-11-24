@@ -74,9 +74,7 @@ func (hf *fieldsImpl) Append(ctx context.Context, name string, value []uint8) (R
 		}, nil
 	}
 	if isForbiddenHeader(name) {
-		// Silently drop — preserves the spec's success response shape while
-		// preventing the guest from setting forbidden transport headers.
-		return types.Result_HeaderErrorOk{}, nil
+		return Result_HeaderErrorErr{Value: types.HeaderErrorForbidden{}}, nil
 	}
 	hf.entries = append(hf.entries, TupleStringListU8{F0: name, F1: slices.Clone(value)})
 	return types.Result_HeaderErrorOk{}, nil
@@ -121,7 +119,7 @@ func (hf *fieldsImpl) Set(ctx context.Context, name string, value [][]uint8) (Re
 		}, nil
 	}
 	if isForbiddenHeader(name) {
-		return types.Result_HeaderErrorOk{}, nil
+		return Result_HeaderErrorErr{Value: types.HeaderErrorForbidden{}}, nil
 	}
 	hf.remove(name)
 	for _, v := range value {
