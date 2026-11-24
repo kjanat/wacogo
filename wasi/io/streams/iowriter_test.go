@@ -734,6 +734,28 @@ func TestSpliceForwardsClosedFromInput(t *testing.T) {
 	})
 }
 
+func TestBlockingWriteAndFlushReportsWriteFailure(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		s := NewIOWriterOutputStream(nil, nil, &errorWriter{err: errors.New("boom")})
+		defer s.Drop(context.Background())
+		res, err := s.BlockingWriteAndFlush(bgCtx, []byte("x"))
+		if err != nil {
+			t.Fatal(err)
+		}
+		e, ok := res.(Result_StreamErrorErr)
+		if !ok {
+			t.Fatalf("blocking-write-and-flush = %T, want err", res)
+		}
+		lof, ok := e.Value.(StreamErrorLastOperationFailed)
+		if !ok {
+			t.Fatalf("expected last-operation-failed, got %T", e.Value)
+		}
+		if msg, _ := lof.Value.ToDebugString(bgCtx); msg != "boom" {
+			t.Fatalf("debug string = %q, want %q", msg, "boom")
+		}
+	})
+}
+
 type settlingInputStream struct{ *sliceInputStream }
 
 func (s settlingInputStream) Read(ctx context.Context, n uint64) (ResultListU8StreamError, error) {

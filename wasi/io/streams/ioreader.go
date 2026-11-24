@@ -178,7 +178,7 @@ func (s *IOReaderInputStream) failWith(err error) {
 func (s *IOReaderInputStream) takeStreamError() StreamError {
 	if errp := s.lastErr.Swap(nil); errp != nil {
 		return StreamErrorLastOperationFailed{
-			Value: wioerror.NewErrorResourceHandleIn(s.errorInst, errorString((*errp).Error())),
+			Value: wioerror.NewErrorResourceHandleIn(s.errorInst, streamFailure{*errp}),
 		}
 	}
 	return StreamErrorClosed{}

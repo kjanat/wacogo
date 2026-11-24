@@ -209,7 +209,7 @@ func (s *IOWriterOutputStream) failWith(err error) {
 func (s *IOWriterOutputStream) takeStreamError() StreamError {
 	if errp := s.lastErr.Swap(nil); errp != nil {
 		return StreamErrorLastOperationFailed{
-			Value: wioerror.NewErrorResourceHandleIn(s.errorInst, errorString((*errp).Error())),
+			Value: wioerror.NewErrorResourceHandleIn(s.errorInst, streamFailure{*errp}),
 		}
 	}
 	return StreamErrorClosed{}
@@ -343,6 +343,9 @@ func (s *IOWriterOutputStream) blockingWriteAndFlush(total uint64, stage func(of
 	s.flushReq.Store(true)
 	s.signal(s.wake)
 	<-s.subscriptions.subscribe(s.readyForWrite)
+	if s.closed.Load() {
+		return Result_StreamErrorErr{Value: s.takeStreamError()}, nil
+	}
 	return Result_StreamErrorOk{}, nil
 }
 
@@ -470,12 +473,12 @@ func (p *outputPollable) Drop(_ context.Context) error {
 	return nil
 }
 
-// errorString satisfies wioerror.ErrorResource by returning a captured
-// debug message.
-type errorString string
+type streamFailure struct{ err error }
 
-func (e errorString) ToDebugString(_ context.Context) (string, error) {
-	return string(e), nil
+func (e streamFailure) ToDebugString(_ context.Context) (string, error) {
+	return e.err.Error(), nil
 }
+
+func (e streamFailure) Unwrap() error { return e.err }
 
 var _ OutputStream = (*IOWriterOutputStream)(nil)
