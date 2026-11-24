@@ -15,13 +15,14 @@ type GoOutgoingRequest interface {
 
 type outgoingRequestImpl struct {
 	r          *http.Request
+	headers    []TupleStringListU8
 	streamInst *host.ComponentInstance
 	pollInst   *host.ComponentInstance
 	errorInst  *host.ComponentInstance
 	body       *outgoingBodyImpl
 }
 
-func newOutgoingRequestImpl(h http.Header, streamInst, pollInst, errorInst *host.ComponentInstance) *outgoingRequestImpl {
+func newOutgoingRequestImpl(headers []TupleStringListU8, streamInst, pollInst, errorInst *host.ComponentInstance) *outgoingRequestImpl {
 	req := &http.Request{
 		Method: http.MethodGet,
 		URL: &url.URL{
@@ -30,10 +31,11 @@ func newOutgoingRequestImpl(h http.Header, streamInst, pollInst, errorInst *host
 		Proto:      "HTTP/1.1",
 		ProtoMajor: 1,
 		ProtoMinor: 1,
-		Header:     h,
+		Header:     headerFromEntries(headers),
 	}
 	return &outgoingRequestImpl{
 		r:          req,
+		headers:    headers,
 		streamInst: streamInst,
 		pollInst:   pollInst,
 		errorInst:  errorInst,
@@ -65,7 +67,7 @@ func (r *outgoingRequestImpl) Body(_ context.Context) (ResultOutgoingBody_, erro
 }
 
 func (r *outgoingRequestImpl) Headers(_ context.Context) (*FieldsHandle, error) {
-	return NewFieldsHandle(newFieldsImpl(r.r.Header, true)), nil
+	return NewFieldsHandle(newFieldsImpl(r.headers, true)), nil
 }
 
 func (r *outgoingRequestImpl) Method(_ context.Context) (Method, error) {

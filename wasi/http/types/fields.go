@@ -4,6 +4,7 @@ import (
 	"context"
 	"maps"
 	"net/http"
+	"slices"
 	"strings"
 
 	"github.com/kjanat/wacogo/internal/wasi/gen/wasi/http/types"
@@ -32,12 +33,38 @@ func isForbiddenHeader(name string) bool {
 }
 
 type fieldsImpl struct {
-	h         http.Header
+	entries   []TupleStringListU8
 	immutable bool
 }
 
-func newFieldsImpl(h http.Header, immutable bool) *fieldsImpl {
-	return &fieldsImpl{h: h, immutable: immutable}
+func newFieldsImpl(entries []TupleStringListU8, immutable bool) *fieldsImpl {
+	return &fieldsImpl{entries: cloneEntries(entries), immutable: immutable}
+}
+
+func fieldsFromHeader(h http.Header, immutable bool) *fieldsImpl {
+	var entries []TupleStringListU8
+	for _, name := range slices.Sorted(maps.Keys(h)) {
+		for _, v := range h[name] {
+			entries = append(entries, TupleStringListU8{F0: name, F1: []uint8(v)})
+		}
+	}
+	return &fieldsImpl{entries: entries, immutable: immutable}
+}
+
+func cloneEntries(entries []TupleStringListU8) []TupleStringListU8 {
+	out := make([]TupleStringListU8, len(entries))
+	for i, e := range entries {
+		out[i] = TupleStringListU8{F0: e.F0, F1: slices.Clone(e.F1)}
+	}
+	return out
+}
+
+func sameFieldName(a, b string) bool {
+	return http.CanonicalHeaderKey(a) == http.CanonicalHeaderKey(b)
+}
+
+func (hf *fieldsImpl) remove(name string) {
+	hf.entries = slices.DeleteFunc(hf.entries, func(e TupleStringListU8) bool { return sameFieldName(e.F0, name) })
 }
 
 func (hf *fieldsImpl) Append(ctx context.Context, name string, value []uint8) (Result_HeaderError, error) {
@@ -51,14 +78,12 @@ func (hf *fieldsImpl) Append(ctx context.Context, name string, value []uint8) (R
 		// preventing the guest from setting forbidden transport headers.
 		return types.Result_HeaderErrorOk{}, nil
 	}
-	hf.h.Add(name, string(value))
+	hf.entries = append(hf.entries, TupleStringListU8{F0: name, F1: slices.Clone(value)})
 	return types.Result_HeaderErrorOk{}, nil
 }
 
 func (hf *fieldsImpl) Clone(ctx context.Context) (*FieldsHandle, error) {
-	newHeaders := make(http.Header)
-	maps.Copy(newHeaders, hf.h)
-	return types.NewFieldsHandle(&fieldsImpl{newHeaders, false}), nil
+	return types.NewFieldsHandle(newFieldsImpl(hf.entries, false)), nil
 }
 
 func (hf *fieldsImpl) Delete(ctx context.Context, name string) (Result_HeaderError, error) {
@@ -67,31 +92,26 @@ func (hf *fieldsImpl) Delete(ctx context.Context, name string) (Result_HeaderErr
 			Value: types.HeaderErrorImmutable{},
 		}, nil
 	}
-	hf.h.Del(name)
+	hf.remove(name)
 	return types.Result_HeaderErrorOk{}, nil
 }
 
 func (hf *fieldsImpl) Entries(ctx context.Context) ([]TupleStringListU8, error) {
-	entries := make([]TupleStringListU8, 0, len(hf.h))
-	for name, values := range hf.h {
-		for _, v := range values {
-			entries = append(entries, TupleStringListU8{F0: name, F1: []uint8(v)})
-		}
-	}
-	return entries, nil
+	return cloneEntries(hf.entries), nil
 }
 
 func (hf *fieldsImpl) Get(ctx context.Context, name string) ([][]uint8, error) {
-	values := hf.h.Values(name)
-	result := make([][]uint8, len(values))
-	for i, v := range values {
-		result[i] = []uint8(v)
+	result := [][]uint8{}
+	for _, e := range hf.entries {
+		if sameFieldName(e.F0, name) {
+			result = append(result, slices.Clone(e.F1))
+		}
 	}
 	return result, nil
 }
 
 func (hf *fieldsImpl) Has(ctx context.Context, name string) (bool, error) {
-	return len(hf.h.Values(name)) > 0, nil
+	return slices.ContainsFunc(hf.entries, func(e TupleStringListU8) bool { return sameFieldName(e.F0, name) }), nil
 }
 
 func (hf *fieldsImpl) Set(ctx context.Context, name string, value [][]uint8) (Result_HeaderError, error) {
@@ -103,29 +123,26 @@ func (hf *fieldsImpl) Set(ctx context.Context, name string, value [][]uint8) (Re
 	if isForbiddenHeader(name) {
 		return types.Result_HeaderErrorOk{}, nil
 	}
-	hf.h.Del(name)
+	hf.remove(name)
 	for _, v := range value {
-		hf.h.Add(name, string(v))
+		hf.entries = append(hf.entries, TupleStringListU8{F0: name, F1: slices.Clone(v)})
 	}
 	return types.Result_HeaderErrorOk{}, nil
 }
 
-func headersFromFields(ctx context.Context, fh *FieldsHandle) (http.Header, error) {
+func entriesFromFields(ctx context.Context, fh *FieldsHandle) ([]TupleStringListU8, error) {
 	if impl, ok := fh.LocalImpl(); ok {
 		if fieldsImpl, ok := impl.(*fieldsImpl); ok {
-			return fieldsImpl.h, nil
+			return cloneEntries(fieldsImpl.entries), nil
 		}
 	}
+	return fh.Entries(ctx)
+}
 
+func headerFromEntries(entries []TupleStringListU8) http.Header {
 	h := make(http.Header)
-	entries, err := fh.Entries(ctx)
-	if err != nil {
-		return nil, err
+	for _, e := range entries {
+		h.Add(e.F0, string(e.F1))
 	}
-	for _, entry := range entries {
-		for _, v := range entry.F1 {
-			h.Add(entry.F0, string(v))
-		}
-	}
-	return h, nil
+	return h
 }

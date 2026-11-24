@@ -2,8 +2,8 @@ package types
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"net/http"
 
 	"github.com/kjanat/wacogo/host"
 	"github.com/kjanat/wacogo/internal/wasi/gen/wasi/http/types"
@@ -23,27 +23,21 @@ func (i *impl) HTTPErrorCode(_ context.Context, _ *wioerror.ErrorResourceHandle)
 }
 
 func (i *impl) NewFields(_ context.Context) (*FieldsHandle, error) {
-	return NewFieldsHandle(newFieldsImpl(make(http.Header), false)), nil
+	return NewFieldsHandle(newFieldsImpl(nil, false)), nil
 }
 
 func (i *impl) FieldsFromList(_ context.Context, values []TupleStringListU8) (ResultFieldsHeaderError, error) {
-	headers := make(http.Header)
-	for _, tuple := range values {
-		headers.Add(tuple.F0, string(tuple.F1))
-	}
 	return types.ResultFieldsHeaderErrorOk{
-		Value: NewFieldsHandle(newFieldsImpl(headers, false)),
+		Value: NewFieldsHandle(newFieldsImpl(values, false)),
 	}, nil
 }
 
 func (i *impl) NewOutgoingRequest(ctx context.Context, fields *FieldsHandle) (*OutgoingRequestHandle, error) {
-	defer fields.Drop(ctx)
-
-	h, err := headersFromFields(ctx, fields)
-	if err != nil {
-		return nil, err
+	entries, err := entriesFromFields(ctx, fields)
+	if dropErr := fields.Drop(ctx); err != nil || dropErr != nil {
+		return nil, errors.Join(err, dropErr)
 	}
-	ri := newOutgoingRequestImpl(h, i.streamInst, i.pollInst, i.errorInst)
+	ri := newOutgoingRequestImpl(entries, i.streamInst, i.pollInst, i.errorInst)
 	return NewOutgoingRequestHandle(ri), nil
 }
 
@@ -65,7 +59,9 @@ func (i *impl) IncomingBodyFinish(ctx context.Context, bodyHandle *IncomingBodyH
 	if !ok {
 		return nil, fmt.Errorf("wasi:http/types.incoming-body.finish: invalid incoming body handle")
 	}
-	bodyHandle.Drop(ctx)
+	if err := bodyHandle.Drop(ctx); err != nil {
+		return nil, fmt.Errorf("wasi:http/types.incoming-body.finish: %w", err)
+	}
 
 	return NewFutureTrailersHandle(&futureTrailersImpl{
 		headers:  bImpl.resp.Trailer,
@@ -77,8 +73,12 @@ func (i *impl) NewOutgoingResponse(_ context.Context, _ *FieldsHandle) (*Outgoin
 	return nil, fmt.Errorf("wasi:http/types.outgoing-response.constructor: %w", wasierr.ErrNotImplemented)
 }
 
-func (i *impl) OutgoingBodyFinish(ctx context.Context, bh *OutgoingBodyHandle, trailers OptionFields) (Result_ErrorCode, error) {
-	defer bh.Drop(ctx)
+func (i *impl) OutgoingBodyFinish(ctx context.Context, bh *OutgoingBodyHandle, trailers OptionFields) (result Result_ErrorCode, err error) {
+	defer func() {
+		if dropErr := bh.Drop(ctx); dropErr != nil {
+			result, err = nil, errors.Join(err, dropErr)
+		}
+	}()
 
 	impl, ok := bh.LocalImpl()
 	if !ok {
@@ -90,12 +90,11 @@ func (i *impl) OutgoingBodyFinish(ctx context.Context, bh *OutgoingBodyHandle, t
 	}
 
 	if trailers.IsSome {
-		defer trailers.Value.Drop(ctx)
-		h, err := headersFromFields(ctx, trailers.Value)
-		if err != nil {
-			return nil, err
+		entries, err := entriesFromFields(ctx, trailers.Value)
+		if dropErr := trailers.Value.Drop(ctx); err != nil || dropErr != nil {
+			return nil, errors.Join(err, dropErr)
 		}
-		obImpl.request.r.Trailer = h
+		obImpl.request.r.Trailer = headerFromEntries(entries)
 	}
 
 	if !obImpl.streamDropped {
@@ -103,11 +102,12 @@ func (i *impl) OutgoingBodyFinish(ctx context.Context, bh *OutgoingBodyHandle, t
 		return nil, fmt.Errorf("wasi:http/types.outgoing-body.finish: body stream not dropped")
 	}
 
+	var closeErr error
 	if obImpl.writeOpened {
-		obImpl.writer.Close()
+		closeErr = obImpl.writer.Close()
 		obImpl.writeOpened = false
 		obImpl.writer = nil
 	}
 
-	return types.Result_ErrorCodeOk{}, nil
+	return types.Result_ErrorCodeOk{}, closeErr
 }
