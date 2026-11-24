@@ -4,6 +4,7 @@ import (
 	"archive/tar"
 	"bytes"
 	"compress/gzip"
+	"errors"
 	"io"
 	"net/http"
 	"os"
@@ -86,17 +87,21 @@ func TestRunDownloadsPinnedCommit(t *testing.T) {
 	}
 }
 
-func testArchive(t *testing.T) []byte {
+type testEntry struct{ name, body string }
+
+func testArchive(t *testing.T, extra ...testEntry) []byte {
 	t.Helper()
 	var archive bytes.Buffer
 	gz := gzip.NewWriter(&archive)
 	tw := tar.NewWriter(gz)
-	for name, body := range map[string]string{
-		"component-model-c1/test/a/one.wast": "one",
-		"component-model-c1/test/two.wast":   "two",
-		"component-model-c1/test/notes.md":   "skip",
-		"component-model-c1/design/x.wast":   "skip",
-	} {
+	entries := []testEntry{
+		{"component-model-c1/test/a/one.wast", "one"},
+		{"component-model-c1/test/two.wast", "two"},
+		{"component-model-c1/test/notes.md", "skip"},
+		{"component-model-c1/design/x.wast", "skip"},
+	}
+	for _, entry := range append(entries, extra...) {
+		name, body := entry.name, entry.body
 		if err := tw.WriteHeader(&tar.Header{Name: name, Mode: 0o644, Size: int64(len(body)), Typeflag: tar.TypeReg}); err != nil {
 			t.Fatal(err)
 		}
@@ -143,6 +148,18 @@ func TestExtractReplacesMirror(t *testing.T) {
 	}
 	if _, err := os.Stat(filepath.Join(dir, "notes.md")); !os.IsNotExist(err) {
 		t.Fatalf("non-wast file written: %v", err)
+	}
+}
+
+func TestExtractDoesNotOverwriteDuplicate(t *testing.T) {
+	dir := t.TempDir()
+	archive := testArchive(t, testEntry{"component-model-c1/test/a/one.wast", "replacement"})
+	count, err := extract(bytes.NewReader(archive), "c1", dir)
+	if !errors.Is(err, os.ErrExist) || count != 2 {
+		t.Fatalf("extract duplicate = %d, %v", count, err)
+	}
+	if got := readTestFile(t, filepath.Join(dir, "a", "one.wast")); got != "one" {
+		t.Fatalf("duplicate replaced original: %q", got)
 	}
 }
 
