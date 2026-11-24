@@ -1,7 +1,7 @@
 github.com/coreos/go-semver v0.3.1 h1:yi21YpKnrx1gt5R+la8n5WgS0kCrsPp33dmEyHReZr4=
 github.com/coreos/go-semver v0.3.1/go.mod h1:irMmmIw/7yzSRPWryHsK7EYSg09caPQL03VsM8rvUec=
-github.com/kjanat/go-modules v0.11.0 h1:ThAzMewBc9oVdS+06ibIuJJ0iby3KUbMQgdJhqo4SZM=
-github.com/kjanat/go-modules v0.11.0/go.mod h1:TJLBKz7j7AjVbYfUhnRJTk3Cakci5oE/VA2UVnCz7vs=
+github.com/kjanat/go-modules v0.11.1 h1:ULZR+4xrNhSuMLRolll8MG9+HM0lNeIrPF0bufi61pk=
+github.com/kjanat/go-modules v0.11.1/go.mod h1:TJLBKz7j7AjVbYfUhnRJTk3Cakci5oE/VA2UVnCz7vs=
 github.com/kjanat/wazero v1.12.2 h1:KBXGrCQGza+opf6VsEPwczp7B7BcNe4WgLjWcBZjAWY=
 github.com/kjanat/wazero v1.12.2/go.mod h1:6j4cEbiug+UYd7xW6B/b66TwMRsJoXjja7tMHeTNXGA=
 github.com/sergi/go-diff v1.4.5 h1:3LvhZn2aCAWagLwIhga3BZiEZ82j5+oQ0vKDwkhjHCI=
