@@ -34,7 +34,7 @@ func TestPythonJSON(t *testing.T) {
 	})
 	t.Run("lifts a guest error without trapping", func(t *testing.T) {
 		output, err := call(t, "{")
-		if output != nil || err == nil || !strings.Contains(err.Error(), "Python formatter: Expecting property name") {
+		if output != nil || err == nil || !strings.Contains(err.Error(), "format-json: Expecting property name") {
 			t.Fatalf("format-json = %q, %v; want a Python JSON parse error", output, err)
 		}
 	})

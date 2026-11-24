@@ -58,7 +58,7 @@ func formatJSON(ctx context.Context, guest io.Reader, source []byte) ([]byte, er
 		if !ok {
 			return nil, fmt.Errorf("format-json returned %T as error, want string", result.Err())
 		}
-		return nil, fmt.Errorf("Python formatter: %s", message)
+		return nil, fmt.Errorf("format-json: %s", message)
 	}
 	list, ok := result.Ok().(*wacogo.ValList)
 	if !ok {
