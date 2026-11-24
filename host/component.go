@@ -574,7 +574,8 @@ func buildComponentWpType(c *Component) (*wasmparser.ComponentType, error) {
 				ExportOrder: childOrder,
 			})
 			subInstID := htb.PushInstanceType(wasmparser.InstanceTypeDesc{
-				Exports: childExp,
+				Exports:     childExp,
+				ExportOrder: childOrder,
 			})
 			_ = ctID
 			exp[child.exportName] = wasmparser.ComponentEntityType{

@@ -66,6 +66,7 @@ func (b *HostTypeBuilder) PushComponentType(t ComponentTypeDesc) ComponentTypeID
 // returns its ID. Useful when constructing a ComponentTypeDesc whose
 // imports reference an instance type built on the fly.
 func (b *HostTypeBuilder) PushInstanceType(t InstanceTypeDesc) ComponentInstanceTypeID {
+	t.ExportOrder = orderedKeys(t.ExportOrder, t.Exports, strings.Compare)
 	return b.arena.pushInstanceType(t)
 }
 

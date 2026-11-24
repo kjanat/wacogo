@@ -1,6 +1,9 @@
 package wasmparser
 
-import "testing"
+import (
+	"slices"
+	"testing"
+)
 
 func TestHostTypeBuilder_NonNil(t *testing.T) {
 	arena := NewArena(DefaultFeatures())
@@ -189,5 +192,25 @@ func TestTypeArena_HostTypeBuilder(t *testing.T) {
 	}
 	if arena.nextResourceID != 1 {
 		t.Fatalf("arena.nextResourceID after alloc: got %d, want 1", arena.nextResourceID)
+	}
+}
+
+func TestHostTypeBuilder_PushInstanceType_OrdersExports(t *testing.T) {
+	arena := NewArena(DefaultFeatures())
+	b := arena.HostTypeBuilder()
+	exports := map[string]ComponentEntityType{"zeta": {Kind: EntityModule}, "alpha": {Kind: EntityModule}, "mid": {Kind: EntityModule}}
+	for name, c := range map[string]struct {
+		order, want []string
+	}{
+		"none":    {nil, []string{"alpha", "mid", "zeta"}},
+		"partial": {[]string{"zeta", "gone", "zeta"}, []string{"zeta", "alpha", "mid"}},
+		"full":    {[]string{"mid", "zeta", "alpha"}, []string{"mid", "zeta", "alpha"}},
+	} {
+		t.Run(name, func(t *testing.T) {
+			id := b.PushInstanceType(InstanceTypeDesc{Exports: exports, ExportOrder: c.order})
+			if got := arena.InstanceTypes[id].ExportOrder; !slices.Equal(got, c.want) {
+				t.Fatalf("ExportOrder = %q, want %q", got, c.want)
+			}
+		})
 	}
 }
