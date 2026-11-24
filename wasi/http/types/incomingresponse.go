@@ -2,7 +2,6 @@ package types
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -72,10 +71,14 @@ func (b *incomingBodyImpl) Drop(_ context.Context) error {
 		return fmt.Errorf("wasi:http/types.incoming-body.drop: body stream not closed")
 	}
 	if b.stream == nil {
-		_, err := io.Copy(io.Discard, b.resp.Body)
-		return errors.Join(err, b.resp.Body.Close())
+		return drainAndClose(b.resp.Body)
 	}
 	return nil
+}
+
+func drainAndClose(body io.ReadCloser) error {
+	_, _ = io.Copy(io.Discard, body)
+	return body.Close()
 }
 
 func (b *incomingBodyImpl) Stream(_ context.Context) (ResultInputStream_, error) {
@@ -94,8 +97,7 @@ type incomingBodyStreamImpl struct {
 
 func (s *incomingBodyStreamImpl) Close() error {
 	s.closed = true
-	_, err := io.Copy(io.Discard, s.ReadCloser) // ensure the body is fully consumed so that the connection can be reused
-	return errors.Join(err, s.ReadCloser.Close())
+	return drainAndClose(s.ReadCloser)
 }
 
 type futureTrailersImpl struct {

@@ -4,12 +4,15 @@ import (
 	"context"
 	"errors"
 	"io"
+	"net"
 	"net/http"
+	"net/http/httptest"
 	"reflect"
 	"strings"
 	"testing"
 
 	"github.com/kjanat/wacogo/internal/wasi/gen/wasi/http/types"
+	"github.com/kjanat/wacogo/wasi/io/streams"
 )
 
 type faultyFields struct {
@@ -90,6 +93,10 @@ func TestIncomingBodyDropDrainsAndCloses(t *testing.T) {
 				}
 				return err
 			},
+			"finish": func(b *trackedBody) error {
+				_, err := (&impl{}).IncomingBodyFinish(context.Background(), NewIncomingBodyHandle(&incomingBodyImpl{resp: &http.Response{Body: b}}))
+				return err
+			},
 		} {
 			t.Run(name+"/"+kind, func(t *testing.T) {
 				rest := strings.NewReader("rest")
@@ -98,12 +105,13 @@ func TestIncomingBodyDropDrainsAndCloses(t *testing.T) {
 				if !body.closed {
 					t.Fatal("body not closed")
 				}
-				for _, want := range []error{c.readErr, c.closeErr} {
-					if want != nil && !errors.Is(err, want) {
-						t.Fatalf("err = %v, want %v", err, want)
-					}
+				if c.readErr != nil && errors.Is(err, c.readErr) {
+					t.Fatalf("drain error became a trap: %v", err)
 				}
-				if c.readErr == nil && c.closeErr == nil && err != nil {
+				if c.closeErr != nil && !errors.Is(err, c.closeErr) {
+					t.Fatalf("err = %v, want %v", err, c.closeErr)
+				}
+				if c.closeErr == nil && err != nil {
 					t.Fatal(err)
 				}
 				if c.readErr == nil && rest.Len() != 0 {
@@ -178,6 +186,82 @@ func TestOutgoingBodyFinish(t *testing.T) {
 		res, err := (&impl{}).OutgoingBodyFinish(ctx, NewOutgoingBodyHandle(foreignBody{dropErr: dropErr}), OptionFields{})
 		if res != nil || !errors.Is(err, dropErr) || !strings.Contains(err.Error(), "invalid outgoing body handle") {
 			t.Fatalf("finish = %v, %v", res, err)
+		}
+	})
+}
+
+func resetAfterPartialBody(t *testing.T) *httptest.Server {
+	t.Helper()
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		conn, buf, err := http.NewResponseController(w).Hijack()
+		if err != nil {
+			t.Error(err)
+			return
+		}
+		_, _ = buf.WriteString("HTTP/1.1 200 OK\r\nContent-Length: 100\r\n\r\npartial")
+		_ = buf.Flush()
+		if tcp, ok := conn.(*net.TCPConn); ok {
+			_ = tcp.SetLinger(0)
+		}
+		_ = conn.Close()
+	}))
+	t.Cleanup(srv.Close)
+	return srv
+}
+
+func TestIncomingBodyConnectionReset(t *testing.T) {
+	ctx := context.Background()
+	srv := resetAfterPartialBody(t)
+
+	t.Run("drop", func(t *testing.T) {
+		resp, err := srv.Client().Get(srv.URL)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if err := (&incomingBodyImpl{resp: resp}).Drop(ctx); err != nil {
+			t.Fatalf("drop after reset = %v", err)
+		}
+	})
+
+	t.Run("stream", func(t *testing.T) {
+		resp, err := srv.Client().Get(srv.URL)
+		if err != nil {
+			t.Fatal(err)
+		}
+		body := NewIncomingBodyHandle(&incomingBodyImpl{resp: resp})
+		res, err := body.Stream(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		ok, isOK := res.(types.ResultInputStream_Ok)
+		if !isOK {
+			t.Fatalf("stream = %#v", res)
+		}
+		var got []byte
+		var streamErr streams.StreamError
+		for streamErr == nil {
+			r, err := ok.Value.BlockingRead(ctx, 64)
+			if err != nil {
+				t.Fatalf("blocking-read trapped: %v", err)
+			}
+			switch r := r.(type) {
+			case streams.ResultListU8StreamErrorOk:
+				got = append(got, r.Value...)
+			case streams.ResultListU8StreamErrorErr:
+				streamErr = r.Value
+			}
+		}
+		if string(got) != "partial" {
+			t.Fatalf("read %q, want %q", got, "partial")
+		}
+		if _, failed := streamErr.(streams.StreamErrorLastOperationFailed); !failed {
+			t.Fatalf("stream error = %#v, want last-operation-failed", streamErr)
+		}
+		if err := ok.Value.Drop(ctx); err != nil {
+			t.Fatalf("stream drop after reset = %v", err)
+		}
+		if _, err := (&impl{}).IncomingBodyFinish(ctx, body); err != nil {
+			t.Fatalf("finish after reset = %v", err)
 		}
 	})
 }
