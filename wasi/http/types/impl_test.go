@@ -10,6 +10,7 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/kjanat/wacogo/internal/wasi/gen/wasi/http/types"
 	"github.com/kjanat/wacogo/internal/wasi/gen/wasi/io/wioerror"
@@ -72,8 +73,9 @@ func (b *trackedBody) Close() error {
 	return b.closeErr
 }
 
-func TestIncomingBodyDropDrainsAndCloses(t *testing.T) {
+func TestIncomingBodyReleaseClosesBody(t *testing.T) {
 	readErr, closeErr := errors.New("read"), errors.New("close")
+	ctx := context.Background()
 	for name, c := range map[string]struct {
 		readErr, closeErr error
 	}{
@@ -85,25 +87,33 @@ func TestIncomingBodyDropDrainsAndCloses(t *testing.T) {
 		for kind, k := range map[string]struct {
 			release      func(*trackedBody) error
 			reportsClose bool
+			drains       bool
 		}{
-			"drop": {func(b *trackedBody) error {
-				return consumeBody(t, &http.Response{Body: b}).Drop(context.Background())
-			}, true},
-			"stream": {func(b *trackedBody) error {
-				s := &incomingBodyStreamImpl{ReadCloser: b}
-				err := s.Close()
-				if !s.closed {
-					t.Errorf("%s/stream: stream not marked closed", name)
+			"drop": {release: func(b *trackedBody) error {
+				return consumeBody(t, &http.Response{Body: b}).Drop(ctx)
+			}, reportsClose: true},
+			"stream": {release: func(b *trackedBody) error {
+				body := consumeBody(t, &http.Response{Body: b})
+				res, err := body.Stream(ctx)
+				if err != nil {
+					t.Fatal(err)
 				}
-				return err
-			}, true},
-			"finish": {func(b *trackedBody) error {
-				fh, err := (&impl{}).IncomingBodyFinish(context.Background(), consumeBody(t, &http.Response{Body: b}))
+				stream, ok := res.(types.ResultInputStream_Ok)
+				if !ok {
+					t.Fatalf("stream = %#v", res)
+				}
+				if err := stream.Value.Drop(ctx); err != nil {
+					t.Fatalf("stream drop = %v", err)
+				}
+				return body.Drop(ctx)
+			}, reportsClose: true},
+			"finish": {release: func(b *trackedBody) error {
+				fh, err := (&impl{}).IncomingBodyFinish(ctx, consumeBody(t, &http.Response{Body: b}))
 				if err == nil {
 					waitReady(t, fh)
 				}
 				return err
-			}, false},
+			}, drains: true},
 		} {
 			t.Run(name+"/"+kind, func(t *testing.T) {
 				rest := strings.NewReader("rest")
@@ -113,23 +123,102 @@ func TestIncomingBodyDropDrainsAndCloses(t *testing.T) {
 					t.Fatal("body not closed")
 				}
 				if c.readErr != nil && errors.Is(err, c.readErr) {
-					t.Fatalf("drain error became a trap: %v", err)
+					t.Fatalf("read error became a trap: %v", err)
 				}
-				if !k.reportsClose && err != nil {
+				if k.reportsClose && c.closeErr != nil {
+					if !errors.Is(err, c.closeErr) {
+						t.Fatalf("err = %v, want %v", err, c.closeErr)
+					}
+				} else if err != nil {
 					t.Fatalf("err = %v, want nil", err)
 				}
-				if k.reportsClose && c.closeErr != nil && !errors.Is(err, c.closeErr) {
-					t.Fatalf("err = %v, want %v", err, c.closeErr)
+				if k.drains && c.readErr == nil && rest.Len() != 0 {
+					t.Fatal("finish did not read the rest of the body")
 				}
-				if (!k.reportsClose || c.closeErr == nil) && err != nil {
-					t.Fatal(err)
-				}
-				if c.readErr == nil && rest.Len() != 0 {
-					t.Fatal("body not drained")
+				if kind == "drop" && rest.Len() != len("rest") {
+					t.Fatal("drop read the body")
 				}
 			})
 		}
 	}
+}
+
+func endlessBody(t *testing.T, stall bool) *httptest.Server {
+	t.Helper()
+	stop := make(chan struct{})
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		chunk := []byte(strings.Repeat("x", 1024))
+		for {
+			if _, err := w.Write(chunk); err != nil {
+				return
+			}
+			w.(http.Flusher).Flush()
+			pause := time.After(time.Millisecond)
+			if stall {
+				pause = nil
+			}
+			select {
+			case <-stop:
+				return
+			case <-r.Context().Done():
+				return
+			case <-pause:
+			}
+		}
+	}))
+	t.Cleanup(func() {
+		close(stop)
+		srv.Close()
+	})
+	return srv
+}
+
+func within(t *testing.T, what string, f func() error) {
+	t.Helper()
+	done := make(chan error, 1)
+	go func() { done <- f() }()
+	select {
+	case err := <-done:
+		if err != nil {
+			t.Fatalf("%s: %v", what, err)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatalf("%s did not return", what)
+	}
+}
+
+func TestIncomingBodyDropReturnsOnEndlessBody(t *testing.T) {
+	for name, stall := range map[string]bool{"streaming": false, "stalled": true} {
+		t.Run(name, func(t *testing.T) {
+			testEndlessBodyDrop(t, stall)
+		})
+	}
+}
+
+func testEndlessBodyDrop(t *testing.T, stall bool) {
+	ctx := context.Background()
+	t.Run("body", func(t *testing.T) {
+		body := incomingBody(t, endlessBody(t, stall))
+		within(t, "incoming-body drop", func() error { return body.Drop(ctx) })
+	})
+	t.Run("stream", func(t *testing.T) {
+		body := incomingBody(t, endlessBody(t, stall))
+		res, err := body.Stream(ctx)
+		if err != nil {
+			t.Fatal(err)
+		}
+		stream, ok := res.(types.ResultInputStream_Ok)
+		if !ok {
+			t.Fatalf("stream = %#v", res)
+		}
+		if r, err := stream.Value.BlockingRead(ctx, 16); err != nil {
+			t.Fatal(err)
+		} else if _, ok := r.(streams.ResultListU8StreamErrorOk); !ok {
+			t.Fatalf("blocking-read = %#v", r)
+		}
+		within(t, "input-stream drop", func() error { return stream.Value.Drop(ctx) })
+		within(t, "incoming-body drop", func() error { return body.Drop(ctx) })
+	})
 }
 
 func consumeBody(t *testing.T, resp *http.Response) *IncomingBodyHandle {
@@ -418,6 +507,19 @@ func TestFutureTrailersDeliverResponseTrailers(t *testing.T) {
 	for name, prepare := range map[string]func(*IncomingBodyHandle){
 		"finish":      func(*IncomingBodyHandle) {},
 		"read stream": func(b *IncomingBodyHandle) { readAndDropStream(t, b) },
+		"drop stream unread": func(b *IncomingBodyHandle) {
+			res, err := b.Stream(context.Background())
+			if err != nil {
+				t.Fatal(err)
+			}
+			stream, ok := res.(types.ResultInputStream_Ok)
+			if !ok {
+				t.Fatalf("stream = %#v", res)
+			}
+			if err := stream.Value.Drop(context.Background()); err != nil {
+				t.Fatal(err)
+			}
+		},
 	} {
 		t.Run(name, func(t *testing.T) {
 			body := incomingBody(t, srv)

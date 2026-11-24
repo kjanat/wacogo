@@ -43,7 +43,7 @@ func (r *incomingResponseImpl) Consume(_ context.Context) (ResultIncomingBody_, 
 func newIncomingBody(resp *http.Response, errorInst, pollInst, streamsInst *host.ComponentInstance) *incomingBodyImpl {
 	return &incomingBodyImpl{
 		resp:        resp,
-		received:    &bodyReceiver{body: resp.Body},
+		received:    newBodyReceiver(resp.Body),
 		errorInst:   errorInst,
 		pollInst:    pollInst,
 		streamsInst: streamsInst,
@@ -68,41 +68,65 @@ type incomingBodyImpl struct {
 	streamsInst *host.ComponentInstance
 }
 
+const bodyChunkSize = 32 << 10
+
 type bodyReceiver struct {
-	body io.ReadCloser
-	mu   sync.Mutex
-	err  error
+	body   io.ReadCloser
+	start  sync.Once
+	chunks chan []byte
+	err    error
+
+	closeOnce sync.Once
+	closed    chan struct{}
 }
 
-func (r *bodyReceiver) Read(p []byte) (int, error) {
-	n, err := r.body.Read(p)
-	if err == nil || err == io.EOF {
-		return n, err
-	}
-	r.mu.Lock()
-	if r.err == nil {
-		r.err = err
-	}
-	r.mu.Unlock()
-	return n, receiveError{err}
+func newBodyReceiver(body io.ReadCloser) *bodyReceiver {
+	return &bodyReceiver{body: body, chunks: make(chan []byte), closed: make(chan struct{})}
 }
 
-func (r *bodyReceiver) Close() error {
+func (r *bodyReceiver) receive() <-chan []byte {
+	r.start.Do(func() { go r.fetch() })
+	return r.chunks
+}
+
+func (r *bodyReceiver) fetch() {
+	defer close(r.chunks)
+	for {
+		buf := make([]byte, bodyChunkSize)
+		n, err := r.body.Read(buf)
+		if n > 0 {
+			select {
+			case r.chunks <- buf[:n]:
+			case <-r.closed:
+				return
+			}
+		}
+		if err != nil {
+			if err != io.EOF {
+				r.err = err
+			}
+			return
+		}
+	}
+}
+
+func (r *bodyReceiver) end() error {
+	if r.err != nil {
+		return receiveError{r.err}
+	}
+	return io.EOF
+}
+
+func (r *bodyReceiver) close() error {
+	r.closeOnce.Do(func() { close(r.closed) })
 	return r.body.Close()
-}
-
-func (r *bodyReceiver) receiveErr() error {
-	r.mu.Lock()
-	defer r.mu.Unlock()
-	return r.err
 }
 
 // Drop matches the Drop(ctx) error shape that the witgen-emitted
 // resourceDtor type-asserts on guest-driven resource.drop, and that
 // the host-extern-table drain calls at close. The spec requires the
 // body's input-stream child to be dropped first; violating that
-// returns an error. When no stream was opened, drain the response
-// body and close it so the underlying connection can be reused.
+// returns an error.
 func (b *incomingBodyImpl) Drop(_ context.Context) error {
 	if b.finished {
 		return nil
@@ -110,10 +134,7 @@ func (b *incomingBodyImpl) Drop(_ context.Context) error {
 	if b.stream != nil && !b.stream.closed {
 		return fmt.Errorf("wasi:http/types.incoming-body.drop: body stream not closed")
 	}
-	if b.stream == nil {
-		return drainAndClose(b.received)
-	}
-	return nil
+	return b.received.close()
 }
 
 func (b *incomingBodyImpl) finish(pollInst *host.ComponentInstance) (*futureTrailersImpl, error) {
@@ -122,13 +143,12 @@ func (b *incomingBodyImpl) finish(pollInst *host.ComponentInstance) (*futureTrai
 	}
 	b.finished = true
 	f := &futureTrailersImpl{done: make(chan struct{}), pollInst: pollInst}
-	drain := b.stream == nil
 	go func() {
 		defer close(f.done)
-		if drain {
-			_ = drainAndClose(b.received)
+		for range b.received.receive() {
 		}
-		f.err = b.received.receiveErr()
+		_ = b.received.close()
+		f.err = b.received.err
 		if f.err == nil {
 			f.trailers = b.resp.Trailer
 		}
@@ -136,28 +156,66 @@ func (b *incomingBodyImpl) finish(pollInst *host.ComponentInstance) (*futureTrai
 	return f, nil
 }
 
-func drainAndClose(body io.ReadCloser) error {
-	_, _ = io.Copy(io.Discard, body)
-	return body.Close()
-}
-
 func (b *incomingBodyImpl) Stream(_ context.Context) (ResultInputStream_, error) {
 	if b.stream != nil {
 		return types.ResultInputStream_Err{}, nil
 	}
-	b.stream = &incomingBodyStreamImpl{ReadCloser: b.received}
-	h := streams.NewInputStreamHandleIn(b.streamsInst, streams.NewIOReaderInputStream(b.errorInst, b.pollInst, b.stream))
+	b.stream = &incomingBodyStreamImpl{received: b.received, stopped: make(chan struct{})}
+	h := streams.NewInputStreamHandleIn(b.streamsInst, &bodyInputStream{
+		IOReaderInputStream: streams.NewIOReaderInputStream(b.errorInst, b.pollInst, b.stream),
+		body:                b.stream,
+	})
 	return types.ResultInputStream_Ok{Value: h}, nil
 }
 
 type incomingBodyStreamImpl struct {
-	io.ReadCloser
-	closed bool
+	received *bodyReceiver
+	pending  []byte
+	closed   bool
+
+	stopOnce sync.Once
+	stopped  chan struct{}
+}
+
+func (s *incomingBodyStreamImpl) Read(p []byte) (int, error) {
+	if len(s.pending) == 0 {
+		select {
+		case chunk, ok := <-s.received.receive():
+			if !ok {
+				return 0, s.received.end()
+			}
+			s.pending = chunk
+		case <-s.stopped:
+			return 0, io.ErrClosedPipe
+		}
+	}
+	n := copy(p, s.pending)
+	s.pending = s.pending[n:]
+	return n, nil
 }
 
 func (s *incomingBodyStreamImpl) Close() error {
 	s.closed = true
-	return drainAndClose(s.ReadCloser)
+	return nil
+}
+
+func (s *incomingBodyStreamImpl) stop() {
+	s.stopOnce.Do(func() { close(s.stopped) })
+}
+
+type bodyInputStream struct {
+	*streams.IOReaderInputStream
+	body *incomingBodyStreamImpl
+}
+
+func (s *bodyInputStream) Drop(ctx context.Context) error {
+	s.body.stop()
+	return s.IOReaderInputStream.Drop(ctx)
+}
+
+func (s *bodyInputStream) DestroyOrphan(ctx context.Context) error {
+	s.body.stop()
+	return s.IOReaderInputStream.DestroyOrphan(ctx)
 }
 
 type futureTrailersImpl struct {
