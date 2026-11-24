@@ -734,6 +734,30 @@ func TestSpliceForwardsClosedFromInput(t *testing.T) {
 	})
 }
 
+type settlingInputStream struct{ *sliceInputStream }
+
+func (s settlingInputStream) Read(ctx context.Context, n uint64) (ResultListU8StreamError, error) {
+	synctest.Wait()
+	return s.sliceInputStream.Read(ctx, n)
+}
+
+func TestSpliceReportsWriteFailure(t *testing.T) {
+	synctest.Test(t, func(t *testing.T) {
+		s := NewIOWriterOutputStream(nil, nil, &errorWriter{err: errors.New("boom")})
+		defer s.Drop(context.Background())
+		okWrite(t, s, []byte("hi"))
+		in := NewInputStreamHandle(settlingInputStream{&sliceInputStream{data: []byte("more")}})
+		err := errSplice(t, s, in, 4)
+		lof, ok := err.(StreamErrorLastOperationFailed)
+		if !ok {
+			t.Fatalf("expected last-operation-failed, got %T", err)
+		}
+		if msg, _ := lof.Value.ToDebugString(bgCtx); msg != "boom" {
+			t.Fatalf("debug string = %q, want %q", msg, "boom")
+		}
+	})
+}
+
 func TestBlockingSpliceCopiesBytes(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
 		var dest bytes.Buffer

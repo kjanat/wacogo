@@ -49,7 +49,6 @@ type instantiationState struct {
 	// Component index spaces
 	funcs              []*ExportedFunc      // spec: func
 	componentInstances []*ComponentInstance // spec: instance
-	values             []Val                // spec: value
 	ascribedExports    map[string]*ComponentInstance
 	// types is the type index space (spec: type), filled in by
 	// planResolveType steps. It is instantiation-time scratch: once the

@@ -14,7 +14,6 @@ import (
 // orphan implements host.DestroyOrphan and records when it was called.
 type orphan struct {
 	id           int
-	destroyedAt  atomic.Int32
 	destroySeqCh chan int
 	destroyError error
 }

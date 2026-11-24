@@ -47,8 +47,8 @@ func decompress() ([]byte, error) {
 			decompressErr = err
 			return
 		}
-		defer gr.Close()
 		wasmToolsBin, decompressErr = io.ReadAll(gr)
+		decompressErr = errors.Join(decompressErr, gr.Close())
 	})
 	return wasmToolsBin, decompressErr
 }

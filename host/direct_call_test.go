@@ -32,8 +32,7 @@ func TestDirect_CompToHostFailures(t *testing.T) {
 		case 1:
 			return wantErr
 		case 2:
-			var m map[int]int
-			m[0] = 1 // runtime panic
+			stack[0] /= stack[0] - 2
 		case 3:
 			panic("string panic")
 		}
@@ -85,7 +84,7 @@ func TestDirect_CompToHostFailures(t *testing.T) {
 		want []string
 	}{
 		{1, []string{wantErr.Error()}},
-		{2, []string{"assignment to entry in nil map", "Go runtime stack trace"}},
+		{2, []string{"integer divide by zero", "Go runtime stack trace"}},
 		{3, []string{"string panic"}},
 	} {
 		_, err := call(tc.x)

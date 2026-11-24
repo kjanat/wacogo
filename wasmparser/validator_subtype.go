@@ -95,22 +95,6 @@ func (v *Validator) newSubtypeCheckerWithRemapping() *SubtypeChecker {
 	}
 }
 
-// newSubtypeCheckerOnArena constructs a single-arena SubtypeChecker without a
-// live Validator. Used by validator-internal code paths that still need
-// remap* (for staging the result of an instantiation).
-func newSubtypeCheckerOnArena(arena *TypeArena) *SubtypeChecker {
-	return &SubtypeChecker{
-		aArena:             arena,
-		bArena:             arena,
-		writeArena:         arena,
-		resourceMapping:    make(map[ResourceID]scopedResID),
-		definedTypeRemap:   make(map[ComponentDefinedTypeID]ComponentDefinedTypeID),
-		funcTypeRemap:      make(map[ComponentFuncTypeID]ComponentFuncTypeID),
-		instanceTypeRemap:  make(map[ComponentInstanceTypeID]ComponentInstanceTypeID),
-		definedTypeMapping: make(map[ComponentDefinedTypeID]ComponentDefinedTypeID),
-	}
-}
-
 // isSubtype checks whether entity type `a` (in aArena) is a subtype of
 // entity type `b` (in bArena). Returns nil if a is a subtype of b.
 func (sc *SubtypeChecker) isSubtype(a, b ComponentEntityType) error {

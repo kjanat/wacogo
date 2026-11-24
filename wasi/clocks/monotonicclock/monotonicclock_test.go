@@ -24,7 +24,7 @@ func pollableReady(t *testing.T, ph *poll.PollableHandle) bool {
 func TestNowAdvancesWithVirtualTime(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
 		c := newClock(nil)
-		start, _ := c.Now(nil)
+		start, _ := c.Now(bgCtx)
 		time.Sleep(2*time.Second + 500*time.Millisecond)
 		got, err := c.Now(bgCtx)
 		if err != nil {
@@ -110,7 +110,7 @@ func TestSubscribeInstantInPastIsImmediatelyReady(t *testing.T) {
 func TestSubscribeInstantInFutureBecomesReady(t *testing.T) {
 	synctest.Test(t, func(t *testing.T) {
 		c := newClock(nil)
-		start, _ := c.Now(nil)
+		start, _ := c.Now(bgCtx)
 		ph, err := c.SubscribeInstant(bgCtx, start+uint64(2*time.Second))
 		if err != nil {
 			t.Fatalf("SubscribeInstant: %v", err)

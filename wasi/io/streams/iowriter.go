@@ -403,7 +403,7 @@ func (s *IOWriterOutputStream) BlockingSplice(ctx context.Context, src *InputStr
 func (s *IOWriterOutputStream) spliceWriteResult(ctx context.Context, readRes ResultListU8StreamError, op string) (ResultU64StreamError, error) {
 	switch r := readRes.(type) {
 	case ResultListU8StreamErrorErr:
-		return ResultU64StreamErrorErr{Value: r.Value}, nil
+		return ResultU64StreamErrorErr(r), nil
 	case ResultListU8StreamErrorOk:
 		if len(r.Value) == 0 {
 			return ResultU64StreamErrorOk{Value: 0}, nil
@@ -413,7 +413,7 @@ func (s *IOWriterOutputStream) spliceWriteResult(ctx context.Context, readRes Re
 			return nil, err
 		}
 		if w, ok := writeRes.(Result_StreamErrorErr); ok {
-			return ResultU64StreamErrorErr{Value: w.Value}, nil
+			return ResultU64StreamErrorErr(w), nil
 		}
 		return ResultU64StreamErrorOk{Value: uint64(len(r.Value))}, nil
 	default:

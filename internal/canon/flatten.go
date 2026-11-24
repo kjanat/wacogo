@@ -151,10 +151,3 @@ func coreValueTypeToAPI(v coreValueType) api.ValueType {
 		return api.ValueTypeI32
 	}
 }
-
-// coreValueTypeToWasm returns the raw wasm byte for a coreValueType.
-// The byte values are already identical (0x7f, 0x7e, 0x7d, 0x7c), so this
-// is a simple cast.
-func coreValueTypeToWasm(v coreValueType) byte {
-	return byte(v)
-}

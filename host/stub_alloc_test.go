@@ -93,7 +93,7 @@ func TestStubAllocator_MatchesWasmRealloc(t *testing.T) {
 		{oldPtr: 16, oldSize: 48, align: 4, size: 8},  // shrink: copies the prefix
 		{align: 1, size: 3 << 16},                     // grows by several pages
 	}
-	var bumpW api.MutableGlobal = wasmStub.ExportedGlobal("bump").(api.MutableGlobal)
+	bumpW := wasmStub.ExportedGlobal("bump").(api.MutableGlobal)
 	for i, o := range ops {
 		if o.reset {
 			bumpW.Set(uint64(uint32(stubBumpInitial)))

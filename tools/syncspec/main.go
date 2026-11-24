@@ -7,6 +7,7 @@ import (
 	"archive/tar"
 	"bufio"
 	"compress/gzip"
+	"errors"
 	"flag"
 	"fmt"
 	"io"
@@ -20,9 +21,16 @@ func main() {
 	specDir := flag.String("spec-dir", "testdata/spec", "directory holding UPSTREAM.txt and the mirror")
 	flag.Parse()
 
-	commit, err := readCommit(filepath.Join(*specDir, "UPSTREAM.txt"))
+	if err := run(*specDir); err != nil {
+		fmt.Fprintf(os.Stderr, "syncspec: %v\n", err)
+		os.Exit(1)
+	}
+}
+
+func run(specDir string) (err error) {
+	commit, err := readCommit(filepath.Join(specDir, "UPSTREAM.txt"))
 	if err != nil {
-		fail("read UPSTREAM.txt: %v", err)
+		return fmt.Errorf("read UPSTREAM.txt: %w", err)
 	}
 
 	url := fmt.Sprintf("https://codeload.github.com/WebAssembly/component-model/tar.gz/%s", commit)
@@ -30,68 +38,81 @@ func main() {
 
 	resp, err := http.Get(url)
 	if err != nil {
-		fail("download: %v", err)
+		return fmt.Errorf("download: %w", err)
 	}
-	defer resp.Body.Close()
+	defer closeInto(&err, resp.Body)
 	if resp.StatusCode != http.StatusOK {
-		fail("download: HTTP %d", resp.StatusCode)
+		return fmt.Errorf("download: HTTP %d", resp.StatusCode)
 	}
 
-	gz, err := gzip.NewReader(resp.Body)
+	count, err := extract(resp.Body, commit, specDir)
 	if err != nil {
-		fail("gunzip: %v", err)
+		return err
 	}
-	defer gz.Close()
+	fmt.Fprintf(os.Stderr, "wrote %d .wast files into %s\n", count, specDir)
+	return nil
+}
 
-	if err := clearMirror(*specDir); err != nil {
-		fail("clear mirror: %v", err)
+func closeInto(err *error, c io.Closer) {
+	*err = errors.Join(*err, c.Close())
+}
+
+func extract(archive io.Reader, commit, specDir string) (count int, err error) {
+	gz, err := gzip.NewReader(archive)
+	if err != nil {
+		return 0, fmt.Errorf("gunzip: %w", err)
+	}
+	defer closeInto(&err, gz)
+
+	if err := clearMirror(specDir); err != nil {
+		return 0, fmt.Errorf("clear mirror: %w", err)
 	}
 
 	tr := tar.NewReader(gz)
 	prefix := fmt.Sprintf("component-model-%s/test/", commit)
-	count := 0
 	for {
 		hdr, err := tr.Next()
 		if err == io.EOF {
-			break
+			return count, nil
 		}
 		if err != nil {
-			fail("tar: %v", err)
+			return count, fmt.Errorf("tar: %w", err)
 		}
 		if hdr.Typeflag != tar.TypeReg {
 			continue
 		}
-		if !strings.HasPrefix(hdr.Name, prefix) {
+		rel, ok := strings.CutPrefix(hdr.Name, prefix)
+		if !ok || !strings.HasSuffix(rel, ".wast") {
 			continue
 		}
-		rel := strings.TrimPrefix(hdr.Name, prefix)
-		if !strings.HasSuffix(rel, ".wast") {
-			continue
+		if err := writeFile(filepath.Join(specDir, rel), tr); err != nil {
+			return count, err
 		}
-		dst := filepath.Join(*specDir, rel)
-		if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
-			fail("mkdir %s: %v", filepath.Dir(dst), err)
-		}
-		f, err := os.Create(dst)
-		if err != nil {
-			fail("create %s: %v", dst, err)
-		}
-		if _, err := io.Copy(f, tr); err != nil {
-			f.Close()
-			fail("write %s: %v", dst, err)
-		}
-		f.Close()
 		count++
 	}
-	fmt.Fprintf(os.Stderr, "wrote %d .wast files into %s\n", count, *specDir)
 }
 
-func readCommit(path string) (string, error) {
+func writeFile(dst string, r io.Reader) (err error) {
+	if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
+		return fmt.Errorf("mkdir %s: %w", filepath.Dir(dst), err)
+	}
+	f, err := os.Create(dst)
+	if err != nil {
+		return fmt.Errorf("create %s: %w", dst, err)
+	}
+	defer closeInto(&err, f)
+	if _, err := io.Copy(f, r); err != nil {
+		return fmt.Errorf("write %s: %w", dst, err)
+	}
+	return nil
+}
+
+func readCommit(path string) (commit string, err error) {
 	f, err := os.Open(path)
 	if err != nil {
 		return "", err
 	}
-	defer f.Close()
+	defer closeInto(&err, f)
 	scanner := bufio.NewScanner(f)
 	for scanner.Scan() {
 		line := strings.TrimSpace(scanner.Text())
@@ -111,7 +132,7 @@ func clearMirror(specDir string) error {
 		return err
 	}
 	for _, e := range entries {
-		if e.Name() == "UPSTREAM.txt" {
+		if e.Name() == "UPSTREAM.txt" || e.Name() == "skip.json" {
 			continue
 		}
 		if err := os.RemoveAll(filepath.Join(specDir, e.Name())); err != nil {
@@ -119,9 +140,4 @@ func clearMirror(specDir string) error {
 		}
 	}
 	return nil
-}
-
-func fail(format string, args ...any) {
-	fmt.Fprintf(os.Stderr, "syncspec: "+format+"\n", args...)
-	os.Exit(1)
 }

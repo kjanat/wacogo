@@ -400,7 +400,8 @@ func TestCoreTableAdmissionCancellationNotifierShutdown(t *testing.T) {
 			canceled, cancel := context.WithCancel(ctx)
 			cancel()
 			fn := instance.ExportedFunc("run")
-			if call == "Drop" {
+			switch call {
+			case "Drop":
 				for _, owned := range instance.owned {
 					if m, ok := owned.(*accountedModule); ok {
 						table := NewResourceTable(&ComponentInstance{})
@@ -411,9 +412,9 @@ func TestCoreTableAdmissionCancellationNotifierShutdown(t *testing.T) {
 						err = handle.Drop(canceled)
 					}
 				}
-			} else if call == "CallRaw" {
+			case "CallRaw":
 				err = fn.CallRaw(canceled, nil, func(*CallContext, *CallContext, []uint64) error { return nil }, func(*CallContext, *CallContext, []uint64) error { return nil })
-			} else {
+			default:
 				_, err = fn.Call(canceled)
 			}
 			if err == nil {

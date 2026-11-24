@@ -57,16 +57,6 @@ const maxStringByteLength uint32 = (1 << 28) - 1
 // codedLen: clear ⇒ Latin-1 (1 byte/char), set ⇒ UTF-16 (2 bytes/unit).
 const latin1UTF16HighBit uint32 = 1 << 31
 
-func unitSize(enc StringEncoding) uint32 {
-	switch enc {
-	case EncUTF8, EncLatin1UTF16:
-		return 1
-	case EncUTF16:
-		return 2
-	}
-	return 1
-}
-
 func stringAlign(enc StringEncoding) uint32 {
 	switch enc {
 	case EncUTF16, EncLatin1UTF16:
