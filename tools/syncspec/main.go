@@ -11,6 +11,7 @@ import (
 	"flag"
 	"fmt"
 	"io"
+	"io/fs"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -64,7 +65,12 @@ func extract(archive io.Reader, commit, specDir string) (count int, err error) {
 	}
 	defer closeInto(&err, gz)
 
-	if err := clearMirror(specDir); err != nil {
+	root, err := os.OpenRoot(specDir)
+	if err != nil {
+		return 0, fmt.Errorf("open mirror: %w", err)
+	}
+	defer closeInto(&err, root)
+	if err := clearMirror(root); err != nil {
 		return 0, fmt.Errorf("clear mirror: %w", err)
 	}
 
@@ -85,18 +91,23 @@ func extract(archive io.Reader, commit, specDir string) (count int, err error) {
 		if !ok || !strings.HasSuffix(rel, ".wast") {
 			continue
 		}
-		if err := writeFile(filepath.Join(specDir, rel), tr); err != nil {
+		if err := writeFile(root, rel, tr); err != nil {
 			return count, err
 		}
 		count++
 	}
 }
 
-func writeFile(dst string, r io.Reader) (err error) {
-	if err := os.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
+func writeFile(root *os.Root, name string, r io.Reader) (err error) {
+	// Tar names use slashes. Apply the same separator and drive rules on all hosts.
+	dst, err := filepath.Localize(name)
+	if err != nil || strings.ContainsAny(name, `\:`) {
+		return fmt.Errorf("invalid spec path %q", name)
+	}
+	if err := root.MkdirAll(filepath.Dir(dst), 0o755); err != nil {
 		return fmt.Errorf("mkdir %s: %w", filepath.Dir(dst), err)
 	}
-	f, err := os.Create(dst)
+	f, err := root.OpenFile(dst, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o666)
 	if err != nil {
 		return fmt.Errorf("create %s: %w", dst, err)
 	}
@@ -126,8 +137,8 @@ func readCommit(path string) (commit string, err error) {
 	return "", fmt.Errorf("no commit: line in %s", path)
 }
 
-func clearMirror(specDir string) error {
-	entries, err := os.ReadDir(specDir)
+func clearMirror(root *os.Root) error {
+	entries, err := fs.ReadDir(root.FS(), ".")
 	if err != nil {
 		return err
 	}
@@ -135,7 +146,7 @@ func clearMirror(specDir string) error {
 		if e.Name() == "UPSTREAM.txt" || e.Name() == "skip.json" {
 			continue
 		}
-		if err := os.RemoveAll(filepath.Join(specDir, e.Name())); err != nil {
+		if err := root.RemoveAll(e.Name()); err != nil {
 			return err
 		}
 	}
