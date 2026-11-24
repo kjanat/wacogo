@@ -41,4 +41,3 @@ func ParseAll(r io.Reader, opts ...ParseOption) iter.Seq2[Payload, error] {
 		}
 	}
 }
-

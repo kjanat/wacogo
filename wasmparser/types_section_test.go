@@ -10,8 +10,8 @@ func TestComponentImport_PlainFuncRef(t *testing.T) {
 	data := []byte{
 		0x00,                          // plain name
 		0x05, 'h', 'e', 'l', 'l', 'o', // "hello"
-		0x01,                          // func type ref
-		0x03,                          // type index 3
+		0x01, // func type ref
+		0x03, // type index 3
 	}
 	r := newBinaryReaderAt(bytes.NewReader(data), 0, &defaultParseLimits)
 	var imp ComponentImport
@@ -36,11 +36,11 @@ func TestComponentImport_PlainFuncRef(t *testing.T) {
 // TestComponentImport_TypeBoundsEq tests an import with type bounds eq.
 func TestComponentImport_TypeBoundsEq(t *testing.T) {
 	data := []byte{
-		0x00,                    // plain name
-		0x03, 'f', 'o', 'o',   // "foo"
-		0x03,                    // type ref
-		0x00,                    // eq bounds
-		0x07,                    // index 7
+		0x00,                // plain name
+		0x03, 'f', 'o', 'o', // "foo"
+		0x03, // type ref
+		0x00, // eq bounds
+		0x07, // index 7
 	}
 	r := newBinaryReaderAt(bytes.NewReader(data), 0, &defaultParseLimits)
 	var imp ComponentImport
@@ -63,10 +63,10 @@ func TestComponentImport_TypeBoundsEq(t *testing.T) {
 // TestComponentImport_TypeBoundsSubResource tests an import with sub-resource bounds.
 func TestComponentImport_TypeBoundsSubResource(t *testing.T) {
 	data := []byte{
-		0x00,                    // plain name
-		0x03, 'b', 'a', 'r',   // "bar"
-		0x03,                    // type ref
-		0x01,                    // sub resource bounds
+		0x00,                // plain name
+		0x03, 'b', 'a', 'r', // "bar"
+		0x03, // type ref
+		0x01, // sub resource bounds
 	}
 	r := newBinaryReaderAt(bytes.NewReader(data), 0, &defaultParseLimits)
 	var imp ComponentImport
@@ -86,11 +86,11 @@ func TestComponentImport_TypeBoundsSubResource(t *testing.T) {
 // TestComponentExport_FuncNoAscription tests an export with func kind, no ascribed type.
 func TestComponentExport_FuncNoAscription(t *testing.T) {
 	data := []byte{
-		0x00,                              // plain name
-		0x05, 'h', 'e', 'l', 'l', 'o',   // "hello"
-		0x01,                              // func kind
-		0x02,                              // index 2
-		0x00,                              // no ascribed type
+		0x00,                          // plain name
+		0x05, 'h', 'e', 'l', 'l', 'o', // "hello"
+		0x01, // func kind
+		0x02, // index 2
+		0x00, // no ascribed type
 	}
 	r := newBinaryReaderAt(bytes.NewReader(data), 0, &defaultParseLimits)
 	var exp ComponentExport
@@ -117,13 +117,13 @@ func TestComponentExport_FuncNoAscription(t *testing.T) {
 // TestComponentExport_WithAscribedType tests an export with an ascribed type.
 func TestComponentExport_WithAscribedType(t *testing.T) {
 	data := []byte{
-		0x00,                    // plain name
-		0x03, 'f', 'o', 'o',   // "foo"
-		0x01,                    // func kind
-		0x00,                    // index 0
-		0x01,                    // has ascribed type (0x01 = yes)
-		0x01,                    // type ref kind: func
-		0x05,                    // type index 5
+		0x00,                // plain name
+		0x03, 'f', 'o', 'o', // "foo"
+		0x01, // func kind
+		0x00, // index 0
+		0x01, // has ascribed type (0x01 = yes)
+		0x01, // type ref kind: func
+		0x05, // type index 5
 	}
 	r := newBinaryReaderAt(bytes.NewReader(data), 0, &defaultParseLimits)
 	var exp ComponentExport
@@ -145,10 +145,10 @@ func TestComponentExport_WithAscribedType(t *testing.T) {
 // TestAliasInstanceExport tests alias from a component instance export.
 func TestAliasInstanceExport(t *testing.T) {
 	data := []byte{
-		0x01,                              // sort: func kind
-		0x00,                              // discriminant: instance export alias
-		0x03,                              // instance index 3
-		0x05, 'h', 'e', 'l', 'l', 'o',   // name "hello"
+		0x01,                          // sort: func kind
+		0x00,                          // discriminant: instance export alias
+		0x03,                          // instance index 3
+		0x05, 'h', 'e', 'l', 'l', 'o', // name "hello"
 	}
 	r := newBinaryReaderAt(bytes.NewReader(data), 0, &defaultParseLimits)
 	alias, err := readComponentAlias(r)
@@ -173,10 +173,10 @@ func TestAliasInstanceExport(t *testing.T) {
 // TestAliasCoreInstanceExport tests alias from a core instance export.
 func TestAliasCoreInstanceExport(t *testing.T) {
 	data := []byte{
-		0x00,                          // sort byte1: core prefix
-		0x02,                          // sort byte2: memory
-		0x01,                          // discriminant: core instance export alias
-		0x01,                          // instance index 1
+		0x00,                               // sort byte1: core prefix
+		0x02,                               // sort byte2: memory
+		0x01,                               // discriminant: core instance export alias
+		0x01,                               // instance index 1
 		0x06, 'm', 'e', 'm', 'o', 'r', 'y', // name "memory"
 	}
 	r := newBinaryReaderAt(bytes.NewReader(data), 0, &defaultParseLimits)
@@ -331,12 +331,12 @@ func TestCanonResourceDrop(t *testing.T) {
 // TestComponentInstance_Instantiate tests instantiating a component with args.
 func TestComponentInstance_Instantiate(t *testing.T) {
 	data := []byte{
-		0x00,                              // instantiate
-		0x01,                              // component index 1
-		0x01,                              // 1 arg
-		0x05, 'h', 'e', 'l', 'l', 'o',   // arg name "hello"
-		0x01,                              // func kind
-		0x03,                              // index 3
+		0x00,                          // instantiate
+		0x01,                          // component index 1
+		0x01,                          // 1 arg
+		0x05, 'h', 'e', 'l', 'l', 'o', // arg name "hello"
+		0x01, // func kind
+		0x03, // index 3
 	}
 	r := newBinaryReaderAt(bytes.NewReader(data), 0, &defaultParseLimits)
 	ci, err := readComponentInstance(r)
@@ -367,12 +367,12 @@ func TestComponentInstance_Instantiate(t *testing.T) {
 // TestCoreInstance_Instantiate tests instantiating a core module.
 func TestCoreInstance_Instantiate(t *testing.T) {
 	data := []byte{
-		0x00,                              // instantiate
-		0x00,                              // module index 0
-		0x01,                              // 1 arg
-		0x03, 'e', 'n', 'v',              // arg name "env"
-		0x12,                              // instance sort
-		0x01,                              // index 1
+		0x00,                // instantiate
+		0x00,                // module index 0
+		0x01,                // 1 arg
+		0x03, 'e', 'n', 'v', // arg name "env"
+		0x12, // instance sort
+		0x01, // index 1
 	}
 	r := newBinaryReaderAt(bytes.NewReader(data), 0, &defaultParseLimits)
 	ci, err := readInstance(r)
@@ -406,7 +406,7 @@ func TestComponentStartFunction(t *testing.T) {
 		0x02,       // func index 2
 		0x02,       // 2 args
 		0x00, 0x01, // arg 0, arg 1
-		0x01,       // 1 result
+		0x01, // 1 result
 	}
 	r := newBinaryReaderAt(bytes.NewReader(data), 0, &defaultParseLimits)
 	var sf ComponentStartFunction

@@ -9,9 +9,9 @@ import (
 type ComponentKind uint8
 
 const (
-	ComponentKindComponent    ComponentKind = iota // real component
-	ComponentKindInstanceType                      // inside (type (instance ...))
-	ComponentKindComponentType                     // inside (type (component ...))
+	ComponentKindComponent     ComponentKind = iota // real component
+	ComponentKindInstanceType                       // inside (type (instance ...))
+	ComponentKindComponentType                      // inside (type (component ...))
 )
 
 // ComponentState holds the validation state for a single component (or nested component/module).
@@ -38,10 +38,10 @@ type ComponentState struct {
 	components []ComponentTypeID
 
 	// Import/export tracking
-	imports     map[string]ComponentEntityType
-	importOrder []string // preserves insertion order
-	exports     map[string]ComponentEntityType
-	exportOrder []string // preserves insertion order
+	imports       map[string]ComponentEntityType
+	importOrder   []string // preserves insertion order
+	exports       map[string]ComponentEntityType
+	exportOrder   []string          // preserves insertion order
 	importNameSet map[string]string // lowercase name -> original name for conflict detection
 	exportNameSet map[string]string // lowercase name -> original name for conflict detection
 	// importResourceNames tracks resource names referenced by bracket-prefixed imports.
@@ -95,23 +95,23 @@ type valueEntry struct {
 
 func newComponentState(features FeatureSet, arena *TypeArena, kind ComponentKind) *ComponentState {
 	return &ComponentState{
-		kind:                kind,
-		features:            features,
-		arena:               arena,
-		imports:             make(map[string]ComponentEntityType),
-		exports:             make(map[string]ComponentEntityType),
-		importNameSet:       make(map[string]string),
-		exportNameSet:       make(map[string]string),
-		importResourceNames: make(map[string]string),
+		kind:                       kind,
+		features:                   features,
+		arena:                      arena,
+		imports:                    make(map[string]ComponentEntityType),
+		exports:                    make(map[string]ComponentEntityType),
+		importNameSet:              make(map[string]string),
+		exportNameSet:              make(map[string]string),
+		importResourceNames:        make(map[string]string),
 		localResources:             make(map[ResourceID]bool),
 		locallyDefinedSubResources: make(map[ResourceID]bool),
 		definedResources:           make(map[ResourceID]bool),
-		importRefNames:         make(map[ResourceID]string),
-		exportRefNames:         make(map[ResourceID]string),
-		importedResourceIDs:    make(map[ResourceID]bool),
-		exportedResourceIDs:    make(map[ResourceID]bool),
-		importedDefinedTypes:   make(map[ComponentDefinedTypeID]bool),
-		exportedDefinedTypes:   make(map[ComponentDefinedTypeID]bool),
+		importRefNames:             make(map[ResourceID]string),
+		exportRefNames:             make(map[ResourceID]string),
+		importedResourceIDs:        make(map[ResourceID]bool),
+		exportedResourceIDs:        make(map[ResourceID]bool),
+		importedDefinedTypes:       make(map[ComponentDefinedTypeID]bool),
+		exportedDefinedTypes:       make(map[ComponentDefinedTypeID]bool),
 	}
 }
 

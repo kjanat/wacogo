@@ -9,12 +9,12 @@ import (
 // Encoding: 0x40 (sync func), 1 param ("x", u32=0x79), result tag 0x00, string=0x73
 func TestComponentFuncType_SingleResult(t *testing.T) {
 	data := []byte{
-		0x40,                    // sync func type
-		0x01,                    // 1 param
-		0x01, 'x',              // param name "x"
-		0x79,                    // u32
-		0x00,                    // single unnamed result
-		0x73,                    // string
+		0x40,      // sync func type
+		0x01,      // 1 param
+		0x01, 'x', // param name "x"
+		0x79, // u32
+		0x00, // single unnamed result
+		0x73, // string
 	}
 	r := newBinaryReaderAt(bytes.NewReader(data), 0, &defaultParseLimits)
 	ct, err := readComponentTypeDef(r)

@@ -24,7 +24,7 @@ func TestGoName_Unexported(t *testing.T) {
 	cases := []struct{ in, want string }{
 		{"add", "add"},
 		{"get-value", "getValue"},
-		{"http-status", "httpStatus"},  // first segment lowercase even if initialism
+		{"http-status", "httpStatus"}, // first segment lowercase even if initialism
 	}
 	for _, c := range cases {
 		if got := GoName(c.in, false); got != c.want {

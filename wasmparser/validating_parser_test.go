@@ -42,8 +42,8 @@ func TestValidatingParserEmptyComponent(t *testing.T) {
 func TestValidatingParserNestedComponent(t *testing.T) {
 	data := []byte{
 		0x00, 0x61, 0x73, 0x6D, 0x0d, 0x00, 0x01, 0x00, // outer header
-		0x04,                                             // section id: component
-		0x08,                                             // section length: 8
+		0x04,                                           // section id: component
+		0x08,                                           // section length: 8
 		0x00, 0x61, 0x73, 0x6D, 0x0d, 0x00, 0x01, 0x00, // inner header
 	}
 
@@ -119,12 +119,12 @@ func TestValidatingParserNestedComponent(t *testing.T) {
 func TestValidatingParserRejectsInvalid(t *testing.T) {
 	data := []byte{
 		0x00, 0x61, 0x73, 0x6D, 0x0d, 0x00, 0x01, 0x00, // header
-		0x0a,                                             // section: import (10)
-		0x0a,                                             // section len: 10
-		0x01,                                             // 1 import
-		0x00, 0x03, 'f', 'o', 'o',                       // plain name "foo"
-		0x01,                                             // func type ref
-		0xFF, 0xFF, 0x03,                                 // type index 65535 (out of bounds)
+		0x0a,                      // section: import (10)
+		0x0a,                      // section len: 10
+		0x01,                      // 1 import
+		0x00, 0x03, 'f', 'o', 'o', // plain name "foo"
+		0x01,             // func type ref
+		0xFF, 0xFF, 0x03, // type index 65535 (out of bounds)
 	}
 
 	vp := NewValidatingParser(bytes.NewReader(data), DefaultFeatures())

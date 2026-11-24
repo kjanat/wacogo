@@ -74,9 +74,9 @@ type memDef struct {
 
 // exportEntry records an export.
 type exportEntry struct {
-	name    string
-	kind    byte   // 0x00 = func, 0x02 = memory
-	idx     uint32
+	name string
+	kind byte // 0x00 = func, 0x02 = memory
+	idx  uint32
 }
 
 // globalDef records a defined global.
@@ -361,10 +361,10 @@ func (b *ModuleBuilder) Encode() []byte {
 		var sec bytes.Buffer
 		encodeVec(&sec, uint32(len(b.dataSegs)))
 		for _, ds := range b.dataSegs {
-			sec.WriteByte(0x00)           // active segment, memory 0
-			sec.WriteByte(0x41)           // i32.const
+			sec.WriteByte(0x00) // active segment, memory 0
+			sec.WriteByte(0x41) // i32.const
 			encodeS32(&sec, int32(ds.offset))
-			sec.WriteByte(0x0b)           // end
+			sec.WriteByte(0x0b) // end
 			encodeVec(&sec, uint32(len(ds.data)))
 			sec.Write(ds.data)
 		}

@@ -418,4 +418,3 @@ func resourceFieldName(rt *TypeResource) string {
 	}
 	return strings.ToLower(rt.GoName[:1]) + rt.GoName[1:] + "RT"
 }
-

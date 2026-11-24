@@ -8,8 +8,8 @@ import (
 // ValidationError describes a problem with the lowered IR. Returned by
 // Validate; aggregated errors are wrapped via errors.Join.
 type ValidationError struct {
-	Interface *Interface  // may be nil for cross-interface issues
-	Function  string      // empty if not function-scoped
+	Interface *Interface // may be nil for cross-interface issues
+	Function  string     // empty if not function-scoped
 	Message   string
 }
 
@@ -125,7 +125,7 @@ func validateInterface(iface *Interface) error {
 				if prev, dup := witNameSeen[n.Name]; dup {
 					errs = append(errs, &ValidationError{
 						Interface: iface,
-						Message: fmt.Sprintf("imported nominal %q (%s from %q) collides with %s", n.Name, kind, imp.Name, prev),
+						Message:   fmt.Sprintf("imported nominal %q (%s from %q) collides with %s", n.Name, kind, imp.Name, prev),
 					})
 				}
 				witNameSeen[n.Name] = fmt.Sprintf("%s from %q", kind, imp.Name)

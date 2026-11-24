@@ -8,12 +8,12 @@ import (
 // TestRecordType tests decoding a record with 2 fields: "name" (string=0x73), "age" (u32=0x79)
 func TestRecordType(t *testing.T) {
 	data := []byte{
-		0x72,                          // opcode: record
-		0x02,                          // count: 2
-		0x04, 'n', 'a', 'm', 'e',     // field name "name"
-		0x73,                          // type: string
-		0x03, 'a', 'g', 'e',          // field name "age"
-		0x79,                          // type: u32
+		0x72,                     // opcode: record
+		0x02,                     // count: 2
+		0x04, 'n', 'a', 'm', 'e', // field name "name"
+		0x73,                // type: string
+		0x03, 'a', 'g', 'e', // field name "age"
+		0x79, // type: u32
 	}
 	r := newBinaryReaderAt(bytes.NewReader(data), 0, &defaultParseLimits)
 	dt, err := readComponentDefinedType(r)
@@ -126,10 +126,10 @@ func TestResultType_BothAbsent(t *testing.T) {
 // TestEnumType tests decoding enum with 2 cases "red", "blue"
 func TestEnumType(t *testing.T) {
 	data := []byte{
-		0x6d,                              // opcode: enum
-		0x02,                              // count: 2
-		0x03, 'r', 'e', 'd',              // "red"
-		0x04, 'b', 'l', 'u', 'e',         // "blue"
+		0x6d,                // opcode: enum
+		0x02,                // count: 2
+		0x03, 'r', 'e', 'd', // "red"
+		0x04, 'b', 'l', 'u', 'e', // "blue"
 	}
 	r := newBinaryReaderAt(bytes.NewReader(data), 0, &defaultParseLimits)
 	dt, err := readComponentDefinedType(r)
@@ -188,10 +188,10 @@ func TestBorrowType(t *testing.T) {
 // TestTupleType tests decoding tuple<u8, string>
 func TestTupleType(t *testing.T) {
 	data := []byte{
-		0x6f,  // opcode: tuple
-		0x02,  // count: 2
-		0x7d,  // u8
-		0x73,  // string
+		0x6f, // opcode: tuple
+		0x02, // count: 2
+		0x7d, // u8
+		0x73, // string
 	}
 	r := newBinaryReaderAt(bytes.NewReader(data), 0, &defaultParseLimits)
 	dt, err := readComponentDefinedType(r)
@@ -216,10 +216,10 @@ func TestTupleType(t *testing.T) {
 // TestFlagsType tests decoding flags with 2 labels "read", "write"
 func TestFlagsType(t *testing.T) {
 	data := []byte{
-		0x6e,                                    // opcode: flags
-		0x02,                                    // count: 2
-		0x04, 'r', 'e', 'a', 'd',               // "read"
-		0x05, 'w', 'r', 'i', 't', 'e',          // "write"
+		0x6e,                     // opcode: flags
+		0x02,                     // count: 2
+		0x04, 'r', 'e', 'a', 'd', // "read"
+		0x05, 'w', 'r', 'i', 't', 'e', // "write"
 	}
 	r := newBinaryReaderAt(bytes.NewReader(data), 0, &defaultParseLimits)
 	dt, err := readComponentDefinedType(r)
@@ -246,15 +246,15 @@ func TestFlagsType(t *testing.T) {
 // Case 1: "none" with no type, no refines
 func TestVariantType(t *testing.T) {
 	data := []byte{
-		0x71,                          // opcode: variant
-		0x02,                          // count: 2
-		0x04, 's', 'o', 'm', 'e',     // case name "some"
-		0x01,                          // type present
-		0x73,                          // type: string
-		0x00,                          // no refines
-		0x04, 'n', 'o', 'n', 'e',     // case name "none"
-		0x00,                          // no type
-		0x00,                          // no refines
+		0x71,                     // opcode: variant
+		0x02,                     // count: 2
+		0x04, 's', 'o', 'm', 'e', // case name "some"
+		0x01,                     // type present
+		0x73,                     // type: string
+		0x00,                     // no refines
+		0x04, 'n', 'o', 'n', 'e', // case name "none"
+		0x00, // no type
+		0x00, // no refines
 	}
 	r := newBinaryReaderAt(bytes.NewReader(data), 0, &defaultParseLimits)
 	dt, err := readComponentDefinedType(r)

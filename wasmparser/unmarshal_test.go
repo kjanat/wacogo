@@ -29,4 +29,3 @@ func TestRead(t *testing.T) {
 		t.Fatalf("got %d, want 42", item.Value)
 	}
 }
-

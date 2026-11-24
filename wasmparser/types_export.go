@@ -32,9 +32,9 @@ func (n *ComponentExportName) unmarshalBinary(r *BinaryReader) error {
 
 // ComponentExport represents a component-level export.
 type ComponentExport struct {
-	Name          ComponentExportName
-	Kind          ComponentExternalKind
-	Index         uint32
+	Name         ComponentExportName
+	Kind         ComponentExternalKind
+	Index        uint32
 	AscribedType Optional[ComponentTypeRef]
 }
 
@@ -93,4 +93,3 @@ func readComponentExportNoType(r *BinaryReader) (ComponentExport, error) {
 	// No type ascription
 	return exp, nil
 }
-

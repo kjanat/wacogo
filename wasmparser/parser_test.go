@@ -188,8 +188,8 @@ func TestParserNestedComponent(t *testing.T) {
 	// Outer component containing an inner empty component
 	data := []byte{
 		0x00, 0x61, 0x73, 0x6D, 0x0d, 0x00, 0x01, 0x00, // outer header
-		0x04,                                             // section id: component
-		0x08,                                             // section length: 8
+		0x04,                                           // section id: component
+		0x08,                                           // section length: 8
 		0x00, 0x61, 0x73, 0x6D, 0x0d, 0x00, 0x01, 0x00, // inner header
 	}
 
@@ -250,8 +250,8 @@ func TestParserNestedModule(t *testing.T) {
 	// Outer component containing an inner empty module
 	data := []byte{
 		0x00, 0x61, 0x73, 0x6D, 0x0d, 0x00, 0x01, 0x00, // outer header
-		0x01,                                             // section id: core module
-		0x08,                                             // section length: 8
+		0x01,                                           // section id: core module
+		0x08,                                           // section length: 8
 		0x00, 0x61, 0x73, 0x6D, 0x01, 0x00, 0x00, 0x00, // inner module header
 	}
 
@@ -319,7 +319,7 @@ func TestParserCustomSection(t *testing.T) {
 
 	data := make([]byte, 0, 30)
 	data = append(data, emptyComponent...)
-	data = append(data, 0x00)              // section id: custom
+	data = append(data, 0x00)               // section id: custom
 	data = append(data, byte(len(content))) // section length
 	data = append(data, content...)
 

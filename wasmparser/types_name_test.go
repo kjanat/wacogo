@@ -12,9 +12,9 @@ func TestIsKebabCase(t *testing.T) {
 		"hello-world",
 		"abc-123",
 		"foo-bar-baz",
-		"FOO",       // all-uppercase single word is valid
-		"X",         // single uppercase letter is valid
-		"FOO-BAR",   // all-uppercase words are valid
+		"FOO",     // all-uppercase single word is valid
+		"X",       // single uppercase letter is valid
+		"FOO-BAR", // all-uppercase words are valid
 	}
 
 	for _, s := range valid {
@@ -28,13 +28,13 @@ func TestIsKebabCase(t *testing.T) {
 		"-foo",
 		"foo-",
 		"foo--bar",
-		"Foo",       // mixed case within word
+		"Foo", // mixed case within word
 		"foo_bar",
 		"foo bar",
-		"123",       // starts with digit
-		"foo-Bar",   // mixed case within "Bar" word
+		"123",     // starts with digit
+		"foo-Bar", // mixed case within "Bar" word
 		"-",
-		"fOo",      // mixed case within word
+		"fOo", // mixed case within word
 	}
 	for _, s := range invalid {
 		if IsKebabCase(s) {
@@ -92,9 +92,9 @@ func TestParseComponentName(t *testing.T) {
 
 		// Errors
 		{"", ComponentNameLabel, "", "", true},
-		{"[constructor]My-Resource", ComponentNameLabel, "", "", true},  // uppercase invalid
-		{"[method]res", ComponentNameLabel, "", "", true},               // missing dot
-		{"[unknown]foo", ComponentNameLabel, "", "", true},              // bad bracket prefix
+		{"[constructor]My-Resource", ComponentNameLabel, "", "", true}, // uppercase invalid
+		{"[method]res", ComponentNameLabel, "", "", true},              // missing dot
+		{"[unknown]foo", ComponentNameLabel, "", "", true},             // bad bracket prefix
 	}
 
 	for _, tt := range tests {

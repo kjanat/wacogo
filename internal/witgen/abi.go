@@ -68,7 +68,7 @@ func Size(t Type) uint32 {
 		if maxPayloadSize == 0 {
 			return alignUp(1, Align(t)) // disc only, aligned to overall
 		}
-		return alignUp(alignUp(1, payloadAlign) + maxPayloadSize, Align(t))
+		return alignUp(alignUp(1, payloadAlign)+maxPayloadSize, Align(t))
 	case *TypeResource, *TypeOwn, *TypeBorrow:
 		return 4
 	}

@@ -23,7 +23,7 @@ const (
 
 // Validator validates a stream of Payload values from ParseAll.
 type Validator struct {
-	limits *ParseLimits
+	limits     *ParseLimits
 	state      validatorState
 	features   FeatureSet
 	components []*ComponentState // stack, one per nesting level
@@ -261,5 +261,3 @@ func (v *Validator) validateComponentSection(_ *ComponentSectionPayload) error {
 }
 
 // ---------- Core Type Section ----------
-
-

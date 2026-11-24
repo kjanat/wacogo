@@ -41,8 +41,8 @@ func TestValidatorEmptyComponent(t *testing.T) {
 func TestValidatorNestedComponent(t *testing.T) {
 	data := []byte{
 		0x00, 0x61, 0x73, 0x6D, 0x0d, 0x00, 0x01, 0x00, // outer header
-		0x04,                                             // section id: component
-		0x08,                                             // section length: 8
+		0x04,                                           // section id: component
+		0x08,                                           // section length: 8
 		0x00, 0x61, 0x73, 0x6D, 0x0d, 0x00, 0x01, 0x00, // inner header
 	}
 
@@ -64,8 +64,8 @@ func TestValidatorNestedComponent(t *testing.T) {
 func TestValidatorNestedModule(t *testing.T) {
 	data := []byte{
 		0x00, 0x61, 0x73, 0x6D, 0x0d, 0x00, 0x01, 0x00, // outer component header
-		0x01,                                             // section id: core module
-		0x08,                                             // section length: 8
+		0x01,                                           // section id: core module
+		0x08,                                           // section length: 8
 		0x00, 0x61, 0x73, 0x6D, 0x01, 0x00, 0x00, 0x00, // inner module header
 	}
 

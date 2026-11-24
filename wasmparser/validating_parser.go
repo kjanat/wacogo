@@ -13,9 +13,9 @@ import "io"
 // If the caller does not fully traverse the sub-parser before calling Next()
 // again, the remaining payloads are drained and validated automatically.
 type ValidatingParser struct {
-	parser  *Parser
+	parser    *Parser
 	validator *Validator
-	pending *ValidatingParser // sub-parser that may need draining
+	pending   *ValidatingParser // sub-parser that may need draining
 }
 
 // NewValidatingParser creates a ValidatingParser that parses from r and
