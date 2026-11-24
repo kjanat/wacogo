@@ -27,14 +27,11 @@ func (i *impl) NewFields(_ context.Context) (*FieldsHandle, error) {
 }
 
 func (i *impl) FieldsFromList(_ context.Context, values []TupleStringListU8) (ResultFieldsHeaderError, error) {
-	for _, v := range values {
-		if isForbiddenHeader(v.F0) {
-			return types.ResultFieldsHeaderErrorErr{Value: types.HeaderErrorForbidden{}}, nil
-		}
+	fields, herr := fieldsFromList(values)
+	if herr != nil {
+		return types.ResultFieldsHeaderErrorErr{Value: herr}, nil
 	}
-	return types.ResultFieldsHeaderErrorOk{
-		Value: NewFieldsHandle(newFieldsImpl(values, false)),
-	}, nil
+	return types.ResultFieldsHeaderErrorOk{Value: NewFieldsHandle(fields)}, nil
 }
 
 func (i *impl) NewOutgoingRequest(ctx context.Context, fields *FieldsHandle) (*OutgoingRequestHandle, error) {
