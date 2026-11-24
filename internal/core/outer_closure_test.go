@@ -3,8 +3,109 @@ package core
 import (
 	"bytes"
 	"context"
+	"fmt"
+	"runtime"
+	"runtime/metrics"
+	"strings"
 	"testing"
+	"time"
 )
+
+func aliasDAG(levels int, level func(i int) string) string {
+	var b strings.Builder
+	for i := 1; i <= levels; i++ {
+		b.WriteString(level(i))
+	}
+	return b.String()
+}
+
+func twoAliases(scope string, i int) string {
+	return fmt.Sprintf(`(alias outer %s $C%d (component $a)) (alias outer %s $C%d (component $b))`, scope, i-1, scope, i-1)
+}
+
+func capturingRoot(levels int, body string) string {
+	return `(component $Root
+  (component $Outer
+    (import "m" (core module $M))
+    (component $C0 (alias outer $Outer $M (core module)))` + body + fmt.Sprintf(`
+    (instance (instantiate $C%d))
+    (export "c" (component $C%d)))
+  (core module $m)
+  (instance $o (instantiate $Outer (with "m" (core module $m))))
+  (alias export $o "c" (component $c))
+  (instance (instantiate $c)))`, levels, levels)
+}
+
+func heapObjectBytes() uint64 {
+	sample := []metrics.Sample{{Name: "/memory/classes/heap/objects:bytes"}}
+	metrics.Read(sample)
+	return sample[0].Value.Uint64()
+}
+
+func loadAndInstantiateWithin(t *testing.T, bin []byte, heapLimit uint64, deadline time.Duration) {
+	t.Helper()
+	ctx := context.Background()
+	engine := NewEngine(ctx)
+	defer engine.Close(ctx)
+	runtime.GC()
+	base := heapObjectBytes()
+	done := make(chan error, 1)
+	go func() {
+		comp, err := engine.LoadComponent(ctx, bytes.NewReader(bin))
+		if err != nil {
+			done <- err
+			return
+		}
+		inst, err := comp.Instantiate(ctx)
+		if err == nil {
+			err = inst.Close(ctx)
+		}
+		done <- err
+	}()
+	timeout := time.After(deadline)
+	tick := time.NewTicker(time.Millisecond)
+	defer tick.Stop()
+	for {
+		select {
+		case err := <-done:
+			if err != nil {
+				t.Fatal(err)
+			}
+			return
+		case <-tick.C:
+			if heap := heapObjectBytes(); heap > base+heapLimit {
+				panic(fmt.Sprintf("a %d byte component grew the heap by %d MiB", len(bin), (heap-base)>>20))
+			}
+		case <-timeout:
+			panic(fmt.Sprintf("a %d byte component did not load and instantiate within %v", len(bin), deadline))
+		}
+	}
+}
+
+func TestOuterClosureDAGsShareComponents(t *testing.T) {
+	const levels = 40
+	for name, wat := range map[string]string{
+		"defined components": `(component $Root
+  (component $C0)` + aliasDAG(levels, func(i int) string {
+			return fmt.Sprintf("\n  (component $C%d %s)", i, twoAliases("$Root", i))
+		}) + fmt.Sprintf(`
+  (instance (instantiate $C%d)))`, levels),
+		"components capturing an import": capturingRoot(levels, aliasDAG(levels, func(i int) string {
+			return fmt.Sprintf("\n    (component $C%d %s)", i, twoAliases("$Outer", i))
+		})),
+		"nested components capturing an import": capturingRoot(levels, aliasDAG(levels, func(i int) string {
+			return fmt.Sprintf("\n    (component $C%d (component $I %s) (component $J %s) (instance (instantiate $I)) (instance (instantiate $J)))", i, twoAliases("$Outer", i), twoAliases("$Outer", i))
+		})),
+	} {
+		t.Run(name, func(t *testing.T) {
+			bin := buildComponentBytes(t, wat)
+			if len(bin) > 8<<10 {
+				t.Fatalf("component is %d bytes, want a few KB", len(bin))
+			}
+			loadAndInstantiateWithin(t, bin, 64<<20, 30*time.Second)
+		})
+	}
+}
 
 func TestOuterClosuresFollowExportedComponents(t *testing.T) {
 	for name, wat := range map[string]string{

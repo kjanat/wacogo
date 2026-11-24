@@ -731,6 +731,7 @@ func (l *componentLoader) buildComponent(parentScope *loadScope) (*Component, er
 		typeResolvers:          l.typeResolvers,
 		outerModuleClosures:    outerModuleClosures,
 		outerComponentClosures: outerComponentClosures,
+		reach:                  closureReach(outerModuleClosures, outerComponentClosures, l.scope.subComponents),
 	}
 
 	return comp, nil

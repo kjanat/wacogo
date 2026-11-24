@@ -89,14 +89,14 @@ func TestOuterClosurePanicsNameFirstSlot(t *testing.T) {
 		},
 		"resolve module": {
 			run: func() {
-				s := &instantiationState{subComponents: []*Component{{outerModuleClosures: closures}}}
+				s := &instantiationState{subComponents: []*Component{{outerModuleClosures: closures, reach: 1}}}
 				s.resolveSubComponentClosures()
 			},
 			want: "wacogo: closure resolution module index 10 out of range (have 0)",
 		},
 		"resolve component": {
 			run: func() {
-				s := &instantiationState{subComponents: []*Component{{outerComponentClosures: closures}}}
+				s := &instantiationState{subComponents: []*Component{{outerComponentClosures: closures, reach: 1}}}
 				s.resolveSubComponentClosures()
 			},
 			want: "wacogo: closure resolution component index 10 out of range (have 1)",

@@ -73,6 +73,8 @@ type Component struct {
 	// subComponents index space.
 	outerComponentClosures map[int]outerRef
 
+	reach uint32
+
 	// wpType is the opaque wasmparser type handle for this component, populated
 	// at load time for a top-level component. Nil for a sub-component, whose
 	// instances get their types from the top-level instance's. Used by
@@ -86,6 +88,23 @@ type Component struct {
 type outerRef struct {
 	count uint32 // number of parent scopes to traverse
 	index uint32 // index in the target parent's index space
+}
+
+func closureReach(moduleClosures, componentClosures map[int]outerRef, subComponents []*Component) uint32 {
+	var reach uint32
+	for _, ref := range moduleClosures {
+		reach = max(reach, ref.count)
+	}
+	for _, ref := range componentClosures {
+		reach = max(reach, ref.count)
+	}
+	for j, sub := range subComponents {
+		if _, aliased := componentClosures[j]; aliased || sub == nil || sub.reach == 0 {
+			continue
+		}
+		reach = max(reach, sub.reach-1)
+	}
+	return reach
 }
 
 // Exports returns the component's export descriptors.

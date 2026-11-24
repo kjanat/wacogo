@@ -70,6 +70,13 @@ type instantiationState struct {
 	// parentState provides access to the parent component's instantiation state,
 	// used to resolve outer aliases at runtime. Nil for top-level instantiations.
 	parentState *instantiationState
+
+	closed map[closureKey]*Component
+}
+
+type closureKey struct {
+	comp  *Component
+	depth uint32
 }
 
 type coreFunc struct {
@@ -269,6 +276,7 @@ func (e *Engine) instantiateWithParentCfg(ctx context.Context, component *Compon
 		subComponents:   subComponents,
 		parentState:     parentState,
 		funcExportNames: buildFuncExportNames(component.exports),
+		closed:          make(map[closureKey]*Component),
 	}
 	state.hostFuncs, err = newHostFuncs(ctx, e.runtime, inst, component.hostFuncs)
 	if err != nil {
@@ -643,9 +651,19 @@ func (s *instantiationState) resolveSubComponentClosures() {
 }
 
 func (s *instantiationState) closeOver(comp *Component, depth uint32) *Component {
-	if comp == nil {
-		return nil
+	if comp == nil || comp.reach < depth {
+		return comp
 	}
+	key := closureKey{comp: comp, depth: depth}
+	if closed, ok := s.closed[key]; ok {
+		return closed
+	}
+	closed := s.bindComponent(comp, depth)
+	s.closed[key] = closed
+	return closed
+}
+
+func (s *instantiationState) bindComponent(comp *Component, depth uint32) *Component {
 	subComponents := comp.subComponents
 	subsChanged := false
 	for j, sub := range comp.subComponents {
@@ -670,33 +688,12 @@ func (s *instantiationState) closeOver(comp *Component, depth uint32) *Component
 	cloned.outerModuleClosures = moduleClosures
 	cloned.subComponents = subComponents
 	cloned.outerComponentClosures = componentClosures
+	cloned.reach = closureReach(moduleClosures, componentClosures, subComponents)
 	return &cloned
 }
 
 func (c *Component) capturesOuterScope() bool {
-	return c.capturesAbove(1)
-}
-
-func (c *Component) capturesAbove(depth uint32) bool {
-	for _, ref := range c.outerModuleClosures {
-		if ref.count >= depth {
-			return true
-		}
-	}
-	for _, ref := range c.outerComponentClosures {
-		if ref.count >= depth {
-			return true
-		}
-	}
-	for j, sub := range c.subComponents {
-		if _, aliased := c.outerComponentClosures[j]; aliased {
-			continue
-		}
-		if sub != nil && sub.capturesAbove(depth+1) {
-			return true
-		}
-	}
-	return false
+	return c.reach > 0
 }
 
 func (s *instantiationState) outerModule(index uint32) CompiledModule {
