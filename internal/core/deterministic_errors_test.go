@@ -18,15 +18,49 @@ func TestInstantiateNamesFirstNilImport(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer comp.Close(ctx)
-	var opts []InstantiateOption
-	for _, name := range []string{"h", "g", "f", "e", "d", "c", "b", "a"} {
-		opts = append(opts, WithInstanceImport(name, nil))
-	}
-	want := `wacogo: instantiate: import "a": no instance supplied`
-	for range 32 {
-		if _, err := comp.Instantiate(ctx, opts...); err == nil || err.Error() != want {
-			t.Fatalf("want %q, got %v", want, err)
+	nilImports := func(names ...string) []InstantiateOption {
+		var opts []InstantiateOption
+		for _, name := range names {
+			opts = append(opts, WithInstanceImport(name, nil))
 		}
+		return opts
+	}
+	for _, c := range []struct {
+		opts []InstantiateOption
+		want string
+	}{
+		{nilImports("a", "b", "c", "d", "e", "f", "g", "h"), `wacogo: instantiate: import "h": no instance supplied`},
+		{nilImports("a", "c", "e", "g"), `wacogo: instantiate: import "g": no instance supplied`},
+		{nilImports("z", "y", "x"), `wacogo: instantiate: import "x": no instance supplied`},
+		{nilImports("z", "b", "y"), `wacogo: instantiate: import "b": no instance supplied`},
+	} {
+		for range 32 {
+			if _, err := comp.Instantiate(ctx, c.opts...); err == nil || err.Error() != c.want {
+				t.Fatalf("want %q, got %v", c.want, err)
+			}
+		}
+	}
+}
+
+func TestTooDeepOuterClosurePanics(t *testing.T) {
+	engine := NewEngine(t.Context())
+	defer engine.Close(t.Context())
+	parent := &instantiationState{compiledModules: make([]CompiledModule, 1), subComponents: make([]*Component, 1)}
+	closures := map[int]outerRef{0: {count: 3, index: 0}}
+	for name, component := range map[string]*Component{
+		"module":    {outerModuleClosures: closures, compiledModules: make([]CompiledModule, 1)},
+		"component": {outerComponentClosures: closures, subComponents: make([]*Component, 1)},
+	} {
+		t.Run(name, func(t *testing.T) {
+			got := func() (p any) {
+				defer func() { p = recover() }()
+				_, _ = engine.instantiateWithParentCfg(t.Context(), component, parent, nil, &instantiateConfig{})
+				return nil
+			}()
+			if want := "wacogo: outer closure: count 3 exceeds nesting depth"; got != want {
+				t.Fatalf("want panic %q, got %v", want, got)
+			}
+		})
 	}
 }
 

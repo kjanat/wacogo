@@ -109,8 +109,9 @@ func (e *Engine) instantiate(ctx context.Context, component *Component, opts ...
 	// Pre-check imports against the component's declared type before running
 	// the plan. Imports with no typed handle fall through to the existing
 	// runtime machinery.
+	names := component.suppliedImportOrder(cfg.imports)
 	args := make(map[string]any, len(cfg.imports))
-	for _, name := range slices.Sorted(maps.Keys(cfg.imports)) {
+	for _, name := range names {
 		switch ap := cfg.imports[name].(type) {
 		case *ComponentInstance:
 			if ap == nil {
@@ -154,7 +155,7 @@ func (e *Engine) instantiate(ctx context.Context, component *Component, opts ...
 	}
 
 	// The plan reads a type import as the lender's runtime Type.
-	for _, name := range slices.Sorted(maps.Keys(cfg.imports)) {
+	for _, name := range names {
 		if ap, ok := cfg.imports[name].(resourceTypeImport); ok {
 			res, ok := ap.lender.exportedType(ap.export).(*TypeResource)
 			if !ok {
@@ -169,6 +170,26 @@ func (e *Engine) instantiate(ctx context.Context, component *Component, opts ...
 		return nil, fmt.Errorf("wacogo: instantiate: %w", err)
 	}
 	return e.instantiateWithParentCfg(ctx, component, nil, wpInst, cfg)
+}
+
+func (c *Component) suppliedImportOrder(supplied map[string]any) []string {
+	names := make([]string, 0, len(supplied))
+	seen := make(map[string]bool, len(supplied))
+	for _, imp := range c.imports {
+		name := wasmparser.CanonicalizeImportName(imp.Name)
+		if _, ok := supplied[name]; ok && !seen[name] {
+			seen[name] = true
+			names = append(names, name)
+		}
+	}
+	ordered := len(names)
+	for name := range supplied {
+		if !seen[name] {
+			names = append(names, name)
+		}
+	}
+	slices.Sort(names[ordered:])
+	return names
 }
 
 // suppliedTypes answers what an instantiation was given from the handles its
@@ -227,7 +248,7 @@ func (e *Engine) instantiateWithParentCfg(ctx context.Context, component *Compon
 			target := parentState
 			for i := uint32(1); i < ref.count; i++ {
 				if target.parentState == nil {
-					break
+					panic(fmt.Sprintf("wacogo: outer closure: count %d exceeds nesting depth", ref.count))
 				}
 				target = target.parentState
 			}
