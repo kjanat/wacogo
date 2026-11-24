@@ -4,6 +4,7 @@ import (
 	"archive/tar"
 	"bytes"
 	"compress/gzip"
+	"errors"
 	"io"
 	"net/http"
 	"os"
@@ -86,17 +87,21 @@ func TestRunDownloadsPinnedCommit(t *testing.T) {
 	}
 }
 
-func testArchive(t *testing.T) []byte {
+type testEntry struct{ name, body string }
+
+func testArchive(t *testing.T, extra ...testEntry) []byte {
 	t.Helper()
 	var archive bytes.Buffer
 	gz := gzip.NewWriter(&archive)
 	tw := tar.NewWriter(gz)
-	for name, body := range map[string]string{
-		"component-model-c1/test/a/one.wast": "one",
-		"component-model-c1/test/two.wast":   "two",
-		"component-model-c1/test/notes.md":   "skip",
-		"component-model-c1/design/x.wast":   "skip",
-	} {
+	entries := []testEntry{
+		{"component-model-c1/test/a/one.wast", "one"},
+		{"component-model-c1/test/two.wast", "two"},
+		{"component-model-c1/test/notes.md", "skip"},
+		{"component-model-c1/design/x.wast", "skip"},
+	}
+	for _, entry := range append(entries, extra...) {
+		name, body := entry.name, entry.body
 		if err := tw.WriteHeader(&tar.Header{Name: name, Mode: 0o644, Size: int64(len(body)), Typeflag: tar.TypeReg}); err != nil {
 			t.Fatal(err)
 		}
@@ -146,6 +151,18 @@ func TestExtractReplacesMirror(t *testing.T) {
 	}
 }
 
+func TestExtractDoesNotOverwriteDuplicate(t *testing.T) {
+	dir := t.TempDir()
+	archive := testArchive(t, testEntry{"component-model-c1/test/a/one.wast", "replacement"})
+	count, err := extract(bytes.NewReader(archive), "c1", dir)
+	if !errors.Is(err, os.ErrExist) || count != 2 {
+		t.Fatalf("extract duplicate = %d, %v", count, err)
+	}
+	if got := readTestFile(t, filepath.Join(dir, "a", "one.wast")); got != "one" {
+		t.Fatalf("duplicate replaced original: %q", got)
+	}
+}
+
 func TestExtractErrors(t *testing.T) {
 	dir := t.TempDir()
 	if _, err := extract(strings.NewReader("not gzip"), "c1", dir); err == nil || !strings.HasPrefix(err.Error(), "gunzip:") {
@@ -169,20 +186,60 @@ func TestExtractErrors(t *testing.T) {
 	}
 }
 
+func openTestRoot(t *testing.T, dir string) *os.Root {
+	t.Helper()
+	root, err := os.OpenRoot(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { root.Close() })
+	return root
+}
+
+func TestWriteFileRejectsInvalidNames(t *testing.T) {
+	dir := t.TempDir()
+	root := openTestRoot(t, dir)
+	for _, name := range []string{"dir/../case.wast", "/case.wast", `dir\case.wast`, "C:case.wast"} {
+		if err := writeFile(root, name, strings.NewReader("")); err == nil {
+			t.Errorf("accepted %q", name)
+		}
+	}
+	entries, err := os.ReadDir(dir)
+	if err != nil || len(entries) != 0 {
+		t.Fatalf("mirror after invalid names: %v, %v", entries, err)
+	}
+}
+
+func TestWriteFileConfinesDirectoryLinks(t *testing.T) {
+	dir, outside := t.TempDir(), t.TempDir()
+	root := openTestRoot(t, dir)
+	if err := os.Symlink(outside, filepath.Join(dir, "linked")); err != nil {
+		t.Skipf("cannot create directory symlink: %v", err)
+	}
+	if err := writeFile(root, "linked/nested/case.wast", strings.NewReader("")); err == nil {
+		t.Fatal("accepted a directory link outside the mirror")
+	}
+	entries, err := os.ReadDir(outside)
+	if err != nil || len(entries) != 0 {
+		t.Fatalf("outside directory changed: %v, %v", entries, err)
+	}
+}
+
 func TestWriteFileErrors(t *testing.T) {
 	dir := t.TempDir()
+	root := openTestRoot(t, dir)
 	blocker := filepath.Join(dir, "file")
 	writeTestFile(t, blocker, "x")
-	if err := writeFile(filepath.Join(blocker, "sub", "a.wast"), strings.NewReader("a")); err == nil || !strings.HasPrefix(err.Error(), "mkdir ") {
+	if err := writeFile(root, "file/sub/a.wast", strings.NewReader("a")); err == nil || !strings.HasPrefix(err.Error(), "mkdir ") {
 		t.Fatalf("writeFile under file = %v", err)
 	}
 	if err := os.Mkdir(filepath.Join(dir, "a.wast"), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := writeFile(filepath.Join(dir, "a.wast"), strings.NewReader("a")); err == nil || !strings.HasPrefix(err.Error(), "create ") {
+	if err := writeFile(root, "a.wast", strings.NewReader("a")); err == nil || !strings.HasPrefix(err.Error(), "create ") {
 		t.Fatalf("writeFile onto dir = %v", err)
 	}
-	if err := writeFile(filepath.Join(dir, "b.wast"), iotest.ErrReader(os.ErrClosed)); err == nil || !strings.HasPrefix(err.Error(), "write ") {
+	if err := writeFile(root, "b.wast", iotest.ErrReader(os.ErrClosed)); err == nil || !strings.HasPrefix(err.Error(), "write ") {
 		t.Fatalf("writeFile with failing reader = %v", err)
 	}
 }

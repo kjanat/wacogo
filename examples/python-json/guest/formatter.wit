@@ -1,0 +1,9 @@
+package example:python-json@0.1.0;
+
+interface formatter {
+    format-json: func(source: list<u8>) -> result<list<u8>, string>;
+}
+
+world json-formatter {
+    export formatter;
+}
