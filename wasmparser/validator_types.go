@@ -32,15 +32,15 @@ type ResourceID uint32
 
 // ComponentAnyTypeID is the union of all component type IDs that go in the `types` index space.
 type ComponentAnyTypeID struct {
-	Kind    ComponentAnyTypeKind
-	Index   uint32 // arena index for defined/func/instance/component
-	ResID   ResourceID
+	Kind  ComponentAnyTypeKind
+	Index uint32 // arena index for defined/func/instance/component
+	ResID ResourceID
 }
 
 type ComponentAnyTypeKind uint8
 
 const (
-	AnyTypeDefined   ComponentAnyTypeKind = iota
+	AnyTypeDefined ComponentAnyTypeKind = iota
 	AnyTypeFunc
 	AnyTypeInstance
 	AnyTypeComponent
@@ -73,7 +73,7 @@ type CoreAnyTypeID struct {
 type CoreAnyTypeKind uint8
 
 const (
-	CoreAnyTypeFunc   CoreAnyTypeKind = iota
+	CoreAnyTypeFunc CoreAnyTypeKind = iota
 	CoreAnyTypeModule
 )
 
@@ -93,7 +93,7 @@ type ComponentEntityType struct {
 type EntityKind uint8
 
 const (
-	EntityModule    EntityKind = iota
+	EntityModule EntityKind = iota
 	EntityFunc
 	EntityValue
 	EntityType
@@ -202,7 +202,7 @@ type CoreFuncTypeDesc struct {
 type CoreValType uint8
 
 const (
-	CoreValTypeI32     CoreValType = iota
+	CoreValTypeI32 CoreValType = iota
 	CoreValTypeI64
 	CoreValTypeF32
 	CoreValTypeF64
@@ -216,6 +216,7 @@ type CoreModuleTypeDesc struct {
 	Imports     map[importKey]CoreEntityType // (module, name) -> entity type
 	ImportOrder []importKey                  // preserves insertion order for deterministic iteration
 	Exports     map[string]CoreEntityType
+	ExportOrder []string // preserves insertion order for deterministic iteration
 }
 
 type importKey struct {
@@ -236,7 +237,7 @@ type CoreEntityType struct {
 type CoreEntityKind uint8
 
 const (
-	CoreEntityFunc   CoreEntityKind = iota
+	CoreEntityFunc CoreEntityKind = iota
 	CoreEntityTable
 	CoreEntityMemory
 	CoreEntityGlobal
@@ -331,7 +332,7 @@ type FuncParamDesc struct {
 
 // InstanceTypeDesc holds the exports of a component instance.
 type InstanceTypeDesc struct {
-	Exports          map[string]ComponentEntityType
+	Exports map[string]ComponentEntityType
 	// ExportOrder is the declaration order of Exports, which decides what each
 	// export can name.
 	ExportOrder      []string
@@ -383,9 +384,9 @@ type TypeArena struct {
 	CoreModuleTypes   []CoreModuleTypeDesc
 	CoreInstanceTypes []CoreInstanceTypeDesc
 
-	DefinedTypes  []DefinedTypeDesc
-	FuncTypes     []FuncTypeDesc
-	InstanceTypes []InstanceTypeDesc
+	DefinedTypes   []DefinedTypeDesc
+	FuncTypes      []FuncTypeDesc
+	InstanceTypes  []InstanceTypeDesc
 	ComponentTypes []ComponentTypeDesc
 
 	// Per-type effective sizes used to enforce ParseLimits.EffectiveTypeSize. Each slice
@@ -623,4 +624,3 @@ func (a *TypeArena) computeComponentTypeSize(t *ComponentTypeDesc) uint32 {
 	}
 	return size
 }
-

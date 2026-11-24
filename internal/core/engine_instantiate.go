@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"maps"
+	"slices"
 	"sync/atomic"
 
 	"github.com/kjanat/wacogo/internal/canon"
@@ -109,8 +111,8 @@ func (e *Engine) instantiate(ctx context.Context, component *Component, opts ...
 	// the plan. Imports with no typed handle fall through to the existing
 	// runtime machinery.
 	args := make(map[string]any, len(cfg.imports))
-	for name, v := range cfg.imports {
-		switch ap := v.(type) {
+	for _, name := range slices.Sorted(maps.Keys(cfg.imports)) {
+		switch ap := cfg.imports[name].(type) {
 		case *ComponentInstance:
 			if ap == nil {
 				return nil, fmt.Errorf("wacogo: instantiate: import %q: no instance supplied", name)
@@ -153,8 +155,8 @@ func (e *Engine) instantiate(ctx context.Context, component *Component, opts ...
 	}
 
 	// The plan reads a type import as the lender's runtime Type.
-	for name, v := range cfg.imports {
-		if ap, ok := v.(resourceTypeImport); ok {
+	for _, name := range slices.Sorted(maps.Keys(cfg.imports)) {
+		if ap, ok := cfg.imports[name].(resourceTypeImport); ok {
 			res, ok := ap.lender.exportedType(ap.export).(*TypeResource)
 			if !ok {
 				return nil, fmt.Errorf("wacogo: instantiate: import %q: instance has no resource export `%s`", name, ap.export)
@@ -207,7 +209,8 @@ func (e *Engine) instantiateWithParentCfg(ctx context.Context, component *Compon
 	// Resolve outer closures from the parent state. This fills in compiled
 	// modules and sub-components that were import placeholders at load time.
 	if parentState != nil {
-		for slotIdx, ref := range component.outerModuleClosures {
+		for _, slotIdx := range slices.Sorted(maps.Keys(component.outerModuleClosures)) {
+			ref := component.outerModuleClosures[slotIdx]
 			target := parentState
 			for i := uint32(1); i < ref.count; i++ {
 				if target.parentState == nil {
@@ -220,7 +223,8 @@ func (e *Engine) instantiateWithParentCfg(ctx context.Context, component *Compon
 			}
 			compiledModules[slotIdx] = target.compiledModules[ref.index]
 		}
-		for slotIdx, ref := range component.outerComponentClosures {
+		for _, slotIdx := range slices.Sorted(maps.Keys(component.outerComponentClosures)) {
+			ref := component.outerComponentClosures[slotIdx]
 			target := parentState
 			for i := uint32(1); i < ref.count; i++ {
 				if target.parentState == nil {
@@ -668,16 +672,16 @@ func (s *instantiationState) resolveSubComponentClosures() {
 		cloned.subComponents = make([]*Component, len(subComp.subComponents))
 		copy(cloned.subComponents, subComp.subComponents)
 
-		for slotIdx, ref := range subComp.outerModuleClosures {
-			if ref.count == 1 {
+		for _, slotIdx := range slices.Sorted(maps.Keys(subComp.outerModuleClosures)) {
+			if ref := subComp.outerModuleClosures[slotIdx]; ref.count == 1 {
 				if int(ref.index) >= len(s.compiledModules) {
 					panic(fmt.Sprintf("wacogo: closure resolution module index %d out of range (have %d)", ref.index, len(s.compiledModules)))
 				}
 				cloned.compiledModules[slotIdx] = s.compiledModules[ref.index]
 			}
 		}
-		for slotIdx, ref := range subComp.outerComponentClosures {
-			if ref.count == 1 {
+		for _, slotIdx := range slices.Sorted(maps.Keys(subComp.outerComponentClosures)) {
+			if ref := subComp.outerComponentClosures[slotIdx]; ref.count == 1 {
 				if int(ref.index) >= len(s.subComponents) {
 					panic(fmt.Sprintf("wacogo: closure resolution component index %d out of range (have %d)", ref.index, len(s.subComponents)))
 				}

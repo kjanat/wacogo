@@ -222,12 +222,6 @@ func (v *Validator) coreInstantiate(cs *ComponentState, inst CoreInstantiate) er
 	}
 	maps.Copy(ciType.Exports, modType.Exports)
 
-	// Collect unique import module names from the module's imports
-	importModules := make(map[string]bool)
-	for key := range modType.Imports {
-		importModules[key.Module] = true
-	}
-
 	// Validate args are instances and build a map from name to instance type
 	argInstances := make(map[string]CoreInstanceTypeID)
 	for _, arg := range inst.Args {
@@ -244,28 +238,18 @@ func (v *Validator) coreInstantiate(cs *ComponentState, inst CoreInstantiate) er
 		argInstances[arg.Name] = ciID
 	}
 
-	// Check that all import module names are satisfied by args
-	for modName := range importModules {
-		argCiID, ok := argInstances[modName]
+	for _, key := range orderedKeys(modType.ImportOrder, modType.Imports, compareImportKeys) {
+		argCiID, ok := argInstances[key.Module]
 		if !ok {
-			return fmt.Errorf("missing module instantiation argument named `%s`", modName)
+			return fmt.Errorf("missing module instantiation argument named `%s`", key.Module)
 		}
-		argCiType := v.arena.CoreInstanceTypes[argCiID]
-
-		// Check that the arg instance provides all required imports.
-		// Use the ordered import keys to check in source order.
-		for _, key := range modType.ImportOrder {
-			if key.Module != modName {
-				continue
-			}
-			expectedImport := modType.Imports[key]
-			actualExport, ok := argCiType.Exports[key.Name]
-			if !ok {
-				return fmt.Errorf("module instantiation argument `%s` does not export an item named `%s`", modName, key.Name)
-			}
-			if err := checkCoreEntityTypeMatch(v.arena, v.arena, expectedImport, actualExport); err != nil {
-				return fmt.Errorf("type mismatch for module import `%s::%s`: %w", modName, key.Name, err)
-			}
+		expectedImport := modType.Imports[key]
+		actualExport, ok := v.arena.CoreInstanceTypes[argCiID].Exports[key.Name]
+		if !ok {
+			return fmt.Errorf("module instantiation argument `%s` does not export an item named `%s`", key.Module, key.Name)
+		}
+		if err := checkCoreEntityTypeMatch(v.arena, v.arena, expectedImport, actualExport); err != nil {
+			return fmt.Errorf("type mismatch for module import `%s::%s`: %w", key.Module, key.Name, err)
 		}
 	}
 

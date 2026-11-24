@@ -1,9 +1,11 @@
 package wasmparser
 
 import (
+	"cmp"
 	"fmt"
 	"maps"
 	"slices"
+	"strings"
 )
 
 // scopedResID identifies a resource together with enough context that
@@ -139,7 +141,7 @@ func (sc *SubtypeChecker) isModuleSubtype(a, b CoreModuleTypeID) error {
 	at := sc.aArena.CoreModuleTypes[a]
 	bt := sc.bArena.CoreModuleTypes[b]
 
-	for key := range at.Imports {
+	for _, key := range orderedKeys(at.ImportOrder, at.Imports, compareImportKeys) {
 		bImport, ok := bt.Imports[key]
 		if !ok {
 			return fmt.Errorf("missing expected import `::%[2]s`: module import `%[1]s::%[2]s` not defined", key.Module, key.Name)
@@ -150,7 +152,8 @@ func (sc *SubtypeChecker) isModuleSubtype(a, b CoreModuleTypeID) error {
 		}
 	}
 
-	for name, bExport := range bt.Exports {
+	for _, name := range orderedKeys(bt.ExportOrder, bt.Exports, strings.Compare) {
+		bExport := bt.Exports[name]
 		aExport, ok := at.Exports[name]
 		if !ok {
 			return fmt.Errorf("missing expected export `%[1]s`: module export `%[1]s` not defined", name)
@@ -462,7 +465,8 @@ func (sc *SubtypeChecker) isInstanceSubtype(a, b ComponentInstanceTypeID) error 
 	at := sc.aArena.InstanceTypes[a]
 	bt := sc.bArena.InstanceTypes[b]
 
-	for name, bExport := range bt.Exports {
+	for _, name := range orderedKeys(bt.ExportOrder, bt.Exports, strings.Compare) {
+		bExport := bt.Exports[name]
 		aExport, ok := at.Exports[name]
 		if !ok {
 			return fmt.Errorf("missing expected export `%s`", name)
@@ -549,30 +553,31 @@ func (sc *SubtypeChecker) isComponentSubtype(a, b ComponentTypeID) error {
 	return nil
 }
 
-func orderedComponentNames(order []string, entries map[string]ComponentEntityType) []string {
-	if len(order) == 0 {
-		return slices.Sorted(maps.Keys(entries))
-	}
-	names := make([]string, 0, len(entries))
-	seen := make(map[string]struct{}, len(order))
-	for _, name := range order {
-		if _, ok := entries[name]; !ok {
+func orderedKeys[K comparable, V any](order []K, entries map[K]V, compare func(K, K) int) []K {
+	keys := make([]K, 0, len(entries))
+	seen := make(map[K]struct{}, len(entries))
+	for _, key := range order {
+		if _, ok := entries[key]; !ok {
 			continue
 		}
-		if _, ok := seen[name]; ok {
+		if _, ok := seen[key]; ok {
 			continue
 		}
-		seen[name] = struct{}{}
-		names = append(names, name)
+		seen[key] = struct{}{}
+		keys = append(keys, key)
 	}
-	ordered := len(names)
-	for name := range entries {
-		if _, ok := seen[name]; !ok {
-			names = append(names, name)
+	ordered := len(keys)
+	for key := range entries {
+		if _, ok := seen[key]; !ok {
+			keys = append(keys, key)
 		}
 	}
-	slices.Sort(names[ordered:])
-	return names
+	slices.SortFunc(keys[ordered:], compare)
+	return keys
+}
+
+func compareImportKeys(a, b importKey) int {
+	return cmp.Or(strings.Compare(a.Module, b.Module), strings.Compare(a.Name, b.Name))
 }
 
 // bindOpenResources binds the resources the b-side type introduces to the a-side

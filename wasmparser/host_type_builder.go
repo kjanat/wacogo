@@ -1,6 +1,9 @@
 package wasmparser
 
-import "bytes"
+import (
+	"bytes"
+	"strings"
+)
 
 // HostTypeBuilder is the arena-aware construction primitive set for
 // synthesising component types outside the normal parse flow. Purpose-
@@ -54,8 +57,8 @@ func (a *TypeArena) CoreModuleTypeFromBytes(wasmBytes []byte) (CoreModuleTypeDes
 // PushComponentType appends t to the arena's component-type table and
 // returns its ID.
 func (b *HostTypeBuilder) PushComponentType(t ComponentTypeDesc) ComponentTypeID {
-	t.ImportOrder = orderedComponentNames(t.ImportOrder, t.Imports)
-	t.ExportOrder = orderedComponentNames(t.ExportOrder, t.Exports)
+	t.ImportOrder = orderedKeys(t.ImportOrder, t.Imports, strings.Compare)
+	t.ExportOrder = orderedKeys(t.ExportOrder, t.Exports, strings.Compare)
 	return b.arena.pushComponentType(t)
 }
 

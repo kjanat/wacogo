@@ -2,6 +2,7 @@ package wasmparser
 
 import (
 	"fmt"
+	"strings"
 	"sync"
 )
 
@@ -378,7 +379,8 @@ func (sc *SubtypeChecker) isInstanceSubtypeAgainstExports(aExports map[string]Co
 		}
 	}
 
-	for name, bExport := range bt.Exports {
+	for _, name := range orderedKeys(bt.ExportOrder, bt.Exports, strings.Compare) {
+		bExport := bt.Exports[name]
 		aExport, ok := aExports[name]
 		if !ok {
 			if bExport.Kind == EntityType || (bExport.Kind == EntityInstance && isInstanceTypeRuntimeEmpty(sc.bArena, bExport.InstID)) {

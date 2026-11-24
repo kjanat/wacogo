@@ -2,10 +2,12 @@ package core
 
 import (
 	"bytes"
+	"cmp"
 	"context"
 	"errors"
 	"fmt"
 	"io"
+	"slices"
 	"sync"
 	"sync/atomic"
 
@@ -226,8 +228,9 @@ func (i *ComponentInstance) endOperation() error {
 		}
 	}
 	e.lifecycleMu.Unlock()
+	slices.SortFunc(pending, func(a, b *accountedModule) int { return cmp.Compare(a.id, b.id) })
 	var errs []error
-	for _, m := range pending {
+	for _, m := range slices.Backward(pending) {
 		if err := m.refund(); err != nil {
 			errs = append(errs, err)
 		}

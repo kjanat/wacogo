@@ -288,6 +288,7 @@ func (a *TypeArena) parseInnerCoreModule(sub *Parser) (CoreModuleTypeDesc, error
 					return modType, fmt.Errorf("unknown export kind: 0x%02x", kind)
 				}
 				modType.Exports[name] = et
+				modType.ExportOrder = append(modType.ExportOrder, name)
 			}
 
 		case 10: // code section
@@ -818,6 +819,7 @@ func (v *Validator) addCoreModuleType(cs *ComponentState, mt *CoreModuleType) er
 	modType.Imports = tempState.imports
 	modType.ImportOrder = tempState.importOrder
 	modType.Exports = tempState.exports
+	modType.ExportOrder = tempState.exportOrder
 
 	id := v.arena.pushCoreModuleType(modType)
 	cs.coreTypes = append(cs.coreTypes, CoreAnyTypeID{Kind: CoreAnyTypeModule, Index: uint32(id)})
@@ -831,6 +833,7 @@ type moduleTypeState struct {
 	imports     map[importKey]CoreEntityType
 	importOrder []importKey // preserves insertion order
 	exports     map[string]CoreEntityType
+	exportOrder []string
 	parent      *ComponentState
 	components  []*ComponentState // reference to the validator's component stack
 }
@@ -895,6 +898,7 @@ func (ms *moduleTypeState) addExport(d *ModuleDeclExport) error {
 		return fmt.Errorf("export name `%s` already defined", d.Name)
 	}
 	ms.exports[d.Name] = et
+	ms.exportOrder = append(ms.exportOrder, d.Name)
 	return nil
 }
 

@@ -2,8 +2,10 @@ package witgen
 
 import (
 	"fmt"
+	"maps"
 	"os"
 	"path/filepath"
+	"slices"
 
 	"github.com/kjanat/go-modules/wit"
 )
@@ -66,7 +68,8 @@ func generateFromResolve(res *wit.Resolve, opts Options) (map[string][]byte, err
 		out[filepath.Join(relDir, iface.GoPackage+".wrap.go")] = wrapFile
 	}
 	if !opts.DryRun {
-		for relPath, contents := range out {
+		for _, relPath := range slices.Sorted(maps.Keys(out)) {
+			contents := out[relPath]
 			absPath := filepath.Join(opts.OutDir, relPath)
 			if err := os.MkdirAll(filepath.Dir(absPath), 0o755); err != nil {
 				return nil, fmt.Errorf("mkdir %s: %w", filepath.Dir(absPath), err)
