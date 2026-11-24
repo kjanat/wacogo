@@ -4,5 +4,5 @@
   "forkProcessing": "enabled",
   "timezone": "Europe/Amsterdam",
   "schedule": ["* * * * 1"],
-  "enabledManagers": ["gomod", "dockerfile", "devcontainer"]
+  "enabledManagers": ["gomod", "dockerfile", "devcontainer", "pip_requirements"]
 }
