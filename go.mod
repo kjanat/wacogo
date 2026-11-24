@@ -12,3 +12,6 @@ require (
 )
 
 require github.com/coreos/go-semver v0.3.1 // indirect
+
+// v0.3.6 traps guests on body read errors. v0.3.7 also panics on valid components and forbids Content-Length.
+retract [v0.3.6, v0.3.7]
