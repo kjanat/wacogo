@@ -525,7 +525,7 @@ func (l *componentLoader) processAliasOuter(a wasmparser.AliasOuter) {
 		comp := target.subComponents[a.Index]
 		slotIdx := len(l.scope.subComponents)
 		l.scope.subComponents = append(l.scope.subComponents, comp)
-		if comp == nil {
+		if comp == nil || comp.capturesOuterScope() {
 			l.scope.outerComponentClosures[slotIdx] = outerRef{count: a.Count, index: a.Index}
 		}
 	default:

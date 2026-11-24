@@ -79,13 +79,13 @@ func TestOuterClosurePanicsNameFirstSlot(t *testing.T) {
 			run: func() {
 				_, _ = engine.instantiateWithParentCfg(t.Context(), &Component{outerModuleClosures: closures}, &instantiationState{}, nil, &instantiateConfig{})
 			},
-			want: "wacogo: outer closure module index 10 out of range (have 0)",
+			want: "wacogo: closure resolution module index 10 out of range (have 0)",
 		},
 		"instantiate component": {
 			run: func() {
 				_, _ = engine.instantiateWithParentCfg(t.Context(), &Component{outerComponentClosures: closures}, &instantiationState{}, nil, &instantiateConfig{})
 			},
-			want: "wacogo: outer closure component index 10 out of range (have 0)",
+			want: "wacogo: closure resolution component index 10 out of range (have 0)",
 		},
 		"resolve module": {
 			run: func() {

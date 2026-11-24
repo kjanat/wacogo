@@ -229,34 +229,8 @@ func (e *Engine) instantiateWithParentCfg(ctx context.Context, component *Compon
 	// Resolve outer closures from the parent state. This fills in compiled
 	// modules and sub-components that were import placeholders at load time.
 	if parentState != nil {
-		for _, slotIdx := range slices.Sorted(maps.Keys(component.outerModuleClosures)) {
-			ref := component.outerModuleClosures[slotIdx]
-			target := parentState
-			for i := uint32(1); i < ref.count; i++ {
-				if target.parentState == nil {
-					panic(fmt.Sprintf("wacogo: outer closure: count %d exceeds nesting depth", ref.count))
-				}
-				target = target.parentState
-			}
-			if int(ref.index) >= len(target.compiledModules) {
-				panic(fmt.Sprintf("wacogo: outer closure module index %d out of range (have %d)", ref.index, len(target.compiledModules)))
-			}
-			compiledModules[slotIdx] = target.compiledModules[ref.index]
-		}
-		for _, slotIdx := range slices.Sorted(maps.Keys(component.outerComponentClosures)) {
-			ref := component.outerComponentClosures[slotIdx]
-			target := parentState
-			for i := uint32(1); i < ref.count; i++ {
-				if target.parentState == nil {
-					panic(fmt.Sprintf("wacogo: outer closure: count %d exceeds nesting depth", ref.count))
-				}
-				target = target.parentState
-			}
-			if int(ref.index) >= len(target.subComponents) {
-				panic(fmt.Sprintf("wacogo: outer closure component index %d out of range (have %d)", ref.index, len(target.subComponents)))
-			}
-			subComponents[slotIdx] = target.subComponents[ref.index]
-		}
+		compiledModules, _, _ = bindClosures(parentState, component.outerModuleClosures, compiledModules, 1, (*instantiationState).outerModule)
+		subComponents, _, _ = bindClosures(parentState, component.outerComponentClosures, subComponents, 1, (*instantiationState).outerComponent)
 	}
 
 	// Validate import kind compatibility before running any plan steps.
@@ -644,7 +618,7 @@ func (step *planAlias) execute(_ context.Context, s *instantiationState) error {
 			if int(src.index) >= len(target.subComponents) {
 				return fmt.Errorf("wacogo: outer alias: component %d out of range (have %d)", src.index, len(target.subComponents))
 			}
-			comp := target.subComponents[src.index]
+			comp := target.closeOver(target.subComponents[src.index], 1)
 			if step.targetIndex >= 0 {
 				if step.targetIndex >= len(s.subComponents) {
 					panic(fmt.Sprintf("wacogo: outer alias target component index %d out of range (have %d)", step.targetIndex, len(s.subComponents)))
@@ -664,87 +638,117 @@ func (step *planAlias) execute(_ context.Context, s *instantiationState) error {
 // compiled modules/sub-components rather than nil placeholders.
 func (s *instantiationState) resolveSubComponentClosures() {
 	for i, subComp := range s.subComponents {
-		if subComp == nil {
-			continue
-		}
-		needsClone := false
-		for _, ref := range subComp.outerModuleClosures {
-			if ref.count == 1 {
-				needsClone = true
-				break
-			}
-		}
-		if !needsClone {
-			for _, ref := range subComp.outerComponentClosures {
-				if ref.count == 1 {
-					needsClone = true
-					break
-				}
-			}
-		}
-		if !needsClone {
-			continue
-		}
-		// Clone the sub-component with resolved closures.
-		cloned := *subComp
-		cloned.compiledModules = make([]CompiledModule, len(subComp.compiledModules))
-		copy(cloned.compiledModules, subComp.compiledModules)
-		cloned.subComponents = make([]*Component, len(subComp.subComponents))
-		copy(cloned.subComponents, subComp.subComponents)
-
-		for _, slotIdx := range slices.Sorted(maps.Keys(subComp.outerModuleClosures)) {
-			if ref := subComp.outerModuleClosures[slotIdx]; ref.count == 1 {
-				if int(ref.index) >= len(s.compiledModules) {
-					panic(fmt.Sprintf("wacogo: closure resolution module index %d out of range (have %d)", ref.index, len(s.compiledModules)))
-				}
-				cloned.compiledModules[slotIdx] = s.compiledModules[ref.index]
-			}
-		}
-		for _, slotIdx := range slices.Sorted(maps.Keys(subComp.outerComponentClosures)) {
-			if ref := subComp.outerComponentClosures[slotIdx]; ref.count == 1 {
-				if int(ref.index) >= len(s.subComponents) {
-					panic(fmt.Sprintf("wacogo: closure resolution component index %d out of range (have %d)", ref.index, len(s.subComponents)))
-				}
-				cloned.subComponents[slotIdx] = s.subComponents[ref.index]
-			}
-		}
-		// Clear the closures that were just resolved (count==1).
-		if len(subComp.outerModuleClosures) > 0 || len(subComp.outerComponentClosures) > 0 {
-			newModClosures := make(map[int]outerRef)
-			for slotIdx, ref := range subComp.outerModuleClosures {
-				if ref.count > 1 {
-					// Decrement count since we're one level closer now.
-					newModClosures[slotIdx] = outerRef{count: ref.count - 1, index: ref.index}
-				}
-			}
-			if len(newModClosures) > 0 {
-				cloned.outerModuleClosures = newModClosures
-			} else {
-				cloned.outerModuleClosures = nil
-			}
-			newCompClosures := make(map[int]outerRef)
-			for slotIdx, ref := range subComp.outerComponentClosures {
-				if ref.count > 1 {
-					newCompClosures[slotIdx] = outerRef{count: ref.count - 1, index: ref.index}
-				}
-			}
-			if len(newCompClosures) > 0 {
-				cloned.outerComponentClosures = newCompClosures
-			} else {
-				cloned.outerComponentClosures = nil
-			}
-		}
-
-		s.subComponents[i] = &cloned
-
-		// Recursively resolve closures in the cloned sub-component's sub-components.
-		clonedState := &instantiationState{
-			compiledModules: cloned.compiledModules,
-			subComponents:   cloned.subComponents,
-		}
-		clonedState.resolveSubComponentClosures()
-		cloned.subComponents = clonedState.subComponents
+		s.subComponents[i] = s.closeOver(subComp, 1)
 	}
+}
+
+func (s *instantiationState) closeOver(comp *Component, depth uint32) *Component {
+	if comp == nil {
+		return nil
+	}
+	subComponents := comp.subComponents
+	subsChanged := false
+	for j, sub := range comp.subComponents {
+		if _, aliased := comp.outerComponentClosures[j]; aliased {
+			continue
+		}
+		if closed := s.closeOver(sub, depth+1); closed != sub {
+			if !subsChanged {
+				subComponents = slices.Clone(comp.subComponents)
+				subsChanged = true
+			}
+			subComponents[j] = closed
+		}
+	}
+	compiledModules, moduleClosures, modulesChanged := bindClosures(s, comp.outerModuleClosures, comp.compiledModules, depth, (*instantiationState).outerModule)
+	subComponents, componentClosures, componentsChanged := bindClosures(s, comp.outerComponentClosures, subComponents, depth, (*instantiationState).outerComponent)
+	if !subsChanged && !modulesChanged && !componentsChanged {
+		return comp
+	}
+	cloned := *comp
+	cloned.compiledModules = compiledModules
+	cloned.outerModuleClosures = moduleClosures
+	cloned.subComponents = subComponents
+	cloned.outerComponentClosures = componentClosures
+	return &cloned
+}
+
+func (c *Component) capturesOuterScope() bool {
+	return c.capturesAbove(1)
+}
+
+func (c *Component) capturesAbove(depth uint32) bool {
+	for _, ref := range c.outerModuleClosures {
+		if ref.count >= depth {
+			return true
+		}
+	}
+	for _, ref := range c.outerComponentClosures {
+		if ref.count >= depth {
+			return true
+		}
+	}
+	for j, sub := range c.subComponents {
+		if _, aliased := c.outerComponentClosures[j]; aliased {
+			continue
+		}
+		if sub != nil && sub.capturesAbove(depth+1) {
+			return true
+		}
+	}
+	return false
+}
+
+func (s *instantiationState) outerModule(index uint32) CompiledModule {
+	if int(index) >= len(s.compiledModules) {
+		panic(fmt.Sprintf("wacogo: closure resolution module index %d out of range (have %d)", index, len(s.compiledModules)))
+	}
+	return s.compiledModules[index]
+}
+
+func (s *instantiationState) outerComponent(index uint32) *Component {
+	if int(index) >= len(s.subComponents) {
+		panic(fmt.Sprintf("wacogo: closure resolution component index %d out of range (have %d)", index, len(s.subComponents)))
+	}
+	return s.closeOver(s.subComponents[index], 1)
+}
+
+func (s *instantiationState) ancestor(steps, count uint32) *instantiationState {
+	target := s
+	for range steps {
+		if target.parentState == nil {
+			panic(fmt.Sprintf("wacogo: outer closure: count %d exceeds nesting depth", count))
+		}
+		target = target.parentState
+	}
+	return target
+}
+
+func bindClosures[T any](s *instantiationState, closures map[int]outerRef, slots []T, depth uint32, get func(*instantiationState, uint32) T) ([]T, map[int]outerRef, bool) {
+	changed := false
+	for _, ref := range closures {
+		if ref.count >= depth {
+			changed = true
+			break
+		}
+	}
+	if !changed {
+		return slots, closures, false
+	}
+	slots = slices.Clone(slots)
+	var inner map[int]outerRef
+	for _, slot := range slices.Sorted(maps.Keys(closures)) {
+		ref := closures[slot]
+		if ref.count < depth {
+			if inner == nil {
+				inner = make(map[int]outerRef)
+			}
+			inner[slot] = ref
+			continue
+		}
+		slots[slot] = get(s.ancestor(ref.count-depth, ref.count), ref.index)
+	}
+	return slots, inner, true
 }
 
 // buildFuncExportNames returns a slice indexed by component func-index, holding
@@ -995,7 +999,7 @@ func (step *planInstantiateComponent) execute(ctx context.Context, s *instantiat
 			if int(arg.index) >= len(s.subComponents) {
 				return fmt.Errorf("wacogo: instantiate component: arg %q references component %d, but only %d exist", arg.name, arg.index, len(s.subComponents))
 			}
-			opts = append(opts, WithComponentImport(arg.name, s.subComponents[arg.index]))
+			opts = append(opts, WithComponentImport(arg.name, s.closeOver(s.subComponents[arg.index], 1)))
 		case SortCoreModule:
 			if int(arg.index) >= len(s.compiledModules) {
 				return fmt.Errorf("wacogo: instantiate component: arg %q references module %d, but only %d exist", arg.name, arg.index, len(s.compiledModules))
@@ -1076,7 +1080,7 @@ func (step *planComponentInstantiateFromExports) execute(_ context.Context, s *i
 			}
 			inst.exports[exp.name] = exportEntry{
 				kind:      SortComponent,
-				component: s.subComponents[exp.index],
+				component: s.closeOver(s.subComponents[exp.index], 1),
 			}
 		case SortType:
 			if int(exp.index) >= len(s.types) {
